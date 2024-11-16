@@ -34,9 +34,13 @@ To build only a specific type of server (i.e. admin servers):
 ansible-playbook --limit admin_servers site.yml
 ```
 
-# Design
-TBD
+To build only a specific server (i.e. `admsrv01`):
+```bash
+ansible-playbook --limit admsrv01 site.yml
+```
 
+# Server Profiles
+TBD
 
 # Resources
 Ansible Reference

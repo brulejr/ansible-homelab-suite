@@ -16,10 +16,10 @@ Running this script will prompt for the following information. These values are 
 |Cloudflare DNS Token|Token used in DNS Challenge by Let's Encrypt to generate server certificates|
 |Traefik Username|User id for the Traefik dashboard|
 |Traefik Password|Password for the Traefik dashboard|
-|Admin Server(s)|Comma-separated list of administrative server(s)|
-|Devops Server(s)|Comma-separated list of devops server(s)|
-|Home Automation Server(s)|Comma-separated list of home automation server(s)|
-|Network Server(s)|Comma-separated list of network server(s)|
+|Admin Server|The administrative server|
+|Devops Server|The devops server|
+|Home Automation Server|The home automation server|
+|Network Server|The network server|
 
 # Usage
 Once the project has been setup using the above bootstrap process, then the Ansible playbook may be run to build different types of servers.
@@ -50,4 +50,10 @@ Ansible Reference
 - [Working with Inventory](https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html)
 
 Blog Articles
+- [Automating my Homelab with Ansible (AnsibleFest 2022)](https://www.jeffgeerling.com/blog/2022/automating-my-homelab-ansible-ansiblefest-2022)
 - [Ansible Roles: Basics, Creating & Using](https://spacelift.io/blog/ansible-roles)
+- [Ansible — Configuration as Code for building up my Homelab](https://akashrajpurohit.com/blog/ansible-infrastructure-as-a-code-for-building-up-my-homelab/)
+
+Related Projects
+- [Github - rishavnandi/ansible_homelab](https://github.com/rishavnandi/ansible_homelab)
+- [Github - nleiva/ansible-home](https://github.com/rishavnandi/ansible_homelab)

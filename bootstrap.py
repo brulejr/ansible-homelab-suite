@@ -33,10 +33,10 @@ devops_servers = input_val("Enter the devops server name(s)", RE_SERVER_NAMES, "
 
 # Calculate derived values
 traefik_user_hash = subprocess.run([f"htpasswd", "-nBb", traefik_username, traefik_password], stdout=subprocess.PIPE, text=True).stdout
-admin_servers = admin_servers.split(",")
-network_servers = network_servers.split(",")
-ha_servers = ha_servers.split(",")
-devops_servers = devops_servers.split(",")
+admin_servers = "\n".join(admin_servers.split(","))
+network_servers = "\n".join(network_servers.split(","))
+ha_servers = "\n".join(ha_servers.split(","))
+devops_servers = "\n".join(devops_servers.split(","))
 
 # Clone the repository
 subprocess.run(

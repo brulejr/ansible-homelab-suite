@@ -30,8 +30,8 @@ traefik_user_hash = subprocess.run([f"htpasswd", "-nBb", traefik_username, traef
 
 # Clone the repository
 subprocess.run(
-    ['git', 'clone', 'https://github.com/brulejr/ansible-homelab.git'])
-os.chdir('ansible-homelab')
+    ['git', 'clone', 'https://github.com/brulejr/ansible-homelab-suite.git'])
+os.chdir('ansible-homelab-suite')
 
 # Clone inventory template replacing values
 with open('inventory_template', 'r') as f:

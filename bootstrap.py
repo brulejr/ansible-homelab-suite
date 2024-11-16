@@ -7,6 +7,7 @@ import subprocess
 RE_DOMAIN_NAME = r"^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$"
 RE_EMAIL = r"^[a-zA-Z0-9-_]+@[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$"
 RE_PASSWORD = r"^.+$"
+RE_SERVER_NAME = r"^.+$"
 RE_TOKEN = r"^.+$"
 RE_USERNAME = r"^.+$"
 
@@ -25,6 +26,7 @@ cloudflare_email = input_val("Enter the Cloudflare email address", RE_EMAIL, "em
 cloudflare_dns_token = input_val("Enter the Cloudflare DNS Token", RE_TOKEN, "token")
 traefik_username = input_val("Enter the Traefik dashboard user", RE_USERNAME, "username")
 traefik_password = input_val("Enter the Traefik dashboard password", RE_PASSWORD, "password")
+admin_server = input_val("Enter the admin server name", RE_SERVER_NAME, "server name")
 
 traefik_user_hash = subprocess.run([f"htpasswd", "-nBb", traefik_username, traefik_password], stdout=subprocess.PIPE, text=True).stdout
 
@@ -36,6 +38,7 @@ os.chdir('ansible-homelab-suite')
 # Clone inventory template replacing values
 with open('inventory_template', 'r') as f:
     content = f.read()
+content = content.replace('<admin_server>', admin_server)
 content = content.replace('<domain_name>', domain_name)
 content = content.replace('<cloudflare_email>', cloudflare_email)
 content = content.replace('<cloudflare_dns_token>', cloudflare_dns_token)

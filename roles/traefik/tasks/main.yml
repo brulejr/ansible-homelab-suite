@@ -67,7 +67,7 @@
     security_opts:
       - no-new-privileges:true
     networks:
-      - name: homelab
+      - name: "{{ docker_network }}"
     ports:
       - "80:80"
       - "443:443"
@@ -81,13 +81,13 @@
     labels:
       traefik.enable: "true"
       traefik.http.routers.traefik.entrypoints: "http"
-      traefik.http.routers.traefik.rule: "Host(`traefik.{{ domain }}`)"
+      traefik.http.routers.traefik.rule: "Host(`traefik_{{ inventory_hostname_short }}.{{ domain }}`)"
       traefik.http.middlewares.traefik-auth.basicauth.users: "{{ traefik_basic_auth_hash }}"
       traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme: "https"
       traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto: "https"
       traefik.http.routers.traefik.middlewares: "traefik-https-redirect"
       traefik.http.routers.traefik-secure.entrypoints: "https"
-      traefik.http.routers.traefik-secure.rule: "Host(`traefik.{{ domain }}`)"
+      traefik.http.routers.traefik-secure.rule: "Host(`traefik_{{ inventory_hostname_short }}.{{ domain }}`)"
       traefik.http.routers.traefik-secure.middlewares: "traefik-auth"
       traefik.http.routers.traefik-secure.tls: "true"
       traefik.http.routers.traefik-secure.tls.certresolver: "cloudflare"

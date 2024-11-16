@@ -8,6 +8,7 @@
     - portainer
     - traefik
     - watchtower
+    - homarr
 
 - name: Setup the devops servers
   hosts: devops_servers

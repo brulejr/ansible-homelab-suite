@@ -1,0 +1,11 @@
+---
+
+ansible_user: sysadm
+
+username: "sysadm"
+groupname: "sysadm"
+
+docker_network: "homelab"
+
+docker_dir: /opt/homelab/docker_apps
+data_dir: /opt/homelab/data

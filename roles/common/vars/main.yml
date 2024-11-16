@@ -1,0 +1,16 @@
+---
+# vars file for common
+
+packages:
+  - unzip
+  - wget
+  - curl
+  - git
+  - python3
+  - python3-pip
+  - vim
+
+pip_packages:
+  - ansible
+  - github3.py
+  - docker

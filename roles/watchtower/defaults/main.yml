@@ -1,0 +1,4 @@
+---
+# defaults file for watchtower
+
+docker_network: homelab

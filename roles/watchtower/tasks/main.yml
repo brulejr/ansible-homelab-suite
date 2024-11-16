@@ -1,0 +1,16 @@
+---
+# tasks file for watchtower
+
+- name: Create watchtower container
+  community.docker.docker_container:
+    name: watchtower
+    image: containrrr/watchtower
+    pull: true
+    state: started
+    restart_policy: unless-stopped
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    env:
+      WATCHTOWER_CLEANUP: "true"
+    networks:
+      - name: "{{ docker_network }}"

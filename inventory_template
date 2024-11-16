@@ -1,0 +1,8 @@
+[admin_servers]
+admsrv02
+
+[all:vars]
+domain = "<domain>"
+cloudflare_email = "<cloudflare_email>"
+cloudflare_dns_token = "<cloudflare_dns_token>"
+traefik_basic_auth_hash = "<traefik_basic_auth_hash>"

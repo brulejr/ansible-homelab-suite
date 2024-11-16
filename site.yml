@@ -1,0 +1,9 @@
+---
+- name: Setup the admin servers
+  hosts: admin_servers
+  become: true
+  roles:
+    - common
+    - docker
+    - portainer
+    - watchtower

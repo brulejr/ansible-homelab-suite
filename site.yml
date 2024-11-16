@@ -6,6 +6,7 @@
     - common
     - docker
     - portainer
+    - traefik
     - watchtower
 
 - name: Setup the devops servers
@@ -15,6 +16,7 @@
     - common
     - docker
     - portainer
+    - traefik
     - watchtower
 
 - name: Setup the home automation servers
@@ -24,6 +26,7 @@
     - common
     - docker
     - portainer
+    - traefik
     - watchtower
 
 - name: Setup the network servers
@@ -33,4 +36,5 @@
     - common
     - docker
     - portainer
+    - traefik
     - watchtower

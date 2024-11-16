@@ -1,5 +1,14 @@
 [admin_servers]
-<admin_server>
+<admin_servers>
+
+[devops_servers]
+<devops_servers>
+
+[ha_servers]
+<ha_servers>
+
+[network_servers]
+<network_servers>
 
 [all:vars]
 domain = "<domain_name>"

@@ -7,7 +7,7 @@ import subprocess
 RE_DOMAIN_NAME = r"^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$"
 RE_EMAIL = r"^[a-zA-Z0-9-_]+@[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$"
 RE_PASSWORD = r"^.+$"
-RE_SERVER_NAME = r"^.+$"
+RE_SERVER_NAMES = r"^([a-zA-Z0-9][a-zA-Z0-9-]{1,61})*(,[a-zA-Z0-9][a-zA-Z0-9-]{1,61})*$"
 RE_TOKEN = r"^.+$"
 RE_USERNAME = r"^.+$"
 
@@ -26,9 +26,17 @@ cloudflare_email = input_val("Enter the Cloudflare email address", RE_EMAIL, "em
 cloudflare_dns_token = input_val("Enter the Cloudflare DNS Token", RE_TOKEN, "token")
 traefik_username = input_val("Enter the Traefik dashboard user", RE_USERNAME, "username")
 traefik_password = input_val("Enter the Traefik dashboard password", RE_PASSWORD, "password")
-admin_server = input_val("Enter the admin server name", RE_SERVER_NAME, "server name")
+admin_servers = input_val("Enter the admin server name(s)", RE_SERVER_NAMES, "admin server name(s)")
+network_servers = input_val("Enter the network server name(s)", RE_SERVER_NAMES, "network server name(s)")
+ha_servers = input_val("Enter the home automation server name(s)", RE_SERVER_NAMES, "home automation server name(s)")
+devops_servers = input_val("Enter the devops server name(s)", RE_SERVER_NAMES, "devops server name(s)")
 
+# Calculate derived values
 traefik_user_hash = subprocess.run([f"htpasswd", "-nBb", traefik_username, traefik_password], stdout=subprocess.PIPE, text=True).stdout
+admin_servers = admin_servers.split(",")
+network_servers = network_servers.split(",")
+ha_servers = ha_servers.split(",")
+devops_servers = devops_servers.split(",")
 
 # Clone the repository
 subprocess.run(
@@ -38,7 +46,10 @@ os.chdir('ansible-homelab-suite')
 # Clone inventory template replacing values
 with open('inventory_template', 'r') as f:
     content = f.read()
-content = content.replace('<admin_server>', admin_server)
+content = content.replace('<admin_servers>', admin_servers)
+content = content.replace('<network_servers>', network_servers)
+content = content.replace('<ha_servers>', ha_servers)
+content = content.replace('<devops_servers>', devops_servers)
 content = content.replace('<domain_name>', domain_name)
 content = content.replace('<cloudflare_email>', cloudflare_email)
 content = content.replace('<cloudflare_dns_token>', cloudflare_dns_token)

@@ -7,3 +7,30 @@
     - docker
     - portainer
     - watchtower
+
+- name: Setup the devops servers
+  hosts: devops_servers
+  become: true
+  roles:
+    - common
+    - docker
+    - portainer
+    - watchtower
+
+- name: Setup the home automation servers
+  hosts: ha_servers
+  become: true
+  roles:
+    - common
+    - docker
+    - portainer
+    - watchtower
+
+- name: Setup the network servers
+  hosts: network_servers
+  become: true
+  roles:
+    - common
+    - docker
+    - portainer
+    - watchtower

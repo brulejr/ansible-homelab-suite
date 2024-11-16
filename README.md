@@ -16,6 +16,10 @@ Running this script will prompt for the following information. These values are 
 |Cloudflare DNS Token|Token used in DNS Challenge by Let's Encrypt to generate server certificates|
 |Traefik Username|User id for the Traefik dashboard|
 |Traefik Password|Password for the Traefik dashboard|
+|Admin Server(s)|Comma-separated list of administrative server(s)|
+|Devops Server(s)|Comma-separated list of devops server(s)|
+|Home Automation Server(s)|Comma-separated list of home automation server(s)|
+|Network Server(s)|Comma-separated list of network server(s)|
 
 # Usage
 Once the project has been setup using the above bootstrap process, then the Ansible playbook may be run to build different types of servers.

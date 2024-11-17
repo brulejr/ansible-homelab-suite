@@ -40,3 +40,4 @@
     - portainer
     - traefik
     - watchtower
+    - guacamole

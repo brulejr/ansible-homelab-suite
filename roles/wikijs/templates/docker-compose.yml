@@ -3,7 +3,7 @@ services:
 
   db:
     image: postgres:15-alpine
-    container_name: postgres
+    container_name: wikijs-postgres
     environment:
       POSTGRES_DB: wiki
       POSTGRES_PASSWORD: W1k1jsR0cks

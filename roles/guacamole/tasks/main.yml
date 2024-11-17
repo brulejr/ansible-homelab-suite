@@ -1,0 +1,26 @@
+---
+# tasks file for guacamole
+
+- name: Create guacamole container
+  community.docker.docker_container:
+    name: guacamole
+    image: maxwaldorf/guacamole
+    pull: true
+    state: started
+    restart_policy: unless-stopped
+    volumes:
+      - "{{ docker_dir }}/guacamole/config:/config"
+    networks:
+      - name: "{{ docker_network }}"
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.guac.entrypoints: "http"
+      traefik.http.routers.guac.rule: "Host(`guacamole.{{ domain }}`)"
+      traefik.http.middlewares.guac-https-redirect.redirectscheme.scheme: "https"
+      traefik.http.routers.guac.middlewares: "guacamole-https-redirect"
+      traefik.http.routers.guac-secure.entrypoints: "https"
+      traefik.http.routers.guac-secure.rule: "Host(`guacamole.{{ domain }}`)"
+      traefik.http.routers.guac-secure.tls: "true"
+      traefik.http.routers.guac-secure.service: "guacamole"
+      traefik.http.services.guac.loadbalancer.server.port: "8080"
+      traefik.docker.network: "{{ docker_network }}"

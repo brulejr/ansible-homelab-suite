@@ -10,6 +10,6 @@
 
 - name: Run wikijs docker compose
   community.docker.docker_compose_v2:
-    project_src: {{ docker_dir }}/wikijs
+    project_src: "{{ docker_dir }}/wikijs"
     files:
       - docker-compose.yml

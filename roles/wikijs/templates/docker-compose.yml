@@ -1,6 +1,6 @@
 services:
 
-  db:
+  wikijs_db:
     image: postgres:15-alpine
     container_name: wikijs-postgres
     environment:
@@ -13,16 +13,16 @@ services:
     volumes:
       - wikijs-db-data:/var/lib/postgresql/data
     networks:
-      - "{{ docker_network }}"
+      - backend
 
   wikijs:
     image: ghcr.io/requarks/wiki:2
     container_name: wikijs
     depends_on:
-      - db
+      - wikijs_db
     environment:
       DB_TYPE: postgres
-      DB_HOST: db
+      DB_HOST: wikijs_db
       DB_PORT: 5432
       DB_USER: wikijs
       DB_PASS: W1k1jsR0cks
@@ -33,7 +33,8 @@ services:
     volumes:
       - {{ docker_dir }}/wikijs/ssh:/wiki/ssh:ro
     networks:
-      - "{{ docker_network }}"
+      - backend
+      - frontend
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.wikijs.entrypoints=http"
@@ -46,6 +47,13 @@ services:
       - "traefik.http.routers.wikijs-secure.service=wikijs"
       - "traefik.http.services.wikijs.loadbalancer.server.port=9000"
       - "traefik.docker.network={{ docker_network }}"
+
+networks:
+  frontend:
+    name: "{{ docker_network }}"
+    external: true
+  backend:
+    external: false
 
 volumes:
   wikijs-db-data:

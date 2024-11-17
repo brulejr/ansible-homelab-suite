@@ -1,7 +1,15 @@
 ---
 # tasks file for wikijs
 
-- name: copy Docker Compose files
+- name: Create wikijs data directory
+  ansible.builtin.file:
+    path: "{{ docker_dir }}/wikijs"
+    state: directory
+    mode: '0755'
+    access_time: preserve
+    modification_time: preserve
+
+- name: copy wikijs files
   copy:
     src: templates/{{ item }}
     dest: "{{ docker_dir }}/wikijs"

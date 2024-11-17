@@ -13,7 +13,7 @@ services:
     volumes:
       - wikijs-db-data:/var/lib/postgresql/data
     networks:
-      - name: "{{ docker_network }}"
+      - "{{ docker_network }}"
 
   wikijs:
     image: ghcr.io/requarks/wiki:2
@@ -32,6 +32,8 @@ services:
       - "3000:3000"
     volumes:
       - {{ docker_dir }}/wikijs/ssh:/wiki/ssh:ro
+    networks:
+      - "{{ docker_network }}"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.wikijs.entrypoints=http"
@@ -44,8 +46,6 @@ services:
       - "traefik.http.routers.wikijs-secure.service=wikijs"
       - "traefik.http.services.wikijs.loadbalancer.server.port=9000"
       - "traefik.docker.network={{ docker_network }}"
-    networks:
-      - name: "{{ docker_network }}"
 
 volumes:
   wikijs-db-data:

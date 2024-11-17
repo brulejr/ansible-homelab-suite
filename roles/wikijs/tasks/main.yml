@@ -4,8 +4,8 @@
 - name: copy Docker Compose files
   copy:
     src: templates/{{ item }}
-    dest: {{ docker_dir }}/wikijs/{{ item }}
-  loop:
+    dest: "{{ docker_dir }}/wikijs"
+  with_items:
     - docker-compose.yml
 
 - name: Run wikijs docker compose

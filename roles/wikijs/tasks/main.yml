@@ -10,10 +10,10 @@
     modification_time: preserve
 
 - name: copy wikijs files
-  copy:
+  template:
     src: templates/{{ item }}
     dest: "{{ docker_dir }}/wikijs"
-  with_items:
+  loop:
     - docker-compose.yml
 
 - name: Run wikijs docker compose

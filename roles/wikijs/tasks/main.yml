@@ -1,0 +1,15 @@
+---
+# tasks file for wikijs
+
+- name: copy Docker Compose files
+  copy:
+    src: templates/{{ item }}
+    dest: {{ docker_dir }}/wikijs/{{ item }}
+  loop:
+    - docker-compose.yml
+
+- name: Run wikijs docker compose
+  community.docker.docker_compose_v2:
+    project_src: {{ docker_dir }}/wikijs
+    files:
+      - docker-compose.yml

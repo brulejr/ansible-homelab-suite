@@ -49,11 +49,11 @@ Ansible Reference
 - [Using Variables](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html)
 - [Working with Inventory](https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html)
 
-Blog Articles
+Blog Articles (Inspiration!)
 - [Automating my Homelab with Ansible (AnsibleFest 2022)](https://www.jeffgeerling.com/blog/2022/automating-my-homelab-ansible-ansiblefest-2022)
 - [Ansible Roles: Basics, Creating & Using](https://spacelift.io/blog/ansible-roles)
 - [Ansible — Configuration as Code for building up my Homelab](https://akashrajpurohit.com/blog/ansible-infrastructure-as-a-code-for-building-up-my-homelab/)
 
-Related Projects
+Related Projects (More Inspiration!)
 - [Github - rishavnandi/ansible_homelab](https://github.com/rishavnandi/ansible_homelab)
 - [Github - nleiva/ansible-home](https://github.com/rishavnandi/ansible_homelab)

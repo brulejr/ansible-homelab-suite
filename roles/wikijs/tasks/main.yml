@@ -3,7 +3,7 @@
 
 - name: Create wikijs data directory
   ansible.builtin.file:
-    path: "{{ docker_dir }}/wikijs"
+    path: "{{ wikijs_dir }}"
     state: directory
     mode: '0755'
     access_time: preserve
@@ -12,12 +12,24 @@
 - name: copy wikijs files
   template:
     src: templates/{{ item }}
-    dest: "{{ docker_dir }}/wikijs"
+    dest: "{{ wikijs_dir }}"
   loop:
     - docker-compose.yml
 
+- name: Generate SSH key
+  openssh_keypair:
+    path: "{{ wikijs_ssh_dir }}/{{ wikijs_ssh_key_filename }}"
+    comment: "wikijs@{{ inventory_hostname }}"
+    owner: sysadm
+    group: sysadm
+    type: rsa
+    size: 4096
+    state: present
+    force: no
+  register: generated_key
+
 - name: Run wikijs docker compose
   community.docker.docker_compose_v2:
-    project_src: "{{ docker_dir }}/wikijs"
+    project_src: "{{ wikijs_dir }}"
     files:
       - docker-compose.yml

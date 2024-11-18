@@ -31,7 +31,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - {{ docker_dir }}/wikijs/ssh:/wiki/ssh:ro
+      - {{ wikijs_ssh_dir }}:/wiki/ssh:ro
     networks:
       - wikijs
     labels:

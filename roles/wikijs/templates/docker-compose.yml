@@ -30,9 +30,6 @@ services:
       - "3000:3000"
     volumes:
       - {{ docker_dir }}/wikijs/ssh:/wiki/ssh:ro
-    networks:
-      - default
-      - frontend
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.wikijs.entrypoints=http"
@@ -47,7 +44,7 @@ services:
       - "traefik.docker.network={{ docker_network }}"
 
 networks:
-  frontend:
+  default:
     name: "{{ docker_network }}"
     external: true
 

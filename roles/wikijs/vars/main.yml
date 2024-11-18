@@ -1,6 +1,6 @@
 ---
 # vars file for wikijs
 
-wikijs_dir: {{ docker_dir }}/wikijs
-wikijs_ssh_dir: {{ wikijs_dir }}/ssh
+wikijs_dir: "{{ docker_dir }}/wikijs"
+wikijs_ssh_dir: "{{ wikijs_dir }}/ssh"
 wikijs_ssh_key_filename: wikijs_rsa

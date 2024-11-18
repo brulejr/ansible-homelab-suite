@@ -1,6 +1,6 @@
 services:
 
-  wikijs_db:
+  db:
     image: postgres:15-alpine
     container_name: wikijs-postgres
     environment:
@@ -19,10 +19,10 @@ services:
     image: ghcr.io/requarks/wiki:2
     container_name: wikijs
     depends_on:
-      - wikijs_db
+      - db
     environment:
       DB_TYPE: postgres
-      DB_HOST: wikijs_db
+      DB_HOST: db
       DB_PORT: 5432
       DB_USER: wikijs
       DB_PASS: W1k1jsR0cks

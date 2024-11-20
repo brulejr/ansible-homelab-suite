@@ -16,6 +16,14 @@
   loop:
     - docker-compose.yml
 
+- name: Create wikijs ssh directory
+  ansible.builtin.file:
+    path: "{{ wikijs_ssh_dir }}"
+    state: directory
+    mode: '0700'
+    access_time: preserve
+    modification_time: preserve
+
 - name: Generate SSH key
   openssh_keypair:
     path: "{{ wikijs_ssh_dir }}/{{ wikijs_ssh_key_filename }}"

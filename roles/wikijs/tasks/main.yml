@@ -20,7 +20,9 @@
   ansible.builtin.file:
     path: "{{ wikijs_ssh_dir }}"
     state: directory
-    mode: '0700'
+    mode: '0755'
+    owner: sysadm
+    group: sysadm
     access_time: preserve
     modification_time: preserve
 

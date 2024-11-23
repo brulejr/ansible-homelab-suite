@@ -10,6 +10,7 @@
     - watchtower
     - homarr
     - wikijs
+    - nextcloud
 
 - name: Setup the devops servers
   hosts: devops_servers

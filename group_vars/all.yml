@@ -12,5 +12,5 @@ docker_network: "homelab"
 docker_dir: /opt/homelab/docker_apps
 data_dir: /opt/homelab/data
 
-puid: 1000
-pgid: 1000
+puid: "1000"
+pgid: "1000"

@@ -1,7 +1,6 @@
 ---
 # tasks file for nextcloud
 
----
 - name: Create nextcloud container
   community.docker.docker_container:
     name: nextcloud

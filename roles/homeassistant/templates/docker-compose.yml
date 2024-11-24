@@ -1,0 +1,32 @@
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: lscr.io/linuxserver/homeassistant:latest
+    restart: unless-stopped
+    ports:
+      - "8123:8123"    
+    volumes:
+      - "{{ homeassistant_config_dir }}":/config
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - homeassistant      
+    environment:
+      - PUID="{{ puid }}"
+      - PGID="{{ pgid }}"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.homeassistant.entrypoints=http"
+      - "traefik.http.routers.homeassistant.rule=Host(`homeassistant.{{ domain }}`)"
+      - "traefik.http.middlewares.homeassistant-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.homeassistant.middlewares=homeassistant-https-redirect"
+      - "traefik.http.routers.homeassistant-secure.entrypoints=https"
+      - "traefik.http.routers.homeassistant-secure.rule=Host(`homeassistant.{{ domain }}`)"
+      - "traefik.http.routers.homeassistant-secure.tls=true"
+      - "traefik.http.routers.homeassistant-secure.service=homeassistant"
+      - "traefik.http.services.homeassistant.loadbalancer.server.port=3000"
+      - "traefik.docker.network={{ docker_network }}"
+
+networks:
+  homeassistant:
+    name: "{{ docker_network }}"
+    external: true

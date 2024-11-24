@@ -1,0 +1,5 @@
+---
+# vars file for homeassistant
+
+homeassistant_dir: "{{ docker_dir }}/homeassistant"
+homeassistant_config_dir: "{{ homeassistant_dir }}/config"

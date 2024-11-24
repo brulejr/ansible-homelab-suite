@@ -11,8 +11,8 @@ services:
     networks:
       - homeassistant      
     environment:
-      - PUID="{{ puid }}"
-      - PGID="{{ pgid }}"
+      - PUID={{ puid }}
+      - PGID={{ pgid }}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.homeassistant.entrypoints=http"
@@ -23,7 +23,7 @@ services:
       - "traefik.http.routers.homeassistant-secure.rule=Host(`homeassistant.{{ domain }}`)"
       - "traefik.http.routers.homeassistant-secure.tls=true"
       - "traefik.http.routers.homeassistant-secure.service=homeassistant"
-      - "traefik.http.services.homeassistant.loadbalancer.server.port=3000"
+      - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
       - "traefik.docker.network={{ docker_network }}"
 
 networks:

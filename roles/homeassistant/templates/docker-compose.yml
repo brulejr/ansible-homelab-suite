@@ -13,6 +13,8 @@ services:
     environment:
       - PUID={{ puid }}
       - PGID={{ pgid }}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.homeassistant.entrypoints=http"

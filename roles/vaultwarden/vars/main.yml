@@ -1,0 +1,4 @@
+---
+# vars file for vaultwarden
+
+vaultwarden_dir: "{{ docker_dir }}/vaultwarden"

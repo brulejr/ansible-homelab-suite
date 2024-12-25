@@ -1,0 +1,29 @@
+services:
+  nodered:
+    container_name: node-red
+    image: nodered/node-red:latest
+    restart: unless-stopped
+    ports:
+      - "1880:1880"    
+    volumes:
+      - {{ nodered_data_dir }}:/data
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - nodered      
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nodered.entrypoints=http"
+      - "traefik.http.routers.nodered.rule=Host(`nodered.{{ domain }}`)"
+      - "traefik.http.middlewares.nodered-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.nodered.middlewares=nodered-https-redirect"
+      - "traefik.http.routers.nodered-secure.entrypoints=https"
+      - "traefik.http.routers.nodered-secure.rule=Host(`nodered.{{ domain }}`)"
+      - "traefik.http.routers.nodered-secure.tls=true"
+      - "traefik.http.routers.nodered-secure.service=nodered"
+      - "traefik.http.services.nodered.loadbalancer.server.port=1880"
+      - "traefik.docker.network={{ docker_network }}"
+
+networks:
+  nodered:
+    name: "{{ docker_network }}"
+    external: true

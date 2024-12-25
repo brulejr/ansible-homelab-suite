@@ -33,6 +33,7 @@
     - traefik
     - watchtower
     - homeassistant
+    - nodered
 
 - name: Setup the network servers
   hosts: network_servers

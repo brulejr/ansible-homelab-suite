@@ -1,0 +1,5 @@
+---
+# vars file for nodered
+
+nodered_dir: "{{ docker_dir }}/nodered"
+nodered_data_dir: "{{ nodered_dir }}/data"

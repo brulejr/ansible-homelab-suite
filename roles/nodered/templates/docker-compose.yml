@@ -1,6 +1,6 @@
 services:
   nodered:
-    container_name: node-red
+    container_name: nodered
     image: nodered/node-red:latest
     restart: unless-stopped
     ports:

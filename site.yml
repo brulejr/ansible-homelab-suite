@@ -34,6 +34,7 @@
     - watchtower
     - homeassistant
     - nodered
+    - esphome
 
 - name: Setup the network servers
   hosts: network_servers

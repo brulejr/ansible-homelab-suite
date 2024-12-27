@@ -1,0 +1,5 @@
+---
+# vars file for esphome
+
+esphome_dir: "{{ docker_dir }}/esphome"
+esphome_data_dir: "{{ esphome_dir }}/data"

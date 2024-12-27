@@ -1,0 +1,35 @@
+---
+# tasks file for esphome
+
+- name: Create esphome base directory
+  ansible.builtin.file:
+    path: "{{ esphome_dir }}"
+    state: directory
+    mode: '0755'
+    owner: sysadm
+    group: sysadm
+    access_time: preserve
+    modification_time: preserve
+
+- name: copy esphome files
+  template:
+    src: templates/{{ item }}
+    dest: "{{ esphome_dir }}"
+  loop:
+    - docker-compose.yml
+
+- name: Create esphome config directory
+  ansible.builtin.file:
+    path: "{{ esphome_config_dir }}"
+    state: directory
+    mode: '0755'
+    owner: sysadm
+    group: sysadm
+    access_time: preserve
+    modification_time: preserve
+
+- name: Run esphome docker compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ esphome_dir }}"
+    files:
+      - docker-compose.yml

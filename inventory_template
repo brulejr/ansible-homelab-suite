@@ -7,8 +7,11 @@
 [ha_servers]
 <ha_server>
 
+[media_servers]
+<media_server>
+
 [network_servers]
-<network_server>
+<network_server
 
 [all:vars]
 domain = "<domain_name>"

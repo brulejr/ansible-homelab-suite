@@ -31,6 +31,7 @@ admin_server = input_val("Enter the admin server name", RE_SERVER_NAME, "admin s
 network_server = input_val("Enter the network server name", RE_SERVER_NAME, "network server name")
 ha_server = input_val("Enter the home automation server name", RE_SERVER_NAME, "home automation server name")
 devops_server = input_val("Enter the devops server name", RE_SERVER_NAME, "devops server name")
+media_server = input_val("Enter the medisa server name", RE_SERVER_NAME, "media server name")
 
 # Calculate derived values
 traefik_user_hash = subprocess.run([f"htpasswd", "-nBb", traefik_username, traefik_password], stdout=subprocess.PIPE, text=True).stdout
@@ -47,6 +48,7 @@ content = content.replace('<admin_server>', admin_server)
 content = content.replace('<network_server>', network_server)
 content = content.replace('<ha_server>', ha_server)
 content = content.replace('<devops_server>', devops_server)
+content = content.replace('<media_server>', media_server)
 content = content.replace('<domain_name>', domain_name)
 content = content.replace('<cloudflare_email>', cloudflare_email)
 content = content.replace('<cloudflare_dns_token>', cloudflare_dns_token)

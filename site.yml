@@ -36,6 +36,17 @@
     - nodered
     - esphome
 
+- name: Setup the media servers
+  hosts: media_servers
+  become: true
+  roles:
+    - common
+    - docker
+    - portainer
+    - traefik
+    - watchtower
+    - jellyfin
+
 - name: Setup the network servers
   hosts: network_servers
   become: true

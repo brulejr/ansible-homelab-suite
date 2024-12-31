@@ -1,0 +1,45 @@
+---
+# tasks file for jellyfin
+
+- name: Create jellyfin base directory
+  ansible.builtin.file:
+    path: "{{ jellyfin_dir }}"
+    state: directory
+    mode: '0755'
+    owner: sysadm
+    group: sysadm
+    access_time: preserve
+    modification_time: preserve
+
+- name: copy jellyfin files
+  template:
+    src: templates/{{ item }}
+    dest: "{{ jellyfin_dir }}"
+  loop:
+    - docker-compose.yml
+
+- name: Create jellyfin config directory
+  ansible.builtin.file:
+    path: "{{ jellyfin_config_dir }}"
+    state: directory
+    mode: '0755'
+    owner: sysadm
+    group: sysadm
+    access_time: preserve
+    modification_time: preserve
+
+- name: Create jellyfin cache directory
+  ansible.builtin.file:
+    path: "{{ jellyfin_cache_dir }}"
+    state: directory
+    mode: '0755'
+    owner: sysadm
+    group: sysadm
+    access_time: preserve
+    modification_time: preserve
+
+- name: Run jellyfin docker compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ jellyfin_dir }}"
+    files:
+      - docker-compose.yml

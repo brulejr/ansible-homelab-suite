@@ -6,7 +6,7 @@ services:
     ports:
       - "1880:1880"    
     volumes:
-      - {{ nodered_data_dir }}:/data
+      - "{{ nodered_data_dir }}:/data"
       - /etc/localtime:/etc/localtime:ro
     networks:
       - nodered      

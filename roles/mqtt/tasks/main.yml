@@ -18,20 +18,6 @@
     access_time: preserve
     modification_time: preserve
 
-- name: copy docker files
-  template:
-    src: templates/{{ item }}
-    dest: "{{ mqtt_dir }}"
-  loop:
-    - docker-compose.yml
-
-- name: copy config files
-  template:
-    src: templates/{{ item }}
-    dest: "{{ mqtt_config_dir }}"
-  loop:
-    - mosquitto.conf
-
 - name: Create mqtt config directory
   ansible.builtin.file:
     path: "{{ mqtt_config_dir }}"
@@ -61,6 +47,20 @@
     group: mqtt
     access_time: preserve
     modification_time: preserve
+
+- name: copy docker files
+  template:
+    src: templates/{{ item }}
+    dest: "{{ mqtt_dir }}"
+  loop:
+    - docker-compose.yml
+
+- name: copy config files
+  template:
+    src: templates/{{ item }}
+    dest: "{{ mqtt_config_dir }}"
+  loop:
+    - mosquitto.conf
 
 - name: Run mqtt docker compose
   community.docker.docker_compose_v2:

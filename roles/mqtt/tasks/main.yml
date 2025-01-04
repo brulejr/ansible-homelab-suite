@@ -6,7 +6,6 @@
     name: mqtt
     uid: 1883
     create_home: no
-    group: mqtt
     home: "{{ mqtt_dir }}"
 
 - name: Create mqtt base directory

@@ -28,9 +28,9 @@
 - name: copy config files
   template:
     src: templates/{{ item }}
-    dest: "{{ mqtt_config }}"
+    dest: "{{ mqtt_config_dir }}"
   loop:
-    - docker-compose.yml
+    - mosquitto.conf
 
 - name: Create mqtt config directory
   ansible.builtin.file:

@@ -35,6 +35,7 @@
     - homeassistant
     - nodered
     - esphome
+    - mqtt
 
 - name: Setup the media servers
   hosts: media_servers

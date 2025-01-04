@@ -1,0 +1,70 @@
+---
+# tasks file for mqtt
+
+- name: Create mqqt user
+  ansible.builtin.user:
+    name: mqtt
+    uid: 1883
+    create_home: no
+    group: mqtt
+    home: "{{ mqtt_dir }}"
+
+- name: Create mqtt base directory
+  ansible.builtin.file:
+    path: "{{ mqtt_dir }}"
+    state: directory
+    mode: '0755'
+    owner: mqtt
+    group: mqtt
+    access_time: preserve
+    modification_time: preserve
+
+- name: copy docker files
+  template:
+    src: templates/{{ item }}
+    dest: "{{ mqtt_dir }}"
+  loop:
+    - docker-compose.yml
+
+- name: copy config files
+  template:
+    src: templates/{{ item }}
+    dest: "{{ mqtt_config }}"
+  loop:
+    - docker-compose.yml
+
+- name: Create mqtt config directory
+  ansible.builtin.file:
+    path: "{{ mqtt_config_dir }}"
+    state: directory
+    mode: '0755'
+    owner: mqtt
+    group: mqtt
+    access_time: preserve
+    modification_time: preserve
+
+- name: Create mqtt data directory
+  ansible.builtin.file:
+    path: "{{ mqtt_data_dir }}"
+    state: directory
+    mode: '0755'
+    owner: mqtt
+    group: mqtt
+    access_time: preserve
+    modification_time: preserve
+
+- name: Create mqtt log directory
+  ansible.builtin.file:
+    path: "{{ mqtt_log_dir }}"
+    state: directory
+    mode: '0755'
+    owner: mqtt
+    group: mqtt
+    access_time: preserve
+    modification_time: preserve
+
+- name: Run mqtt docker compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ mqtt_dir }}"
+    files:
+      - docker-compose.yml

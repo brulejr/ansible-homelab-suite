@@ -1,0 +1,34 @@
+services:
+  mqtt:
+    container_name: mqtt
+    image: eclipse-mosquitto:latest
+    restart: unless-stopped
+    ports:
+      - 0.0.0.0:1883:1883
+      - 0.0.0.0:9001:9001    
+    environment:
+      - mqtt_DASHBOARD_USE_PING=true      
+    volumes:
+      - "{{ mqtt_config_dir }}:/mosquitto/config"
+      - "{{ mqtt_data_dir }}:/mosquitto/data"
+      - "{{ mqtt_log_dir }}:/mosquitto/log"
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - mqtt      
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mqtt.entrypoints=http"
+      - "traefik.http.routers.mqtt.rule=Host(`mqtt.{{ domain }}`)"
+      - "traefik.http.middlewares.mqtt-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.mqtt.middlewares=mqtt-https-redirect"
+      - "traefik.http.routers.mqtt-secure.entrypoints=https"
+      - "traefik.http.routers.mqtt-secure.rule=Host(`mqtt.{{ domain }}`)"
+      - "traefik.http.routers.mqtt-secure.tls=true"
+      - "traefik.http.routers.mqtt-secure.service=mqtt"
+      - "traefik.http.services.mqtt.loadbalancer.server.port=6052"
+      - "traefik.docker.network={{ docker_network }}"
+
+networks:
+  mqtt:
+    name: "{{ docker_network }}"
+    external: true

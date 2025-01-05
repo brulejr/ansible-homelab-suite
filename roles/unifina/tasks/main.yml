@@ -68,6 +68,7 @@
     msg: "{{ mongo_pass }}"
 
 - name: Run unifina docker compose
+  gather_facts: true
   community.docker.docker_compose_v2:
     project_src: "{{ unifina_dir }}"
     files:

@@ -54,7 +54,7 @@
     owner: unifina
     group: unifina
 
-- name: create random idempotent password for database
+- name: create random idempotent passwords
   ansible.builtin.set_fact:
     mongo_initdb_root_password: "{{ lookup('ansible.builtin.password', '/dev/null', seed=inventory_hostname) }}"
     mongo_pass: "{{ lookup('ansible.builtin.password', '/dev/null', seed=inventory_hostname) }}"
@@ -64,3 +64,6 @@
     project_src: "{{ unifina_dir }}"
     files:
       - docker-compose.yml
+    environment:
+      mongo_initdb_root_password: {{ mongo_initdb_root_password }}
+      mongo_pass: {{ mongo_pass }}

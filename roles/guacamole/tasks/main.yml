@@ -9,7 +9,7 @@
     state: started
     restart_policy: unless-stopped
     ports:
-      - 8080:8180
+      - 8180:8080
     volumes:
       - "{{ docker_dir }}/guacamole/config:/config"
     networks:

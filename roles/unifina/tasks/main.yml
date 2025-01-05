@@ -43,14 +43,6 @@
     mongo_initdb_root_password: "{{ lookup('ansible.builtin.password', '/dev/null', seed=inventory_hostname + '_mongo_root') }}"
     mongo_pass: "{{ lookup('ansible.builtin.password', '/dev/null', seed=inventory_hostname + '_mongo_user') }}"
 
-- name: Show mongo_initdb_root_password
-  ansible.builtin.debug:
-    msg: "{{ mongo_initdb_root_password }}"
-
-- name: Show mongo_pass
-  ansible.builtin.debug:
-    msg: "{{ mongo_pass }}"
-
 - name: Copy docker files
   template:
     src: templates/{{ item }}

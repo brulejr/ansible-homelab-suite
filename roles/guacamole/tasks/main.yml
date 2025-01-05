@@ -8,6 +8,8 @@
     pull: true
     state: started
     restart_policy: unless-stopped
+    ports:
+      - 8080:8180
     volumes:
       - "{{ docker_dir }}/guacamole/config:/config"
     networks:
@@ -22,5 +24,5 @@
       traefik.http.routers.guac-secure.rule: "Host(`guacamole.{{ domain }}`)"
       traefik.http.routers.guac-secure.tls: "true"
       traefik.http.routers.guac-secure.service: "guacamole"
-      traefik.http.services.guac.loadbalancer.server.port: "8080"
+      traefik.http.services.guac.loadbalancer.server.port: "8180"
       traefik.docker.network: "{{ docker_network }}"

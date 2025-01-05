@@ -1,0 +1,53 @@
+---
+# tasks file for unifina
+
+- name: Create unifina user
+  ansible.builtin.user:
+    name: unifina
+    uid: 1024
+    create_home: no
+    home: "{{ unifina_dir }}"
+
+- name: Create unifina base directory
+  ansible.builtin.file:
+    path: "{{ unifina_dir }}"
+    state: directory
+    mode: '0755'
+    owner: unifina
+    group: unifina
+    access_time: preserve
+    modification_time: preserve
+
+- name: Create unifina config directory
+  ansible.builtin.file:
+    path: "{{ unifina_config_dir }}"
+    state: directory
+    mode: '0755'
+    owner: unifina
+    group: unifina
+    access_time: preserve
+    modification_time: preserve
+
+- name: Create unifina data directory
+  ansible.builtin.file:
+    path: "{{ unifina_data_dir }}"
+    state: directory
+    mode: '0755'
+    owner: unifina
+    group: unifina
+    access_time: preserve
+    modification_time: preserve
+
+- name: copy docker files
+  template:
+    src: templates/{{ item }}
+    dest: "{{ unifina_dir }}"
+  loop:
+    - docker-compose.yml
+    - init-mongo.sh
+
+- name: Run unifina docker compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ unifina_dir }}"
+    files:
+      - docker-compose.yml

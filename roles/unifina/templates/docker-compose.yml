@@ -1,0 +1,63 @@
+services:
+  unifi-db:
+    image: docker.io/mongo:4.4
+    container_name: unifi-db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=
+      - MONGO_USER=unifi
+      - MONGO_PASS=
+      - MONGO_DBNAME=unifi
+      - MONGO_AUTHSOURCE=admin
+    volumes:
+      - "{{ unifina_data_dir }}:/data/db"
+      - "{{ unifina_dir }}/init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh:ro"
+    restart: unless-stopped
+  unifina:
+    container_name: unifina
+    image: lscr.io/linuxserver/unifi-network-application:latest
+    restart: unless-stopped
+    ports:
+      - 8443:8443
+      - 3478:3478/udp
+      - 10001:10001/udp
+      - 8080:8080
+      - 1900:1900/udp #optional
+      - 8843:8843 #optional
+      - 8880:8880 #optional
+      - 6789:6789 #optional
+      - 5514:5514/udp #optional
+    environment:
+      - PUID=1024
+      - PGID=1024
+      - TZ=Etc/UTC
+      - MONGO_USER=unifi
+      - MONGO_PASS=
+      - MONGO_HOST=unifi-db
+      - MONGO_PORT=27017
+      - MONGO_DBNAME=unifi
+      - MONGO_AUTHSOURCE=admin
+      - MEM_LIMIT=1024 #optional
+      - MEM_STARTUP=1024 #optional
+      - MONGO_TLS= #optional
+    volumes:
+      - "{{ unifina_config_dir }}:/config"
+    networks:
+      - unifina      
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.unifina.entrypoints=http"
+      - "traefik.http.routers.unifina.rule=Host(`unifina.{{ domain }}`)"
+      - "traefik.http.middlewares.unifina-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.unifina.middlewares=unifina-https-redirect"
+      - "traefik.http.routers.unifina-secure.entrypoints=https"
+      - "traefik.http.routers.unifina-secure.rule=Host(`unifina.{{ domain }}`)"
+      - "traefik.http.routers.unifina-secure.tls=true"
+      - "traefik.http.routers.unifina-secure.service=unifina"
+      - "traefik.http.services.unifina.loadbalancer.server.port=8080"
+      - "traefik.docker.network={{ docker_network }}"
+
+networks:
+  unifina:
+    name: "{{ docker_network }}"
+    external: true

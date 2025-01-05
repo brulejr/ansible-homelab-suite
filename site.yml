@@ -58,3 +58,4 @@
     - traefik
     - watchtower
     - guacamole
+    - unifina

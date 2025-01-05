@@ -1,0 +1,6 @@
+---
+# vars file for unifina
+
+unifina_dir: "{{ docker_dir }}/unifina"
+unifina_config_dir: "{{ unifina_dir }}/config"
+unifina_data_dir: "{{ unifina_dir }}/data"

@@ -36,7 +36,7 @@ services:
       - PGID=1024
       - TZ=Etc/UTC
       - MONGO_USER=unifi
-      - MONGO_PASS=
+      - MONGO_PASS="{{ mongo_pass }}"
       - MONGO_HOST=unifi-db
       - MONGO_PORT=27017
       - MONGO_DBNAME=unifi

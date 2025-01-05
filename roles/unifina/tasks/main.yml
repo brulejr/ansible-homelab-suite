@@ -65,5 +65,5 @@
     files:
       - docker-compose.yml
     environment:
-      mongo_initdb_root_password: {{ mongo_initdb_root_password }}
-      mongo_pass: {{ mongo_pass }}
+      mongo_initdb_root_password: "{{ mongo_initdb_root_password }}"
+      mongo_pass: "{{ mongo_pass }}"

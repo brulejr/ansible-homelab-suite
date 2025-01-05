@@ -59,11 +59,16 @@
     mongo_initdb_root_password: "{{ lookup('ansible.builtin.password', '/dev/null', seed=inventory_hostname) }}"
     mongo_pass: "{{ lookup('ansible.builtin.password', '/dev/null', seed=inventory_hostname) }}"
 
+- name: Show mongo_initdb_root_password
+  ansible.builtin.debug:
+    msg: "{{ mongo_initdb_root_password }}"
+
+- name: Show mongo_pass
+  ansible.builtin.debug:
+    msg: "{{ mongo_pass }}"
+
 - name: Run unifina docker compose
   community.docker.docker_compose_v2:
     project_src: "{{ unifina_dir }}"
     files:
       - docker-compose.yml
-    environment:
-      mongo_initdb_root_password: "{{ mongo_initdb_root_password }}"
-      mongo_pass: "{{ mongo_pass }}"

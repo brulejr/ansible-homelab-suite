@@ -52,7 +52,7 @@ services:
       - unifina      
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.unifina.entrypoints=http"
+      - "traefik.http.routers.unifina.entrypoints=https"
       - "traefik.http.routers.unifina.rule=Host(`unifina.{{ domain }}`)"
       - "traefik.http.middlewares.unifina-https-redirect.redirectscheme.scheme=https"
       - "traefik.http.routers.unifina.middlewares=unifina-https-redirect"
@@ -60,7 +60,7 @@ services:
       - "traefik.http.routers.unifina-secure.rule=Host(`unifina.{{ domain }}`)"
       - "traefik.http.routers.unifina-secure.tls=true"
       - "traefik.http.routers.unifina-secure.service=unifina"
-      - "traefik.http.services.unifina.loadbalancer.server.port=8080"
+      - "traefik.http.services.unifina.loadbalancer.server.port=8443"
       - "traefik.docker.network={{ docker_network }}"
 
 networks:

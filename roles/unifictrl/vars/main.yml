@@ -1,0 +1,5 @@
+---
+# vars file for unifictrl
+
+unifictrl_dir: "{{ docker_dir }}/unifictrl"
+unifictrl_config_dir: "{{ unifictrl_dir }}/config"

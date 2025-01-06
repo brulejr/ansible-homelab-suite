@@ -1,0 +1,43 @@
+services:
+
+  unifictrl:
+    image: lscr.io/linuxserver/unifi-controller:latest
+    container_name: unifi-controller
+    environment:
+      - PUID=1024
+      - PGID=1024
+      - MEM_LIMIT=1024 #optional
+      - MEM_STARTUP=1024 #optional
+    ports:
+      - 8443:8443
+      - 3478:3478/udp
+      - 10001:10001/udp
+      - 8080:8080
+      - 1900:1900/udp #optional
+      - 8843:8843 #optional
+      - 8880:8880 #optional
+      - 6789:6789 #optional
+      - 5514:5514/udp #optional
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - "{{ unifictrl_config_dir }}:/config"
+    networks:
+      - unifictrl       
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.unifictrl.entrypoints=https"
+      - "traefik.http.routers.unifictrl.rule=Host(`unifictrl.{{ domain }}`)"
+      - "traefik.http.middlewares.unifictrl-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.unifictrl.middlewares=unifictrl-https-redirect"
+      - "traefik.http.routers.unifictrl-secure.entrypoints=https"
+      - "traefik.http.routers.unifictrl-secure.rule=Host(`unifictrl.{{ domain }}`)"
+      - "traefik.http.routers.unifictrl-secure.tls=true"
+      - "traefik.http.routers.unifictrl-secure.service=unifictrl"
+      - "traefik.http.services.unifictrl.loadbalancer.server.port=8443"
+      - "traefik.docker.network={{ docker_network }}"
+
+networks:
+  unifictrl:
+    name: "{{ docker_network }}"
+    external: true

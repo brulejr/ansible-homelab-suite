@@ -1,0 +1,50 @@
+---
+# tasks file for unifictrl
+
+- name: Create unifictrl user
+  ansible.builtin.user:
+    name: unifictrl
+    uid: 1024
+    create_home: no
+    home: "{{ unifictrl_dir }}"
+
+- name: Create unifictrl base directory
+  ansible.builtin.file:
+    path: "{{ unifictrl_dir }}"
+    state: directory
+    mode: '0755'
+    owner: unifictrl
+    group: unifictrl
+    access_time: preserve
+    modification_time: preserve
+
+- name: Create unifictrl config directory
+  ansible.builtin.file:
+    path: "{{ unifictrl_config_dir }}"
+    state: directory
+    mode: '0755'
+    owner: unifictrl
+    group: unifictrl
+    access_time: preserve
+    modification_time: preserve
+
+- name: Copy docker files
+  template:
+    src: templates/{{ item }}
+    dest: "{{ unifictrl_dir }}"
+  loop:
+    - docker-compose.yml
+
+- name: Recursively change ownership of application data
+  ansible.builtin.file:
+    path: "{{ unifictrl_dir }}"
+    state: directory
+    recurse: yes
+    owner: unifictrl
+    group: unifictrl
+
+- name: Run unifictrl docker compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ unifictrl_dir }}"
+    files:
+      - docker-compose.yml

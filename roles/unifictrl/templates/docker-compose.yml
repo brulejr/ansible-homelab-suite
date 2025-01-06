@@ -4,8 +4,8 @@ services:
     image: lscr.io/linuxserver/unifi-controller:latest
     container_name: unifi-controller
     environment:
-      - PUID=1024
-      - PGID=1024
+      - PUID=1025
+      - PGID=1025
       - MEM_LIMIT=1024 #optional
       - MEM_STARTUP=1024 #optional
     ports:

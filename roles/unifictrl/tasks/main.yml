@@ -4,7 +4,7 @@
 - name: Create unifictrl user
   ansible.builtin.user:
     name: unifictrl
-    uid: 1024
+    uid: 1025
     create_home: no
     home: "{{ unifictrl_dir }}"
 

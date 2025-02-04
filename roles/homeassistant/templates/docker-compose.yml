@@ -6,8 +6,9 @@ services:
     ports:
       - "8123:8123"    
     volumes:
-      - {{ homeassistant_config_dir }}:/config
+      - "{{ homeassistant_config_dir }}:/config"
       - /etc/localtime:/etc/localtime:ro
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
       - homeassistant      
     environment:

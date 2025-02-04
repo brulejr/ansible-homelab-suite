@@ -1,20 +1,8 @@
 services:
-  nexus:
-    container_name: nexus
-    image: sonatype/nexus3:latest
-    restart: unless-stopped
-    env_file: /opt/nexus/.env
-    ports:
-      - "8081:8081"
-      - "10001:10001"
-    volumes:
-      - /opt/nexus/data:/nexus-data
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
 
   nexus:
     container_name: nexus
-    image: nsonatype/nexus3:latest
+    image: sonatype/nexus3:latest
     restart: unless-stopped
     ports:
       - "8081:8081"

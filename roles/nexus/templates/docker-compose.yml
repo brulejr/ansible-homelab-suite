@@ -1,0 +1,43 @@
+services:
+  nexus:
+    container_name: nexus
+    image: sonatype/nexus3:latest
+    restart: unless-stopped
+    env_file: /opt/nexus/.env
+    ports:
+      - "8081:8081"
+      - "10001:10001"
+    volumes:
+      - /opt/nexus/data:/nexus-data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+
+  nexus:
+    container_name: nexus
+    image: nsonatype/nexus3:latest
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+      - "10001:10001"  
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - nexus      
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nexus.entrypoints=http"
+      - "traefik.http.routers.nexus.rule=Host(`nexus.{{ domain }}`)"
+      - "traefik.http.middlewares.nexus-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.nexus.middlewares=nexus-https-redirect"
+      - "traefik.http.routers.nexus-secure.entrypoints=https"
+      - "traefik.http.routers.nexus-secure.rule=Host(`nexus.{{ domain }}`)"
+      - "traefik.http.routers.nexus-secure.tls=true"
+      - "traefik.http.routers.nexus-secure.service=nexus"
+      - "traefik.http.services.nexus.loadbalancer.server.port=8081"
+      - "traefik.docker.network={{ docker_network }}"
+
+networks:
+  nexus:
+    name: "{{ docker_network }}"
+    external: true

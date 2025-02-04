@@ -1,0 +1,5 @@
+---
+# vars file for nexus
+
+nexus_dir: "{{ docker_dir }}/nexus"
+nexus_data_dir: "{{ nexus_dir }}/data"

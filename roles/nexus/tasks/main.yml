@@ -1,0 +1,35 @@
+---
+# tasks file for nexus
+
+- name: Create nexus base directory
+  ansible.builtin.file:
+    path: "{{ nexus_dir }}"
+    state: directory
+    mode: '0755'
+    owner: sysadm
+    group: sysadm
+    access_time: preserve
+    modification_time: preserve
+
+- name: copy nexus files
+  template:
+    src: templates/{{ item }}
+    dest: "{{ nexus_dir }}"
+  loop:
+    - docker-compose.yml
+
+- name: Create nexus data directory
+  ansible.builtin.file:
+    path: "{{ nexus_data_dir }}"
+    state: directory
+    mode: '0755'
+    owner: sysadm
+    group: sysadm
+    access_time: preserve
+    modification_time: preserve
+
+- name: Run nexus docker compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ nexus_dir }}"
+    files:
+      - docker-compose.yml

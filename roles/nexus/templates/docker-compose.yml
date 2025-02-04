@@ -2,12 +2,12 @@ services:
 
   nexus:
     container_name: nexus
-    image: sonatype/nexus3:latest
+    image: sonatype/nexus3
     restart: unless-stopped
     ports:
-      - "8081:8081"
-      - "10001:10001"  
+      - "8081:8081"  
     volumes:
+      - "{{ nexus_data_dir }}:/sonatype-work"
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     networks:

@@ -18,13 +18,25 @@
   loop:
     - docker-compose.yml
 
+- name: Create nexus group
+  ansible.builtin.group:
+    name: nexus
+    gid: 200
+
+- name: Create nexus user
+  ansible.builtin.user:
+    name: nexus
+    comment: Sonatype Nexus
+    uid: 200
+    group: nexus
+
 - name: Create nexus data directory
   ansible.builtin.file:
     path: "{{ nexus_data_dir }}"
     state: directory
     mode: '0755'
-    owner: sysadm
-    group: sysadm
+    owner: nexus
+    group: nexus
     access_time: preserve
     modification_time: preserve
 

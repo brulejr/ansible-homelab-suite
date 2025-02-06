@@ -5,7 +5,8 @@ services:
     image: sonatype/nexus3
     restart: unless-stopped
     ports:
-      - "8081:8081"  
+      - "8081:8081"
+      - "10001:10001"
     volumes:
       - "{{ nexus_data_dir }}:/nexus-data"
       - /etc/timezone:/etc/timezone:ro

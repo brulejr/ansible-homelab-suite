@@ -24,10 +24,12 @@ services:
       - "traefik.http.routers.nexus-secure.tls=true"
       - "traefik.http.routers.nexus-secure.service=nexus"
       - "traefik.http.services.nexus.loadbalancer.server.port=8081"
-      - "traefik.http.routers.dockerhub-router.entrypoints=https"
-      - "traefik.http.routers.dockerhub-router.rule=Host(`dockerhub.{{ domain }}`)"
-      - "traefik.http.routers.dockerhub-router.service=dockerhub-service"
-      - "traefik.http.services.dockerhub-service.loadbalancer.server.port=10001"
+
+      - "traefik.http.routers.nexus-docker-registry.entrypoints=https"
+      - "traefik.http.routers.nexus-docker-registry.service=nexus-docker-service"
+      - "traefik.http.routers.nexus-docker-registry.rule=Host(`docker.{{ domain }}`)"
+      - "traefik.http.services.nexus-docker-service.loadbalancer.server.port=10001"
+      
       - "traefik.docker.network={{ docker_network }}"
 
 networks:

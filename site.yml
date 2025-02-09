@@ -10,7 +10,6 @@
     - watchtower
     - homarr
     - wikijs
-    - nextcloud
     - vaultwarden
 
 - name: Setup the devops servers

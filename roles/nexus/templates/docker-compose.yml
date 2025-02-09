@@ -15,22 +15,21 @@ services:
       - nexus      
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.nexus.entrypoints=http"
-      - "traefik.http.routers.nexus.rule=Host(`nexus.{{ domain }}`)"
-      - "traefik.http.middlewares.nexus-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.nexus.middlewares=nexus-https-redirect"
-      - "traefik.http.routers.nexus-secure.entrypoints=https"
-      - "traefik.http.routers.nexus-secure.rule=Host(`nexus.{{ domain }}`)"
-      - "traefik.http.routers.nexus-secure.tls=true"
-      - "traefik.http.routers.nexus-secure.service=nexus"
-      - "traefik.http.services.nexus.loadbalancer.server.port=8081"
 
-      - "traefik.http.routers.docker-registry.rule=Host(`docker.{{ domain }}`)"
-      - "traefik.http.routers.docker-registry.tls=true"
-      - "traefik.http.routers.docker-registry.service=docker-service"
+      - "traefik.http.routers.nexus.entrypoints=https"
+      - "traefik.http.routers.nexus.rule=Host(`nexus.brulenet.dev`)"
+      - "traefik.http.routers.nexus.tls=true"
+      - "traefik.http.routers.nexus.service=nexus-service"
+      - "traefik.http.services.nexus-service.loadbalancer.server.port=8081"
+
+      - "traefik.http.routers.docker.entrypoints=https"
+      - "traefik.http.routers.docker.rule=Host(`docker.brulenet.dev`)"
+      - "traefik.http.routers.docker.tls=true"
+      - "traefik.http.routers.docker.service=docker-service"
       - "traefik.http.services.docker-service.loadbalancer.server.port=10001"
       
-      - "traefik.docker.network={{ docker_network }}"
+      - "traefik.docker.network=homelab"
+
 
 networks:
   nexus:

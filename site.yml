@@ -34,6 +34,7 @@
     - watchtower
     - homeassistant
     - nodered
+    - mqtt
 
 - name: Setup the media servers
   hosts: media_servers

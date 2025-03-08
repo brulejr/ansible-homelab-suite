@@ -25,7 +25,7 @@ services:
       - "traefik.http.routers.mqtt-secure.rule=Host(`mqtt.{{ domain }}`)"
       - "traefik.http.routers.mqtt-secure.tls=true"
       - "traefik.http.routers.mqtt-secure.service=mqtt"
-      - "traefik.http.services.mqtt.loadbalancer.server.port=6052"
+      - "traefik.http.services.mqtt.loadbalancer.server.port=1883"
       - "traefik.docker.network={{ docker_network }}"
 
 networks:

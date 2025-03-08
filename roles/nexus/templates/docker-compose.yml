@@ -23,7 +23,7 @@ services:
       - "traefik.http.services.nexus-service.loadbalancer.server.port=8081"
 
       - "traefik.http.routers.docker.entrypoints=https"
-      - "traefik.http.routers.docker.rule=Host(`docker.brulenet.dev`) && PathPrefix(`/v2`)
+      - "traefik.http.routers.docker.rule=Host(`docker.brulenet.dev`) && PathPrefix(`/v2`)"
       - "traefik.http.routers.docker.tls=true"
       - "traefik.http.routers.docker.service=docker-service"
       - "traefik.http.services.docker-service.loadbalancer.server.port=5000"

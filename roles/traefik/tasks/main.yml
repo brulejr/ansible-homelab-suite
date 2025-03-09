@@ -33,6 +33,10 @@
                 scheme: "https"
         https:
           address: ":443"
+        mqtt:
+          address: ":1883"
+        websocket:
+          address: ":9001"
       serversTransport:
         insecureSkipVerify: true
       providers:

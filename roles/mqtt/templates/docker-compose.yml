@@ -17,15 +17,14 @@ services:
       - mqtt      
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mqtt.entrypoints=http"
-      - "traefik.http.routers.mqtt.rule=Host(`mqtt.{{ domain }}`)"
-      - "traefik.http.middlewares.mqtt-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.mqtt.middlewares=mqtt-https-redirect"
-      - "traefik.http.routers.mqtt-secure.entrypoints=https"
-      - "traefik.http.routers.mqtt-secure.rule=Host(`mqtt.{{ domain }}`)"
-      - "traefik.http.routers.mqtt-secure.tls=true"
-      - "traefik.http.routers.mqtt-secure.service=mqtt"
-      - "traefik.http.services.mqtt.loadbalancer.server.port=1883"
+      - "traefik.tcp.services.mqtt.loadbalancer.server.port=1883"
+      - "traefik.tcp.services.mqtt_websocket.loadbalancer.server.port=9001"
+      - "traefik.tcp.routers.tcpr_mqtt.entrypoints=mqtt"
+      - "traefik.tcp.routers.tcpr_mqtt.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.tcpr_mqtt.service=mqtt"
+      - "traefik.tcp.routers.tcpr_mqtt_websocket.entrypoints=websocket"
+      - "traefik.tcp.routers.tcpr_mqtt_websocket.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.tcpr_mqtt_websocket.service=mqtt_websocket"
       - "traefik.docker.network={{ docker_network }}"
 
 networks:

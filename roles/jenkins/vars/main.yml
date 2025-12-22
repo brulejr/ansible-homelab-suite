@@ -1,0 +1,5 @@
+---
+# vars file for jenkins
+
+jenkins_dir: "{{ docker_dir }}/jenkins"
+jenkins_data_dir: "{{ jenkins_dir }}/data"

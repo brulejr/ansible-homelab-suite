@@ -1,0 +1,5 @@
+---
+# vars file for keycloak
+
+keycloak_dir: "{{ docker_dir }}/keycloak"
+keycloak_data_dir: "{{ keycloak_dir }}/data"

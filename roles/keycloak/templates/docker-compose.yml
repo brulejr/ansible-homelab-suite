@@ -1,0 +1,49 @@
+services:
+  postgres:
+    container_name: postgress
+    image: postgres
+    restart: unless-stopped
+    volumes:
+      - "{{ keycloak_data_dir }}:/data"
+    networks:
+      - keycloak
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak
+    restart: unless-stopped
+    ports:
+      - 8181:8080
+    networks:
+      - keycloak
+    command: start-dev
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_PASSWORD: password
+      KC_DB_USERNAME: keycloak
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: Pa55w0rd
+    depends_on:
+      - postgres
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.keycloak.entrypoints=http"
+      - "traefik.http.routers.keycloak.rule=Host(`keycloak.{{ domain }}`)"
+      - "traefik.http.middlewares.keycloak-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.keycloak.middlewares=keycloak-https-redirect"
+      - "traefik.http.routers.keycloak-secure.entrypoints=https"
+      - "traefik.http.routers.keycloak-secure.rule=Host(`keycloak.{{ domain }}`)"
+      - "traefik.http.routers.keycloak-secure.tls=true"
+      - "traefik.http.routers.keycloak-secure.service=keycloak"
+      - "traefik.http.services.keycloak.loadbalancer.server.port=1880"
+      - "traefik.docker.network={{ docker_network }}"
+
+networks:
+  keycloak:
+    name: "{{ docker_network }}"
+    external: true

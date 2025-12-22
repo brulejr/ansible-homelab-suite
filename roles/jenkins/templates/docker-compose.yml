@@ -1,0 +1,32 @@
+services:
+
+  jenkins:
+    container_name: jenkins
+    image: jenkins/jenkins:lts-jdk17
+    restart: unless-stopped
+    ports:
+      - "8080:8080"    
+    volumes:
+      - "{{ jenkins_data_dir }}:/var/jenkins_home"
+      - /opt/jenkins/ssh/ssh_known_hosts:/etc/ssh/ssh_known_hosts
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - jenkins
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.jenkins.entrypoints=https"
+      - "traefik.http.routers.jenkins.rule=Host(`jenkins.brulenet.dev`)"
+      - "traefik.http.routers.nejenkinsxus.tls=true"
+      - "traefik.http.routers.jenkins.service=jenkins-service"
+      - "traefik.http.services.jenkins-service.loadbalancer.server.port=8080"
+      
+      - "traefik.docker.network=homelab"
+
+
+networks:
+  jenkins:
+    name: "{{ docker_network }}"
+    external: true

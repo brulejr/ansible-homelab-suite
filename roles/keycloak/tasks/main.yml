@@ -1,0 +1,35 @@
+---
+# tasks file for keycloak
+
+- name: Create keycloak base directory
+  ansible.builtin.file:
+    path: "{{ keycloak_dir }}"
+    state: directory
+    mode: "0755"
+    owner: sysadm
+    group: sysadm
+    access_time: preserve
+    modification_time: preserve
+
+- name: copy keycloak files
+  template:
+    src: templates/{{ item }}
+    dest: "{{ keycloak_dir }}"
+  loop:
+    - docker-compose.yml
+
+- name: Create keycloak data directory
+  ansible.builtin.file:
+    path: "{{ keycloak_data_dir }}"
+    state: directory
+    mode: "0755"
+    owner: sysadm
+    group: sysadm
+    access_time: preserve
+    modification_time: preserve
+
+- name: Run keycloak docker compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ keycloak_dir }}"
+    files:
+      - docker-compose.yml

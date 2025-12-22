@@ -1,0 +1,47 @@
+---
+# tasks file for jenkins
+
+- name: Create jenkins base directory
+  ansible.builtin.file:
+    path: "{{ jenkins_dir }}"
+    state: directory
+    mode: '0755'
+    owner: sysadm
+    group: sysadm
+    access_time: preserve
+    modification_time: preserve
+
+- name: copy jenkins files
+  template:
+    src: templates/{{ item }}
+    dest: "{{ jenkins_dir }}"
+  loop:
+    - docker-compose.yml
+
+- name: Create jenkins group
+  ansible.builtin.group:
+    name: jenkins
+    gid: 200
+
+- name: Create jenkins user
+  ansible.builtin.user:
+    name: jenkins
+    comment: Sonatype jenkins
+    uid: 200
+    group: jenkins
+
+- name: Create jenkins data directory
+  ansible.builtin.file:
+    path: "{{ jenkins_data_dir }}"
+    state: directory
+    mode: '0755'
+    owner: jenkins
+    group: jenkins
+    access_time: preserve
+    modification_time: preserve
+
+- name: Run jenkins docker compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ jenkins_dir }}"
+    files:
+      - docker-compose.yml

@@ -40,7 +40,7 @@ services:
       - "traefik.http.routers.keycloak-secure.rule=Host(`keycloak.{{ domain }}`)"
       - "traefik.http.routers.keycloak-secure.tls=true"
       - "traefik.http.routers.keycloak-secure.service=keycloak"
-      - "traefik.http.services.keycloak.loadbalancer.server.port=8181"
+      - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
       - "traefik.docker.network={{ docker_network }}"
 
 networks:

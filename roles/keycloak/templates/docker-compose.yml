@@ -29,6 +29,10 @@ services:
       KC_DB_SCHEMA: public
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: password
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME: keycloak.brulenet.dev
+      KC_HOSTNAME_STRICT: "true"
     depends_on:
       - postgres
     labels:

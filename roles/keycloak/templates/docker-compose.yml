@@ -15,8 +15,6 @@ services:
     container_name: keycloak
     image: quay.io/keycloak/keycloak
     restart: unless-stopped
-    ports:
-      - 8181:8080
     networks:
       - keycloak
     command: start-dev

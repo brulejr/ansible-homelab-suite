@@ -26,8 +26,9 @@ services:
       KC_DB_URL_DATABASE: keycloak
       KC_DB_PASSWORD: password
       KC_DB_USERNAME: keycloak
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: Pa55w0rd
+      KC_DB_SCHEMA: public
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: password
     depends_on:
       - postgres
     labels:

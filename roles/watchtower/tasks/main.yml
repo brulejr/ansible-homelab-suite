@@ -13,5 +13,6 @@
     env:
       WATCHTOWER_CLEANUP: "true"
       WATCHTOWER_LOG_LEVEL: "debug"
+      DOCKER_API_VERSION: "1.52"
     networks:
       - name: "{{ docker_network }}"

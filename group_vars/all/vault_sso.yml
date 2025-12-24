@@ -1,0 +1,11 @@
+# group_vars/all/vault_sso.yml  (ansible-vault)
+sso_secrets:
+  keycloak_admin_user: "admin"
+  keycloak_admin_password: "CHANGEME"
+
+  # “homelab-forwardauth” client in Keycloak
+  oidc_client_id: "homelab-forwardauth"
+  oidc_client_secret: "CHANGEME"
+
+  # random 32B base64-ish string (oauth2-proxy uses it to encrypt session cookies)
+  oauth2_proxy_cookie_secret: "CHANGEME"

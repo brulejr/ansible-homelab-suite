@@ -1,0 +1,14 @@
+# group_vars/all/sso.yml
+sso:
+  base_domain: "brulenet.dev"
+  cookie_domain: ".brulenet.dev"
+
+  keycloak:
+    external_url: "https://keycloak.brulenet.dev" # reachable ONLY via VPN routing/firewall
+    realm: "homelab"
+
+  oauth2_proxy:
+    image: "quay.io/oauth2-proxy/oauth2-proxy:v7.9.0"
+    http_port: 4180
+    provider: "keycloak-oidc"
+    scope: "openid profile email"

@@ -8,7 +8,7 @@ timezone: America/New_York
 
 docker_network: "homelab"
 
-docker_dir: /opt/homelab/docker_apps
+docker_dir: /opt/homelab/apps
 data_dir: /opt/homelab/data
 
 puid: "1000"

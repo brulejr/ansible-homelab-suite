@@ -3,7 +3,7 @@
 
 - name: Create traefik data directory
   ansible.builtin.file:
-    path: "{{ data_dir }}/traefik"
+    path: "{{ traefik_data_dir }}"
     state: directory
     mode: "0755"
     access_time: preserve
@@ -11,7 +11,7 @@
 
 - name: Create acme.json file
   ansible.builtin.file:
-    path: "{{ data_dir }}/traefik/acme.json"
+    path: "{{ traefik_data_dir }}/acme.json"
     state: touch
     mode: "0600"
     access_time: preserve
@@ -57,7 +57,7 @@
               resolvers:
                 - "1.1.1.1:53"
                 - "1.0.0.1:53"
-    dest: "{{ docker_dir }}/traefik/data/traefik.yml"
+    dest: "{{ traefik_data_dir }}/traefik.yml"
     mode: "0644"
     owner: "{{ username }}"
     group: "{{ groupname }}"
@@ -78,8 +78,8 @@
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - "{{ docker_dir }}/traefik/data/acme.json:/acme.json"
-      - "{{ docker_dir }}/traefik/data/traefik.yml:/traefik.yml:ro"
+      - "{{ traefik_data_dir }}/acme.json:/acme.json"
+      - "{{ traefik_data_dir }}/traefik.yml:/traefik.yml:ro"
     env:
       CF_DNS_API_TOKEN: "{{ cloudflare_dns_token }}"
     labels:

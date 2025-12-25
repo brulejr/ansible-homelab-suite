@@ -1,0 +1,1 @@
+traefik_data_dir: "{{ data_dir }}/traefik"

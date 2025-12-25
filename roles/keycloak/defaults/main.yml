@@ -1,0 +1,27 @@
+keycloak_enabled: true
+
+keycloak_stack_name: "keycloak"
+keycloak_data_dir: "{{ docker_apps_root }}/keycloak"
+
+# Use an explicit version (avoid :latest)
+# Keycloak docs show 26.4.x is current in 2025-era docs (example shows 26.4.7). :contentReference[oaicite:0]{index=0}
+keycloak_image: "quay.io/keycloak/keycloak:26.4.7"
+keycloak_postgres_image: "postgres:16-alpine"
+
+keycloak_db_name: "keycloak"
+keycloak_db_user: "keycloak"
+keycloak_db_password: "{{ vault_keycloak_db_password }}"
+keycloak_bootstrap_admin_username: "admin"
+keycloak_bootstrap_admin_password: "{{ vault_keycloak_bootstrap_admin_password }}"
+
+# Hostname settings for reverse proxy; Keycloak has dedicated reverse proxy / hostname guidance. :contentReference[oaicite:1]{index=1}
+keycloak_hostname: "https://{{ keycloak_fqdn }}"
+keycloak_proxy_headers: "xforwarded"
+
+# Realm import (recommended so everything is repeatable)
+keycloak_import_realm: true
+keycloak_realm: "{{ keycloak_realm | default('homelab') }}"
+
+# Traefik
+keycloak_traefik_entrypoint: "websecure"
+keycloak_traefik_certresolver: "letsencrypt"

@@ -1,0 +1,29 @@
+http:
+  services:
+    sso-gateway:
+      loadBalancer:
+        servers:
+          - url: "{{ sso_gateway_base_url }}"
+
+  middlewares:
+    {{ traefik_sso_middleware_name }}-auth:
+      forwardAuth:
+        address: "{{ sso_gateway_base_url }}/oauth2/auth"
+        trustForwardHeader: true
+        authResponseHeaders:
+          - "X-Auth-Request-User"
+          - "X-Auth-Request-Email"
+          - "Authorization"
+
+    {{ traefik_sso_middleware_name }}-errors:
+      errors:
+        status:
+          - "401-403"
+        service: "sso-gateway"
+        query: "/oauth2/start?rd={url}"
+
+    {{ traefik_sso_middleware_name }}:
+      chain:
+        middlewares:
+          - "{{ traefik_sso_middleware_name }}-errors"
+          - "{{ traefik_sso_middleware_name }}-auth"

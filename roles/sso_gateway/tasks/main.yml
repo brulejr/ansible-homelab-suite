@@ -1,0 +1,17 @@
+- name: "SSO Gateway | Ensure stack directory exists"
+  ansible.builtin.file:
+    path: "{{ sso_gateway_data_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "SSO Gateway | Render docker-compose.yml"
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ sso_gateway_data_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: "SSO Gateway | Start stack"
+  community.docker.docker_compose_v2:
+    project_src: "{{ sso_gateway_data_dir }}"
+    project_name: "{{ sso_gateway_stack_name }}"
+    state: present

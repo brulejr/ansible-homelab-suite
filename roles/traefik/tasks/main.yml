@@ -3,17 +3,17 @@
 
 - name: Create traefik data directory
   ansible.builtin.file:
-    path: "{{ docker_dir }}/traefik/data"
+    path: "{{ data_dir }}/traefik"
     state: directory
-    mode: '0755'
+    mode: "0755"
     access_time: preserve
     modification_time: preserve
 
 - name: Create acme.json file
   ansible.builtin.file:
-    path: "{{ docker_dir }}/traefik/data/acme.json"
+    path: "{{ data_dir }}/traefik/acme.json"
     state: touch
-    mode: '0600'
+    mode: "0600"
     access_time: preserve
     modification_time: preserve
 
@@ -58,7 +58,7 @@
                 - "1.1.1.1:53"
                 - "1.0.0.1:53"
     dest: "{{ docker_dir }}/traefik/data/traefik.yml"
-    mode: '0644'
+    mode: "0644"
     owner: "{{ username }}"
     group: "{{ groupname }}"
 

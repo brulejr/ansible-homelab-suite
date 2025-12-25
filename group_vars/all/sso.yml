@@ -12,6 +12,12 @@ sso_gateway_fqdn: "sso.{{ sso_base_domain }}"
 # Keycloak realm for the homelab
 keycloak_realm: "homelab"
 
+# Where each docker host keeps app stacks (adjust if your repo uses a different var)
+docker_apps_root: "/opt/homelab/docker_apps"
+
+# Network Traefik + apps already share on each docker host (you already use docker_network)
+sso_docker_network: "{{ docker_network | default('traefik') }}"
+
 # =========================
 # Keycloak access controls
 # =========================

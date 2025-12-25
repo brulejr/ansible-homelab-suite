@@ -6,13 +6,9 @@ groupname: "sysadm"
 
 timezone: America/New_York
 
-# Where each docker host keeps app stacks (adjust if your repo uses a different var)
-docker_apps_root: "/opt/homelab/docker_apps"
+docker_network: "homelab"
+
 docker_dir: /opt/homelab/docker_apps
-
-# Network Traefik + apps already share on each docker host (you already use docker_network)
-docker_network: "{{ docker_network | default('traefik') }}"
-
 data_dir: /opt/homelab/data
 
 puid: "1000"

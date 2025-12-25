@@ -11,7 +11,7 @@ services:
     volumes:
       - keycloak_db_data:/var/lib/postgresql/data
     networks:
-      - {{ docker_network }}
+      - {{ sso_docker_network }}
 
   keycloak:
     image: {{ keycloak_image }}
@@ -49,7 +49,7 @@ services:
 {% endif %}
 
     networks:
-      - {{ docker_network }}
+      - {{ sso_docker_network }}
 
     labels:
       - "traefik.enable=true"
@@ -69,5 +69,5 @@ volumes:
   keycloak_db_data:
 
 networks:
-  {{ docker_network }}:
+  {{ sso_docker_network }}:
     external: true

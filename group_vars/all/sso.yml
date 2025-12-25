@@ -19,15 +19,6 @@ docker_apps_root: "/opt/homelab/docker_apps"
 sso_docker_network: "{{ docker_network | default('traefik') }}"
 
 # =========================
-# Keycloak access controls
-# =========================
-# Restrict Keycloak UI to VPN + optionally internal server subnets.
-# Put your actual VPN subnet(s) here.
-keycloak_allowed_cidrs:
-#  - "10.8.0.0/24" # example VPN subnet
-#  - "192.168.0.0/16" # optional: internal RFC1918 (tighten if you prefer)
-
-# =========================
 # oauth2-proxy (SSO gateway)
 # =========================
 # Client registered in Keycloak

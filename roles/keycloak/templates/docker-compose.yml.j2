@@ -57,15 +57,6 @@ services:
       - "traefik.http.routers.keycloak.entrypoints={{ keycloak_traefik_entrypoint }}"
       - "traefik.http.routers.keycloak.tls=true"
       - "traefik.http.routers.keycloak.tls.certresolver={{ keycloak_traefik_certresolver }}"
-
-{% set cidrs = keycloak_allowed_cidrs | default([]) %}
-{% if cidrs | length > 0 %}
-      # Restrict access to VPN/internal only
-      - "traefik.http.middlewares.keycloak-ipwhitelist.ipwhitelist.sourcerange={{ cidrs | join(',') }}"
-      - "traefik.http.routers.keycloak.middlewares=keycloak-ipwhitelist"
-{% endif %}
-
-      # service port
       - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
 
 volumes:

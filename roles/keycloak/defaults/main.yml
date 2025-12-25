@@ -1,7 +1,8 @@
 keycloak_enabled: true
 
 keycloak_stack_name: "keycloak"
-keycloak_data_dir: "{{ docker_apps_root }}/keycloak"
+keycloak_app_dir: "{{ docker_dir }}/keycloak"
+keycloak_data_dir: "{{ data_dir }}/keycloak"
 
 # Use an explicit version (avoid :latest)
 # Keycloak docs show 26.4.x is current in 2025-era docs (example shows 26.4.7). :contentReference[oaicite:0]{index=0}

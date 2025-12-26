@@ -43,7 +43,6 @@ services:
       - "traefik.http.routers.sso.rule=Host(`{{ sso_gateway_fqdn }}`)"
       - "traefik.http.routers.sso.entrypoints={{ sso_gateway_traefik_entrypoint }}"
       - "traefik.http.routers.sso.tls=true"
-      - "traefik.http.routers.sso.tls.certresolver={{ sso_gateway_traefik_certresolver }}"
       - "traefik.http.services.sso.loadbalancer.server.port=4180"
 
 networks:

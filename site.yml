@@ -68,3 +68,4 @@
     - traefik
     - watchtower
     - keycloak
+    - sso_gateway

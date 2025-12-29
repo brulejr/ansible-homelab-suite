@@ -1,1 +1,3 @@
 traefik_data_dir: "{{ data_dir }}/traefik"
+traefik_dynamic_dir: "{{ traefik_data_dir }}/dynamic"
+traefik_dynamic_mount: "/etc/traefik/dynamic"

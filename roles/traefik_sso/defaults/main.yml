@@ -1,0 +1,2 @@
+traefik_sso_dynamic_filename: "05-sso-middleware.yml"
+traefik_sso_middleware_name: "homelab-sso"

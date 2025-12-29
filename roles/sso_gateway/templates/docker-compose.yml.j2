@@ -32,6 +32,7 @@ services:
 
 {% if sso_allowed_groups is defined and (sso_allowed_groups | length) > 0 %}
       # Require group claim (you must map groups in Keycloak token mappers)
+      OAUTH2_PROXY_OIDC_GROUPS_CLAIM=groups
       OAUTH2_PROXY_ALLOWED_GROUPS: "{{ sso_allowed_groups | join(',') }}"
 {% endif %}
 

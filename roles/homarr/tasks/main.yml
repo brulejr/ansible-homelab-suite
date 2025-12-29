@@ -11,18 +11,19 @@
     networks:
       - name: "{{ docker_network }}"
     volumes:
-      - "{{ docker_dir }}/homarr/configs:/app/data/configs"
-      - "{{ docker_dir }}/homarr/icons:/app/public/icons"
+      - "{{ homarr_data_dir }}/configs:/app/data/configs"
+      - "{{ homarr_data_dir }}/icons:/app/public/icons"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     labels:
       traefik.enable: "true"
       traefik.http.routers.homarr.entrypoints: "http"
-      traefik.http.routers.homarr.rule: "Host(`homarr.{{ domain }}`)"
+      traefik.http.routers.homarr.rule: "Host(`{{ homarr_fqdn }}`)"
       traefik.http.middlewares.homarr-https-redirect.redirectscheme.scheme: "https"
       traefik.http.routers.homarr.middlewares: "homarr-https-redirect"
       traefik.http.routers.homarr-secure.entrypoints: "https"
-      traefik.http.routers.homarr-secure.rule: "Host(`homarr.{{ domain }}`)"
+      traefik.http.routers.homarr-secure.rule: "Host(`{{ homarr_fqdn }}`)"
       traefik.http.routers.homarr-secure.tls: "true"
       traefik.http.routers.homarr-secure.service: "homarr"
+      traefik.http.routers.homarr-secure.middlewares: homelab-sso-users@file
       traefik.http.services.homarr.loadbalancer.server.port: "7575"
       traefik.docker.network: "{{ docker_network }}"

@@ -9,6 +9,14 @@
     access_time: preserve
     modification_time: preserve
 
+- name: Create traefik dynamic directory
+  ansible.builtin.file:
+    path: "{{ traefik_dynamic_dir }}"
+    state: directory
+    mode: "0755"
+    access_time: preserve
+    modification_time: preserve
+
 - name: Create acme.json file
   ansible.builtin.file:
     path: "{{ traefik_data_dir }}/acme.json"
@@ -43,6 +51,9 @@
         docker:
           endpoint: "unix:///var/run/docker.sock"
           exposedByDefault: false
+        file:
+          directory: "/etc/traefik/dynamic"
+          watch: true
       certificatesResolvers:
         cloudflare:
           acme:
@@ -80,6 +91,7 @@
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - "{{ traefik_data_dir }}/acme.json:/acme.json"
       - "{{ traefik_data_dir }}/traefik.yml:/traefik.yml:ro"
+      - "{{ traefik_dynamic_dir }}:{{ traefik_dynamic_mount }}:ro"
     env:
       CF_DNS_API_TOKEN: "{{ cloudflare_dns_token }}"
     labels:

@@ -1,0 +1,7 @@
+homarr_enabled: true
+
+homarr_stack_name: "homarr"
+homarr_app_dir: "{{ docker_dir }}/keycloak"
+homarr_data_dir: "{{ data_dir }}/keycloak"
+
+homarr_fqdn: "homarr.{{ sso_base_domain }}"

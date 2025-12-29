@@ -7,6 +7,7 @@
     - docker
     - portainer
     - traefik
+    - traefik_sso
     - watchtower
     - homarr
     - wikijs

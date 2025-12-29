@@ -16,10 +16,6 @@
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     labels:
       traefik.enable: "true"
-      traefik.http.routers.homarr.entrypoints: "http"
-      traefik.http.routers.homarr.rule: "Host(`{{ homarr_fqdn }}`)"
-      traefik.http.middlewares.homarr-https-redirect.redirectscheme.scheme: "https"
-      traefik.http.routers.homarr.middlewares: "homarr-https-redirect"
       traefik.http.routers.homarr-secure.entrypoints: "https"
       traefik.http.routers.homarr-secure.rule: "Host(`{{ homarr_fqdn }}`)"
       traefik.http.routers.homarr-secure.tls: "true"

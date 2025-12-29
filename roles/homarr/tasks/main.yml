@@ -24,6 +24,7 @@
       traefik.http.routers.homarr-secure.rule: "Host(`{{ homarr_fqdn }}`)"
       traefik.http.routers.homarr-secure.tls: "true"
       traefik.http.routers.homarr-secure.service: "homarr"
+      traefik.http.routers.homarr-secure.tls.certresolver: "cloudflare"
       traefik.http.routers.homarr-secure.middlewares: "homelab-sso-users@file"
       traefik.http.services.homarr.loadbalancer.server.port: "7575"
       traefik.docker.network: "{{ docker_network }}"

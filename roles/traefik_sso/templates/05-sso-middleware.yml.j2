@@ -7,7 +7,7 @@ http:
 
   middlewares:
 
-      homelab-sso-users-auth:
+    homelab-sso-users-auth:
       forwardAuth:
         address: "{{ sso_gateway_base_url }}/oauth2/auth?allowed_groups=homelab-users"
         trustForwardHeader: true
@@ -28,7 +28,7 @@ http:
     homelab-sso-errors:
       errors:
         status:
-          - "401-403"
+          - "401"
         service: "sso-gateway"
         query: "/oauth2/start?rd={url}"
 

@@ -30,7 +30,7 @@ http:
         status:
           - "401"
         service: "sso-gateway"
-        query: "/oauth2/start?rd={url}"
+        query: "/oauth2/sign_in?rd={url}"
 
     homelab-sso-users:
       chain:

@@ -36,10 +36,6 @@ services:
       - wikijs
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.wikijs.entrypoints=http"
-      - "traefik.http.routers.wikijs.rule=Host(`wikijs.{{ domain }}`)"
-      - "traefik.http.middlewares.wikijs-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.wikijs.middlewares=wikijs-https-redirect"
       - "traefik.http.routers.wikijs-secure.entrypoints=https"
       - "traefik.http.routers.wikijs-secure.rule=Host(`wikijs.{{ domain }}`)"
       - "traefik.http.routers.wikijs-secure.tls=true"

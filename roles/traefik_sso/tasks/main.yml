@@ -1,7 +1,0 @@
-- name: Install SSO middleware dynamic config for Traefik
-  ansible.builtin.template:
-    src: "05-sso-middleware.yml.j2"
-    dest: "{{ traefik_dynamic_dir }}/{{ traefik_sso_dynamic_filename }}"
-    owner: root
-    group: root
-    mode: "0644"

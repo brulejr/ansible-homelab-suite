@@ -1,5 +1,0 @@
-vault_keycloak_bootstrap_admin_password: "super-long-random"
-vault_keycloak_db_password: "another-long-random"
-
-vault_sso_oidc_client_secret: "client-secret-from-keycloak"
-vault_sso_cookie_secret: "base64-32-bytes-cookie-secret"

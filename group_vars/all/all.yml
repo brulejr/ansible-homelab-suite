@@ -1,15 +1,38 @@
 ---
+# Public-safe defaults only.
+# Anything environment specific (domain_name, IPs, tokens) must live in the private inventory repo.
+
 ansible_user: sysadm
+
+timezone: America/New_York
 
 username: "sysadm"
 groupname: "sysadm"
 
-timezone: America/New_York
+puid: "1000"
+pgid: "1000"
 
-docker_network: "homelab"
+# A default domain placeholder; inventory MUST override.
+domain_name: "example.invalid"
 
+# Docker directories
 docker_dir: /opt/homelab/apps
 data_dir: /opt/homelab/data
 
-puid: "1000"
-pgid: "1000"
+# Docker network
+docker_network: "homelab"
+
+# Traefik file provider defaults (inventory can override)
+traefik_dynamic_dir: "{{docker_dir}}/traefik/dynamic"
+traefik_dynamic_mount: "/etc/traefik/dynamic"
+
+# Edge gateway binding:
+# Inventory should set traefik_bind_ip = edge_vip_ip (e.g., 10.10.60.30)
+traefik_bind_ip: "0.0.0.0"
+
+# Edge SSO middleware name referenced from file provider
+sso_middleware_name: "homelab-sso@file"
+
+# When app roles publish ports, bind them to this IP if provided by host_vars
+# (inventory should set server_bind_ip per host to the server VLAN IP)
+server_bind_ip: "0.0.0.0"

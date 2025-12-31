@@ -5,9 +5,6 @@
   roles:
     - common
     - docker
-    - portainer
-    - traefik
-    - traefik_sso
     - watchtower
     - homarr
     - wikijs
@@ -19,8 +16,6 @@
   roles:
     - common
     - docker
-    - portainer
-    - traefik
     - watchtower
     - nexus
 
@@ -30,8 +25,6 @@
   roles:
     - common
     - docker
-    - portainer
-    - traefik
     - watchtower
     - homeassistant
     - nodered
@@ -43,8 +36,6 @@
   roles:
     - common
     - docker
-    - portainer
-    - traefik
     - watchtower
     - jellyfin
 
@@ -54,8 +45,6 @@
   roles:
     - common
     - docker
-    - portainer
-    - traefik
     - watchtower
     - guacamole
 
@@ -65,8 +54,8 @@
   roles:
     - common
     - docker
+    - watchtower
     - portainer
     - traefik
-    - watchtower
     - keycloak
     - sso_gateway

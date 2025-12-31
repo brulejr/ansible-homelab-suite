@@ -84,8 +84,8 @@
     networks:
       - name: "{{ docker_network }}"
     ports:
-      - "80:80"
-      - "443:443"
+      - "{{ traefik_bind_ip }}:80:80"
+      - "{{ traefik_bind_ip }}:443:443"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro

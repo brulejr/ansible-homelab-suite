@@ -1,0 +1,45 @@
+http:
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+    secure-headers:
+      headers:
+        frameDeny: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "no-referrer"
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+
+  routers:
+{% for app in edge_apps %}
+    {{ app.id }}-http:
+      rule: "Host(`{{ app.host }}`)"
+      entryPoints: [ "web" ]
+      middlewares: [ "redirect-to-https" ]
+      service: noop@internal
+
+    {{ app.id }}:
+      rule: "Host(`{{ app.host }}`)"
+      entryPoints: [ "websecure" ]
+      tls: {}
+      middlewares:
+{% if app.sso | default(true) %}
+        - "{{ sso_middleware_name }}"
+{% endif %}
+        - "secure-headers"
+      service: "{{ app.id }}"
+{% endfor %}
+
+  services:
+{% for app in edge_apps %}
+    {{ app.id }}:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "{{ app.upstream_url }}"
+{% endfor %}

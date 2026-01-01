@@ -19,13 +19,13 @@ http:
 {% for app in edge_apps %}
     {{ app.id }}-http:
       rule: "Host(`{{ app.host }}`)"
-      entryPoints: [ "web" ]
+      entryPoints: [ "http" ]
       middlewares: [ "redirect-to-https" ]
       service: noop@internal
 
     {{ app.id }}:
       rule: "Host(`{{ app.host }}`)"
-      entryPoints: [ "websecure" ]
+      entryPoints: [ "https" ]
       tls: {}
       middlewares:
 {% if app.sso | default(true) %}

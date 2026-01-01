@@ -4,12 +4,6 @@
     state: directory
     mode: "0755"
 
-- name: "SSO Gateway | Deploy SSO middleware config"
-  template:
-    src: 05-sso-middleware.yml.j2
-    dest: "{{ traefik_dynamic_dir }}/05-sso-middleware.yml"
-    mode: "0644"
-
 - name: "SSO Gateway | Deploy Edge routes config"
   template:
     src: 50-edge-routes.yml.j2

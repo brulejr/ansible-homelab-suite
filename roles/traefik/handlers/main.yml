@@ -1,0 +1,6 @@
+---
+- name: Traefik | Compose up
+  community.docker.docker_compose_v2:
+    project_src: "{{ traefik_app_dir }}"
+    project_name: "{{ traefik_stack_name }}"
+    state: present

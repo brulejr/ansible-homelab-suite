@@ -1,5 +1,14 @@
+traefik_stack_name: "traefik"
+traefik_app_dir: "{{ docker_dir }}/traefik"
 traefik_data_dir: "{{ data_dir }}/traefik"
 traefik_dynamic_dir: "{{ traefik_data_dir }}/dynamic"
 traefik_dynamic_mount: "/etc/traefik/dynamic"
 
 traefik_basic_auth_hash: "{{ vault_traefik_basic_auth_hash }}"
+
+# Image pinning is helpful later; keep latest if you want
+traefik_image: "traefik:latest"
+
+# Optional: staging/prod toggle
+traefik_acme_ca_server: "https://acme-staging-v02.api.letsencrypt.org/directory"
+# traefik_acme_ca_server: "https://acme-v02.api.letsencrypt.org/directory"

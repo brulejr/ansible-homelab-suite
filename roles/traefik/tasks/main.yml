@@ -25,88 +25,31 @@
     access_time: preserve
     modification_time: preserve
 
-- name: Create traefik.yml config file
-  ansible.builtin.copy:
-    content: |
-      api:
-        debug: true
-        dashboard: true
-      entryPoints:
-        http:
-          address: ":80"
-          http:
-            redirections:
-              entryPoint:
-                to: "https"
-                scheme: "https"
-        https:
-          address: ":443"
-        mqtt:
-          address: ":1883"
-        websocket:
-          address: ":9001"
-      serversTransport:
-        insecureSkipVerify: true
-      providers:
-        docker:
-          endpoint: "unix:///var/run/docker.sock"
-          exposedByDefault: false
-        file:
-          directory: "/etc/traefik/dynamic"
-          watch: true
-      certificatesResolvers:
-        cloudflare:
-          acme:
-            email: "{{ vault_cloudflare_email }}"
-            storage: "acme.json"
-            # caServer: https://acme-v02.api.letsencrypt.org/directory # prod (default)
-            caServer: https://acme-staging-v02.api.letsencrypt.org/directory # staging
-            dnsChallenge:
-              provider: "cloudflare"
-              #disablePropagationCheck: true # uncomment this if you have issues pulling certificates through cloudflare, By setting this flag to true disables the need to wait for the propagation of the TXT record to all authoritative name servers.
-              #delayBeforeCheck: 60s # uncomment along with disablePropagationCheck if needed to ensure the TXT record is ready before verification is attempted
-              resolvers:
-                - "1.1.1.1:53"
-                - "1.0.0.1:53"
+- name: Render traefik.yml
+  ansible.builtin.template:
+    src: traefik.yml.j2
     dest: "{{ traefik_data_dir }}/traefik.yml"
     mode: "0644"
     owner: "{{ username }}"
     group: "{{ groupname }}"
+  notify: Traefik | Compose up
 
-- name: Deploy traefik with docker container
-  community.docker.docker_container:
-    name: traefik
-    image: traefik:latest
-    restart_policy: unless-stopped
-    state: started
-    security_opts:
-      - no-new-privileges:true
-    networks:
-      - name: "{{ docker_network }}"
-    ports:
-      - "{{ traefik_bind_ip }}:80:80"
-      - "{{ traefik_bind_ip }}:443:443"
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - "{{ traefik_data_dir }}/acme.json:/acme.json"
-      - "{{ traefik_data_dir }}/traefik.yml:/traefik.yml:ro"
-      - "{{ traefik_dynamic_dir }}:{{ traefik_dynamic_mount }}:ro"
-    env:
-      CF_DNS_API_TOKEN: "{{ vault_cloudflare_dns_token }}"
-    labels:
-      traefik.enable: "true"
-      traefik.http.routers.traefik.entrypoints: "http"
-      traefik.http.routers.traefik.rule: "Host(`traefik_{{ inventory_hostname_short }}.{{ domain_name }}`)"
-      traefik.http.middlewares.traefik-auth.basicauth.users: "{{ traefik_basic_auth_hash }}"
-      traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme: "https"
-      traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto: "https"
-      traefik.http.routers.traefik.middlewares: "traefik-https-redirect"
-      traefik.http.routers.traefik-secure.entrypoints: "https"
-      traefik.http.routers.traefik-secure.rule: "Host(`traefik_{{ inventory_hostname_short }}.{{ domain_name }}`)"
-      traefik.http.routers.traefik-secure.middlewares: "traefik-auth"
-      traefik.http.routers.traefik-secure.tls: "true"
-      traefik.http.routers.traefik-secure.tls.certresolver: "cloudflare"
-      traefik.http.routers.traefik-secure.tls.domains[0].main: "{{ domain_name }}"
-      traefik.http.routers.traefik-secure.tls.domains[0].sans: "*.{{ domain_name }}"
-      traefik.http.routers.traefik-secure.service: "api@internal"
+- name: Render docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ traefik_app_dir }}/docker-compose.yml"
+    mode: "0644"
+    owner: "{{ username }}"
+    group: "{{ groupname }}"
+  notify: Traefik | Compose up
+
+# Run the handler immediately (instead of end-of-play)
+- name: Apply traefik changes now
+  ansible.builtin.meta: flush_handlers
+
+# Optional: run compose at least once even if nothing changed (first deploy)
+- name: Ensure traefik stack is up
+  community.docker.docker_compose_v2:
+    project_src: "{{ traefik_app_dir }}"
+    project_name: "{{ traefik_stack_name }}"
+    state: present

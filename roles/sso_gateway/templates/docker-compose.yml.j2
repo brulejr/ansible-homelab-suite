@@ -37,7 +37,7 @@ services:
 {% endif %}
 
     networks:
-      - {{ sso_docker_network }}
+      - {{ docker_network }}
 
     labels:
       - "traefik.enable=true"
@@ -47,5 +47,5 @@ services:
       - "traefik.http.services.sso.loadbalancer.server.port=4180"
 
 networks:
-  {{ sso_docker_network }}:
+  {{ docker_network }}:
     external: true

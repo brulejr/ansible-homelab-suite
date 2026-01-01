@@ -21,4 +21,3 @@ keycloak_proxy_headers: "xforwarded"
 
 # Realm import (recommended so everything is repeatable)
 keycloak_import_realm: true
-keycloak_realm: "{{ keycloak_realm | default('homelab') }}"

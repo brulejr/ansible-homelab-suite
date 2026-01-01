@@ -57,7 +57,7 @@
       certificatesResolvers:
         cloudflare:
           acme:
-            email: "{{ cloudflare_email }}"
+            email: "{{ vault_cloudflare_email }}"
             storage: "acme.json"
             # caServer: https://acme-v02.api.letsencrypt.org/directory # prod (default)
             caServer: https://acme-staging-v02.api.letsencrypt.org/directory # staging
@@ -93,7 +93,7 @@
       - "{{ traefik_data_dir }}/traefik.yml:/traefik.yml:ro"
       - "{{ traefik_dynamic_dir }}:{{ traefik_dynamic_mount }}:ro"
     env:
-      CF_DNS_API_TOKEN: "{{ cloudflare_dns_token }}"
+      CF_DNS_API_TOKEN: "{{ vault_cloudflare_dns_token }}"
     labels:
       traefik.enable: "true"
       traefik.http.routers.traefik.entrypoints: "http"

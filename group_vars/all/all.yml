@@ -12,8 +12,8 @@ groupname: "sysadm"
 puid: "1000"
 pgid: "1000"
 
-homelab_name: "{{ homelab_name | default('example.homelab') }}"
-domain_name: "{{ domain_name | default('example.invalid') }}"
+homelab_name: "example.homelab"
+domain_name: "example.invalid"
 
 # Docker directories
 docker_dir: /opt/homelab/apps

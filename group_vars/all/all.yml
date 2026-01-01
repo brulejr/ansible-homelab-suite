@@ -31,7 +31,7 @@ traefik_dynamic_mount: "/etc/traefik/dynamic"
 traefik_bind_ip: "0.0.0.0"
 
 # Edge SSO middleware name referenced from file provider
-sso_middleware_name: "homelab-sso@file"
+sso_middleware_name: "homelab-sso-users@file"
 
 # When app roles publish ports, bind them to this IP if provided by host_vars
 # (inventory should set server_bind_ip per host to the server VLAN IP)

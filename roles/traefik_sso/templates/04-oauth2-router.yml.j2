@@ -3,7 +3,7 @@ http:
     oauth2-global:
       rule: "HostRegexp(`{host:.+}`) && PathPrefix(`/oauth2/`)"
       entryPoints:
-        - https
+        - websecure
       tls: {}
       service: sso-gateway
       priority: 100000

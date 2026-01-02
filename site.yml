@@ -1,16 +1,11 @@
 ---
-- name: Common baseline for all servers
-  hosts: all
+- name: Setup the admin servers
+  hosts: admin_servers
   become: true
   roles:
     - common
     - docker
     - watchtower
-
-- name: Setup the admin servers
-  hosts: admin_servers
-  become: true
-  roles:
     - homarr
     - wikijs
     - vaultwarden
@@ -19,12 +14,18 @@
   hosts: devops_servers
   become: true
   roles:
+    - common
+    - docker
+    - watchtower
     - nexus
 
 - name: Setup the home automation servers
   hosts: ha_servers
   become: true
   roles:
+    - common
+    - docker
+    - watchtower
     - homeassistant
     - nodered
     - mqtt
@@ -33,18 +34,27 @@
   hosts: media_servers
   become: true
   roles:
+    - common
+    - docker
+    - watchtower
     - jellyfin
 
 - name: Setup the network servers
   hosts: network_servers
   become: true
   roles:
+    - common
+    - docker
+    - watchtower
     - guacamole
 
 - name: Setup the identification servers
   hosts: id_servers
   become: true
   roles:
+    - common
+    - docker
+    - watchtower
     - portainer
     - traefik
     - traefik_sso

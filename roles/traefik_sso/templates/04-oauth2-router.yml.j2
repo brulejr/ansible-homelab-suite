@@ -3,7 +3,7 @@ http:
     oauth2-proxy:
       rule: "HostRegexp(`{any:.+}.{{ domain_name }}`) && PathPrefix(`/oauth2/`)"
       entryPoints:
-        - websecure
+        - https
       tls: {}
       service: sso-gateway
       priority: 10000  # must beat your app routers

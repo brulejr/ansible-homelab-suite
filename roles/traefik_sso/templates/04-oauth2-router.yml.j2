@@ -1,0 +1,15 @@
+http:
+  routers:
+    oauth2-proxy:
+      rule: "HostRegexp(`{any:.+}.{{ domain_name }}`) && PathPrefix(`/oauth2/`)"
+      entryPoints:
+        - websecure
+      tls: {}
+      service: sso-gateway
+      priority: 10000  # must beat your app routers
+
+  services:
+    sso-gateway:
+      loadBalancer:
+        servers:
+          - url: "{{ sso_gateway_internal_base_url }}"  # container name + port on the docker network

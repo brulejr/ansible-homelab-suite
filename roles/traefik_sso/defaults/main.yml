@@ -1,5 +1,1 @@
 traefik_sso_enabled: true
-
-# Where your Traefik container reads dynamic config from (file provider)
-# Adjust if your Traefik stack uses a different mount.
-traefik_sso_dynamic_filename: "05-sso-middleware.yml"

@@ -3,13 +3,13 @@ http:
     sso-gateway:
       loadBalancer:
         servers:
-          - url: "{{ sso_gateway_base_url }}"
+          - url: "{{ sso_gateway_internal_base_url }}"
 
   middlewares:
 
     homelab-sso-users-auth:
       forwardAuth:
-        address: "{{ sso_gateway_base_url }}/oauth2/auth?allowed_groups=homelab-users"
+        address: "{{ sso_gateway_internal_base_url }}/oauth2/auth?allowed_groups=homelab-users"
         trustForwardHeader: true
         authResponseHeaders:
           - "X-Auth-Request-User"
@@ -18,7 +18,7 @@ http:
     
     homelab-sso-admin-auth:
       forwardAuth:
-        address: "{{ sso_gateway_base_url }}/oauth2/auth?allowed_groups=homelab-admins"
+        address: "{{ sso_gateway_internal_base_url }}/oauth2/auth?allowed_groups=homelab-admins"
         trustForwardHeader: true
         authResponseHeaders:
           - "X-Auth-Request-User"

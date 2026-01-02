@@ -47,6 +47,7 @@ keycloak_realm: "{{ homelab_name }}"
 # oauth2-proxy (SSO gateway)
 # ==========================
 sso_gateway_fqdn: "sso.{{ domain_name }}"
+sso_gateway_internal_base_url: "http://sso-gateway:4180"
 
 # Client registered in Keycloak
 sso_oidc_client_id: "homelab-sso"

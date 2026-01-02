@@ -10,8 +10,6 @@ services:
       OAUTH2_PROXY_CLIENT_ID: "{{ sso_oidc_client_id }}"
       OAUTH2_PROXY_CLIENT_SECRET: "{{ sso_oidc_client_secret }}"
 
-      OAUTH2_PROXY_REDIRECT_URL: "https://{{ sso_gateway_fqdn }}/oauth2/callback"
-
       OAUTH2_PROXY_EMAIL_DOMAINS: "{{ sso_email_domains | join(',') }}"
       OAUTH2_PROXY_COOKIE_SECRET: "{{ sso_cookie_secret }}"
       OAUTH2_PROXY_COOKIE_DOMAIN: "{{ sso_cookie_domain }}"

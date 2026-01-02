@@ -33,7 +33,7 @@ certificatesResolvers:
     acme:
       email: "{{ vault_cloudflare_email }}"
       storage: "acme.json"
-      caServer: "{{ traefik_acme_ca_server }}"
+      caServer: "{{ traefik_acme_servers[traefik_acme_mode] }}"
       dnsChallenge:
         provider: "cloudflare"
         resolvers:

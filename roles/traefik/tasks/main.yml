@@ -1,6 +1,14 @@
 ---
 # tasks file for traefik
 
+- name: Validate traefik_acme_mode
+  ansible.builtin.assert:
+    that:
+      - traefik_acme_mode in traefik_acme_servers
+    fail_msg: >
+      Invalid traefik_acme_mode='{{ traefik_acme_mode }}'.
+      Must be one of: {{ traefik_acme_servers.keys() | list | join(', ') }}
+
 - name: Create traefik data directory
   ansible.builtin.file:
     path: "{{ traefik_data_dir }}"

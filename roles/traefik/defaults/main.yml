@@ -9,6 +9,8 @@ traefik_basic_auth_hash: "{{ vault_traefik_basic_auth_hash }}"
 # Image pinning is helpful later; keep latest if you want
 traefik_image: "traefik:latest"
 
-# Optional: staging/prod toggle
-traefik_acme_ca_server: "https://acme-staging-v02.api.letsencrypt.org/directory"
-# traefik_acme_ca_server: "https://acme-v02.api.letsencrypt.org/directory"
+# Inventory-facing staging/production toggle (defaults to staging)
+traefik_acme_mode: staging # allowed: production|staging
+traefik_acme_servers:
+  production: "https://acme-v02.api.letsencrypt.org/directory"
+  staging: "https://acme-staging-v02.api.letsencrypt.org/directory"

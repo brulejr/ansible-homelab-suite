@@ -28,9 +28,9 @@ http:
     homelab-sso-errors:
       errors:
         status:
-          - "401"
+          - "401-403"
         service: "sso-gateway"
-        query: "/oauth2/sign_in?rd={url}"
+        query: "/oauth2/start?rd={url}"
 
     homelab-sso-users:
       chain:

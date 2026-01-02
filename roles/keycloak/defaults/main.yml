@@ -10,9 +10,9 @@ keycloak_image: "quay.io/keycloak/keycloak:26.4.7"
 keycloak_postgres_image: "postgres:16-alpine"
 
 keycloak_db_name: "keycloak"
-keycloak_db_user: "keycloak"
+keycloak_db_user: "{{ vault_keycloak_db_username }}"
 keycloak_db_password: "{{ vault_keycloak_db_password }}"
-keycloak_bootstrap_admin_username: "admin"
+keycloak_bootstrap_admin_username: "{{ vault_keycloak_bootstrap_admin_username }}"
 keycloak_bootstrap_admin_password: "{{ vault_keycloak_bootstrap_admin_password }}"
 
 # Hostname settings for reverse proxy; Keycloak has dedicated reverse proxy / hostname guidance. :contentReference[oaicite:1]{index=1}

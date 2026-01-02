@@ -1,4 +1,10 @@
-- name: "SSO Gateway | Ensure stack directory exists"
+- name: "SSO Gateway | Ensure app directory exists"
+  ansible.builtin.file:
+    path: "{{ sso_gateway_app_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "SSO Gateway | Ensure data directory exists"
   ansible.builtin.file:
     path: "{{ sso_gateway_data_dir }}"
     state: directory

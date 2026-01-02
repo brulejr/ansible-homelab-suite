@@ -1,6 +1,6 @@
 - name: Install SSO passthru dynamic config for Traefik
   ansible.builtin.template:
-    src: "04-oauth2-router.yml).j2"
+    src: "04-oauth2-router.yml.j2"
     dest: "{{ traefik_dynamic_dir }}/04-oauth2-router.yml)"
     owner: root
     group: root

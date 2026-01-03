@@ -58,11 +58,15 @@
   notify: restart traefik
 
 # Build owner->apps list from all *_servers hosts
-- name: Build owner->apps list
+- name: Build owner->apps list (from group_vars maps)
   ansible.builtin.set_fact:
     _edge_owner_apps: >-
       {{ _edge_owner_apps | default([]) +
-         [ {'owner': owner_host, 'apps': (hostvars[owner_host].edge_apps | default([])) } ] }}
+         [ {
+           'owner': owner_host,
+           'apps': ((hostvars[owner_host].edge_apps_by_host | default({})).get(owner_host, []))
+         } ]
+      }}
   loop: "{{ _edge_route_hosts }}"
   loop_control:
     loop_var: owner_host

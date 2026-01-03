@@ -1,4 +1,7 @@
-# Managed by Ansible (traefik role)
-# Common edge routes (high priority)
-
-{{ edge_routes_common | default({}) | to_nice_yaml(indent=2) }}
+# Managed by Ansible (traefik_app)
+http:
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true

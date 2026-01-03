@@ -1,0 +1,92 @@
+---
+- name: Ensure Traefik dynamic config directory exists
+  ansible.builtin.file:
+    path: "{{ traefik_dynamic_dir }}"
+    state: directory
+    mode: "0755"
+
+# 1) Render common middleware file
+- name: Render common edge route middlewares
+  ansible.builtin.template:
+    src: "dynamic/50-edge-route-common.yml.j2"
+    dest: "{{ traefik_dynamic_dir }}/50-edge-route-common.yml"
+    mode: "0644"
+  notify: restart traefik
+
+# Auto-discover owner groups ending in _servers (unless explicitly overridden)
+- name: Determine route-owner groups (defaults to *_servers)
+  ansible.builtin.set_fact:
+    _edge_route_groups_auto: >-
+      {{
+        groups
+        | dict2items
+        | map(attribute='key')
+        | select('match', '.*_servers$')
+        | list
+      }}
+  run_once: true
+
+- name: Determine effective route-owner groups
+  ansible.builtin.set_fact:
+    _edge_route_groups: "{{ (traefik_edge_route_groups | default([])) if (traefik_edge_route_groups | default([]) | length > 0) else _edge_route_groups_auto }}"
+  run_once: true
+
+- name: Flatten route-owner hosts
+  ansible.builtin.set_fact:
+    _edge_route_hosts: "{{ _edge_route_hosts | default([]) + (groups[item] | default([])) }}"
+  loop: "{{ _edge_route_groups }}"
+  run_once: true
+
+- name: Unique route-owner hosts
+  ansible.builtin.set_fact:
+    _edge_route_hosts: "{{ _edge_route_hosts | unique | list }}"
+  run_once: true
+
+# Optional but recommended: prune old per-app route files
+- name: Find existing per-app edge route files
+  ansible.builtin.find:
+    paths: "{{ traefik_dynamic_dir }}"
+    patterns: "55-edge-route-*.yml"
+  register: _edge_route_existing
+
+- name: Remove existing per-app edge route files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ _edge_route_existing.files }}"
+  when: traefik_edge_routes_prune | default(true)
+  notify: restart traefik
+
+# Build owner->apps list so we can render per-app files
+- name: Build owner->apps list
+  ansible.builtin.set_fact:
+    _edge_owner_apps: "{{ _edge_owner_apps | default([]) + [ {'owner': owner_host, 'apps': (hostvars[owner_host].edge_apps | default([])) } ] }}"
+  loop: "{{ _edge_route_hosts }}"
+  loop_control:
+    loop_var: owner_host
+  run_once: true
+
+# Validate required fields now that backend_url is mandatory
+- name: Validate edge apps have required fields
+  ansible.builtin.assert:
+    that:
+      - item.1.name is defined
+      - item.1.fqdn is defined
+      - item.1.backend_url is defined
+      - item.1.backend_url | length > 0
+    fail_msg: "Invalid edge app entry for {{ item.0.owner }}: {{ item.1 }}"
+  loop: "{{ _edge_owner_apps | subelements('apps', skip_missing=True) }}"
+  run_once: true
+
+# Render one file per app, named by owner server + app name
+- name: Render per-app edge route files
+  ansible.builtin.template:
+    src: "dynamic/55-edge-route-app.yml.j2"
+    dest: "{{ traefik_dynamic_dir }}/55-edge-route-{{ item.0.owner }}-{{ item.1.name }}.yml"
+    mode: "0644"
+  vars:
+    edge_owner: "{{ item.0.owner }}"
+    edge_app: "{{ item.1 }}"
+  loop: "{{ _edge_owner_apps | subelements('apps', skip_missing=True) }}"
+  run_once: true
+  notify: restart traefik

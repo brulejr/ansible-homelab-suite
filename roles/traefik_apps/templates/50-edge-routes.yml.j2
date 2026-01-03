@@ -28,9 +28,6 @@ http:
       entryPoints: [ "https" ]
       tls: {}
       middlewares:
-{% if app.sso | default(true) %}
-        - "{{ sso_middleware_name }}"
-{% endif %}
         - "secure-headers"
       service: "{{ app.id }}"
 {% endfor %}

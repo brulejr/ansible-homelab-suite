@@ -1,19 +1,19 @@
-- name: Ensure traefik dynamic dir exists
+- name: Traefik Apps | Ensure traefik dynamic dir exists
   ansible.builtin.file:
     path: "{{ traefik_dynamic_dir }}"
     state: directory
     mode: "0755"
 
 # 1) Render the common baseline first
-- name: Render common edge routes file
+- name: Traefik Apps | Render common edge routes file
   ansible.builtin.template:
-    src: "dynamic/50-edge-route-common.yml.j2"
+    src: "50-edge-route-common.yml.j2"
     dest: "{{ traefik_dynamic_dir }}/50-edge-route-common.yml"
     mode: "0644"
   notify: restart traefik
 
 # 2) Build a flat list of all edge apps from backend hosts
-- name: Build edge apps list from inventory
+- name: Traefik Apps | Build edge apps list from inventory
   ansible.builtin.set_fact:
     traefik_edge_apps_flat: >-
       {{
@@ -40,7 +40,7 @@
   run_once: true
 
 # 2b) Normalize router/service names and validate required fields
-- name: Normalize edge app items and validate
+- name: Traefik Apps | Normalize edge app items and validate
   ansible.builtin.set_fact:
     traefik_edge_apps: "{{ traefik_edge_apps | default([]) + [ normalized ] }}"
   vars:
@@ -59,7 +59,7 @@
   when: item.target_ip | length > 0
   run_once: true
 
-- name: Fail if any edge app is missing required fields
+- name: Traefik Apps | Fail if any edge app is missing required fields
   ansible.builtin.assert:
     that:
       - item.name is defined
@@ -72,13 +72,13 @@
   run_once: true
 
 # 3) (Recommended) prune old per-app route files to avoid stale routes
-- name: Find existing per-app edge route files
+- name: Traefik Apps | Find existing per-app edge route files
   ansible.builtin.find:
     paths: "{{ traefik_dynamic_dir }}"
     patterns: "55-edge-route-*.yml"
   register: edge_route_files
 
-- name: Remove existing per-app edge route files
+- name: Traefik Apps | Remove existing per-app edge route files
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: absent
@@ -86,7 +86,7 @@
   notify: restart traefik
 
 # 4) Render one file per app
-- name: Render per-app edge route files
+- name: Traefik Apps | Render per-app edge route files
   ansible.builtin.template:
     src: "dynamic/55-edge-route-app.yml.j2"
     dest: "{{ traefik_dynamic_dir }}/55-edge-route-{{ item.owner_host }}-{{ item.name }}.yml"

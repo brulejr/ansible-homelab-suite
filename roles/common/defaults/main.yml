@@ -30,9 +30,6 @@ traefik_dynamic_mount: "/etc/traefik/dynamic"
 # Inventory should set traefik_bind_ip = edge_vip_ip (e.g., 10.10.60.30)
 traefik_bind_ip: "0.0.0.0"
 
-# Edge SSO middleware name referenced from file provider
-sso_middleware_name: "homelab-sso-users@file"
-
 # When app roles publish ports, bind them to this IP if provided by host_vars
 # (inventory should set server_bind_ip per host to the server VLAN IP)
 server_bind_ip: "0.0.0.0"
@@ -42,27 +39,3 @@ server_bind_ip: "0.0.0.0"
 # ==========================
 keycloak_fqdn: "keycloak.{{ domain_name }}"
 keycloak_realm: "{{ homelab_name }}"
-
-# ==========================
-# oauth2-proxy (SSO gateway)
-# ==========================
-sso_gateway_fqdn: "sso.{{ domain_name }}"
-sso_gateway_internal_base_url: "http://sso-gateway:4180"
-
-# Client registered in Keycloak
-sso_oidc_client_id: "homelab-sso"
-sso_oidc_client_secret: "{{ vault_sso_oidc_client_secret }}"
-
-# Cookie secret: 32-byte base64 (oauth2-proxy expects base64 secret)
-sso_cookie_secret: "{{ vault_sso_cookie_secret }}"
-
-# SSO cookie domain so login works across entire domain
-sso_cookie_domain: ".{{ domain_name }}"
-
-# If you want to restrict who can log in:
-# Use "*" to allow any Keycloak user. Or set to your domain (if you enforce email domain).
-sso_email_domains:
-  - "*"
-
-# Optional: Keycloak groups/roles requirement (leave empty for no restriction)
-sso_allowed_groups: []

@@ -57,6 +57,5 @@
     - watchtower
     - portainer
     - traefik
-    - traefik_sso
+    - traefik_apps
     - keycloak
-    - sso_gateway

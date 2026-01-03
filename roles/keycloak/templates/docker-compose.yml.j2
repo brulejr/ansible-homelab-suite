@@ -1,0 +1,72 @@
+services:
+
+  keycloak-db:
+    image: {{ keycloak_postgres_image }}
+    container_name: keycloak-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: {{ keycloak_db_name }}
+      POSTGRES_USER: {{ keycloak_db_user }}
+      POSTGRES_PASSWORD: {{ keycloak_db_password }}
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql/data
+    networks:
+      - {{ docker_network }}
+
+  keycloak:
+    image: {{ keycloak_image }}
+    container_name: keycloak
+    restart: unless-stopped
+    depends_on:
+      - keycloak-db
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: "jdbc:postgresql://keycloak-db:5432/{{ keycloak_db_name }}"
+      KC_DB_USERNAME: "{{ keycloak_db_user }}"
+      KC_DB_PASSWORD: "{{ keycloak_db_password }}"
+
+      # Bootstrap admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: "{{ keycloak_bootstrap_admin_username }}"
+      KC_BOOTSTRAP_ADMIN_PASSWORD: "{{ keycloak_bootstrap_admin_password }}"
+
+      # Reverse proxy / hostname (Keycloak guidance: hostname + proxy headers) :contentReference[oaicite:2]{index=2}
+      KC_HOSTNAME: "{{ keycloak_hostname }}"
+      KC_PROXY_HEADERS: "{{ keycloak_proxy_headers }}"
+      KC_HOSTNAME_STRICT: "true"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+
+    command:
+      - start
+{% if keycloak_import_realm | bool %}
+      - --import-realm
+{% endif %}
+
+    volumes:
+{% if keycloak_import_realm | bool %}
+      - ./realm-{{ keycloak_realm }}.json:/opt/keycloak/data/import/realm-{{ keycloak_realm }}.json:ro
+{% endif %}
+
+    networks:
+      - {{ docker_network }}
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.keycloak.entrypoints=http"
+      - "traefik.http.routers.keycloak.rule=Host(`{{ keycloak_fqdn }}`)"
+      - "traefik.http.middlewares.keycloak-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.keycloak.middlewares=keycloak-https-redirect"
+      - "traefik.http.routers.keycloak-secure.entrypoints=https"
+      - "traefik.http.routers.keycloak-secure.rule=Host(`{{ keycloak_fqdn }}`)"
+      - "traefik.http.routers.keycloak-secure.tls=true"
+      - "traefik.http.routers.keycloak-secure.service=keycloak"
+      - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
+      - "traefik.docker.network={{ docker_network }}"
+
+volumes:
+  keycloak_db_data:
+
+networks:
+  {{ docker_network }}:
+    external: true

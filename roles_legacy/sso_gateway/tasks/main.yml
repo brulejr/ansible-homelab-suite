@@ -1,0 +1,29 @@
+- name: "SSO Gateway | Ensure app directory exists"
+  ansible.builtin.file:
+    path: "{{ sso_gateway_app_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "SSO Gateway | Ensure data directory exists"
+  ansible.builtin.file:
+    path: "{{ sso_gateway_data_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "SSO Gateway | Deploy Edge routes config"
+  template:
+    src: 50-edge-routes.yml.j2
+    dest: "{{ traefik_dynamic_dir }}/50-edge-routes.yml"
+    mode: "0644"
+
+- name: "SSO Gateway | Render docker-compose.yml"
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ sso_gateway_app_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: "SSO Gateway | Start stack"
+  community.docker.docker_compose_v2:
+    project_src: "{{ sso_gateway_app_dir }}"
+    project_name: "{{ sso_gateway_stack_name }}"
+    state: present

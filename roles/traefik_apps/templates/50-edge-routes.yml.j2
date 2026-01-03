@@ -1,0 +1,30 @@
+http:
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+  routers:
+{% for app in edge_apps %}
+    {{ app.id }}-http:
+      rule: "Host(`{{ app.host }}`)"
+      entryPoints: [ "http" ]
+      middlewares: [ "redirect-to-https" ]
+      service: noop@internal
+
+    {{ app.id }}:
+      rule: "Host(`{{ app.host }}`)"
+      entryPoints: [ "https" ]
+      tls: {}
+      service: "{{ app.id }}"
+{% endfor %}
+
+  services:
+{% for app in edge_apps %}
+    {{ app.id }}:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "{{ app.upstream_url }}"
+{% endfor %}

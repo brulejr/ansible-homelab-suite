@@ -1,0 +1,5 @@
+- name: "Traefik Apps | Deploy Edge routes config"
+  template:
+    src: 50-edge-routes.yml.j2
+    dest: "{{ traefik_dynamic_dir }}/50-edge-routes.yml"
+    mode: "0644"

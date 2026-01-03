@@ -1,35 +1,24 @@
----
-# tasks file for keycloak
-
-- name: Create keycloak base directory
+- name: "Keycloak | Ensure stack directory exists"
   ansible.builtin.file:
-    path: "{{ keycloak_dir }}"
+    path: "{{ keycloak_app_dir }}"
     state: directory
     mode: "0755"
-    owner: sysadm
-    group: sysadm
-    access_time: preserve
-    modification_time: preserve
 
-- name: copy keycloak files
-  template:
-    src: templates/{{ item }}
-    dest: "{{ keycloak_dir }}"
-  loop:
-    - docker-compose.yml
+- name: "Keycloak | Render realm import (optional)"
+  ansible.builtin.template:
+    src: "realm-homelab.json.j2"
+    dest: "{{ keycloak_app_dir }}/realm-{{ keycloak_realm }}.json"
+    mode: "0644"
+  when: keycloak_import_realm | bool
 
-- name: Create keycloak data directory
-  ansible.builtin.file:
-    path: "{{ keycloak_data_dir }}"
-    state: directory
-    mode: "0755"
-    owner: sysadm
-    group: sysadm
-    access_time: preserve
-    modification_time: preserve
+- name: "Keycloak | Render docker-compose.yml"
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ keycloak_app_dir }}/docker-compose.yml"
+    mode: "0644"
 
-- name: Run keycloak docker compose
+- name: "Keycloak | Start stack"
   community.docker.docker_compose_v2:
-    project_src: "{{ keycloak_dir }}"
-    files:
-      - docker-compose.yml
+    project_src: "{{ keycloak_app_dir }}"
+    project_name: "{{ keycloak_stack_name }}"
+    state: present

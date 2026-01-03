@@ -1,0 +1,15 @@
+- name: Install SSO passthru dynamic config for Traefik
+  ansible.builtin.template:
+    src: "04-oauth2-router.yml.j2"
+    dest: "{{ traefik_dynamic_dir }}/04-oauth2-router.yml"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install SSO middleware dynamic config for Traefik
+  ansible.builtin.template:
+    src: "05-sso-middleware.yml.j2"
+    dest: "{{ traefik_dynamic_dir }}/05-sso-middleware.yml"
+    owner: root
+    group: root
+    mode: "0644"

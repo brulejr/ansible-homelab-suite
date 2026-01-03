@@ -1,0 +1,16 @@
+http:
+  routers:
+    oauth2-global:
+      rule: "HostRegexp(`{host:.+}`) && PathPrefix(`/oauth2/`)"
+      entryPoints:
+        - https
+      tls: {}
+      service: sso-gateway
+      priority: 100000
+
+  services:
+    sso-gateway:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "{{ sso_gateway_internal_base_url }}"

@@ -1,6 +1,17 @@
 ---
 # tasks file for common
 
+- name: Validate required site identity vars
+  ansible.builtin.assert:
+    that:
+      - domain_name is defined
+      - domain_name not in ["example.invalid", "invalid", "example.com"]
+      - homelab_name is defined
+      - homelab_name not in ["example.homelab", "example"]
+    fail_msg: >
+      domain_name/homelab_name must be set in the inventory (group_vars/host_vars).
+      Current domain_name={{ domain_name }}, homelab_name={{ homelab_name }}.
+
 - name: Update apt packages
   ansible.builtin.apt:
     update_cache: true

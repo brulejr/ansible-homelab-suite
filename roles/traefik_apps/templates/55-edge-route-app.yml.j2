@@ -1,0 +1,25 @@
+# Managed by Ansible (traefik role)
+# Owner: {{ item.owner_host }}
+
+http:
+  routers:
+    {{ item.router_name }}:
+      rule: "Host(`{{ item.fqdn }}`)"
+      entryPoints:
+        - "websecure"
+      {% if item.middlewares is defined and item.middlewares|length > 0 %}
+      middlewares:
+      {% for m in item.middlewares %}
+        - "{{ m }}"
+      {% endfor %}
+      {% endif %}
+      service: "{{ item.service_name }}"
+      tls:
+        certResolver: "{{ item.cert_resolver | default('cloudflare') }}"
+
+  services:
+    {{ item.service_name }}:
+      loadBalancer:
+        servers:
+          - url: "{{ item.scheme | default('http') }}://{{ item.target_ip }}:{{ item.port }}"
+        passHostHeader: true

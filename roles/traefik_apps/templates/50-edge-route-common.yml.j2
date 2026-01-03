@@ -1,0 +1,4 @@
+# Managed by Ansible (traefik role)
+# Common edge routes (high priority)
+
+{{ edge_routes_common | default({}) | to_nice_yaml(indent=2) }}

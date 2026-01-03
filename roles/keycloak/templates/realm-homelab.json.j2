@@ -7,23 +7,5 @@
   "loginWithEmailAllowed": true,
 
   "clients": [
-    {
-      "clientId": "{{ sso_oidc_client_id }}",
-      "name": "Homelab SSO Gateway (oauth2-proxy)",
-      "enabled": true,
-      "protocol": "openid-connect",
-      "publicClient": false,
-      "clientAuthenticatorType": "client-secret",
-      "secret": "{{ sso_oidc_client_secret }}",
-      "redirectUris": [
-        "https://{{ sso_gateway_fqdn }}/oauth2/callback"
-      ],
-      "webOrigins": [
-        "https://{{ sso_gateway_fqdn }}"
-      ],
-      "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": false
-    }
   ]
 }

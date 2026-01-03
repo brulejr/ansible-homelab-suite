@@ -57,17 +57,19 @@
   when: traefik_edge_routes_prune | default(true)
   notify: restart traefik
 
-# Build owner->apps list so we can render per-app files
+# Build owner->apps list from all *_servers hosts
 - name: Build owner->apps list
   ansible.builtin.set_fact:
-    _edge_owner_apps: "{{ _edge_owner_apps | default([]) + [ {'owner': owner_host, 'apps': (hostvars[owner_host].edge_apps | default([])) } ] }}"
+    _edge_owner_apps: >-
+      {{ _edge_owner_apps | default([]) +
+         [ {'owner': owner_host, 'apps': (hostvars[owner_host].edge_apps | default([])) } ] }}
   loop: "{{ _edge_route_hosts }}"
   loop_control:
     loop_var: owner_host
   run_once: true
 
-# Validate required fields now that backend_url is mandatory
-- name: Validate edge apps have required fields
+# Validate required fields (backend_url required)
+- name: Validate edge apps
   ansible.builtin.assert:
     that:
       - item.1.name is defined
@@ -78,7 +80,7 @@
   loop: "{{ _edge_owner_apps | subelements('apps', skip_missing=True) }}"
   run_once: true
 
-# Render one file per app, named by owner server + app name
+# Render one file per app
 - name: Render per-app edge route files
   ansible.builtin.template:
     src: "dynamic/55-edge-route-app.yml.j2"

@@ -18,7 +18,7 @@
     - common
     - docker
     - watchtower
-    - nexus
+    - plantuml
 
 - name: Setup the home automation servers
   hosts: ha_servers

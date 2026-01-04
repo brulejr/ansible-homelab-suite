@@ -1,13 +1,13 @@
 ---
 # tasks file for wikijs
 
-- name: "Ensure stack directory exists"
+- name: "Ensure wikijs app directory exists"
   ansible.builtin.file:
     path: "{{ wikijs_app_dir }}"
     state: directory
     mode: "0755"
 
-- name: Create wikijs data directory
+- name: "Ensure wikijs data directory exists"
   ansible.builtin.file:
     path: "{{ wikijs_data_dir }}"
     state: directory

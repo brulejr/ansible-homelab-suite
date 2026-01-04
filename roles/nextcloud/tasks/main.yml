@@ -1,31 +1,33 @@
 ---
 # tasks file for nextcloud
 
+- name: "Ensure nextcloud app directory exists"
+  ansible.builtin.file:
+    path: "{{ nextcloud_app_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "Ensure nextcloud data directory exists"
+  ansible.builtin.file:
+    path: "{{ nextcloud_data_dir }}"
+    state: directory
+    mode: "0755"
+
 - name: Create nextcloud container
   community.docker.docker_container:
     name: nextcloud
     image: lscr.io/linuxserver/nextcloud:latest
-    restart_policy: unless-stopped
     state: started
+    restart_policy: unless-stopped
     networks:
       - name: "{{ docker_network }}"
     pull: true
+    ports:
+      - "{{ server_bind_ip }}:8080:80"
     env:
       PUID: "{{ puid }}"
       PGID: "{{ pgid }}"
       TZ: "{{ timezone }}"
     volumes:
-      - "{{ nextcloud_dir }}/config:/config"
-      - "{{ nextcloud_dir }}/data:/data"
-    labels:
-      traefik.enable: "true"
-      traefik.http.routers.nextcloud.entrypoints: "http"
-      traefik.http.routers.nextcloud.rule: "Host(`nextcloud.{{ domain }}`)"
-      traefik.http.middlewares.nextcloud-https-redirect.redirectscheme.scheme: "https"
-      traefik.http.routers.nextcloud.middlewares: "nextcloud-https-redirect"
-      traefik.http.routers.nextcloud-secure.entrypoints: "https"
-      traefik.http.routers.nextcloud-secure.rule: "Host(`nextcloud.{{ domain }}`)"
-      traefik.http.routers.nextcloud-secure.tls: "true"
-      traefik.http.routers.nextcloud-secure.service: "nextcloud"
-      traefik.http.services.nextcloud.loadbalancer.server.port: "80"
-      traefik.docker.network: "{{ docker_network }}"
+      - "{{ nextcloud_app_dir }}/config:/config"
+      - "{{ nextcloud_data_dir }}/data:/data"

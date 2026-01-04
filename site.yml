@@ -9,6 +9,7 @@
     - homarr
     - wikijs
     - vaultwarden
+    - nextcloud
 
 - name: Setup the devops servers
   hosts: devops_servers

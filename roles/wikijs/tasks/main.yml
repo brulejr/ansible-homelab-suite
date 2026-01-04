@@ -9,21 +9,15 @@
 
 - name: Create wikijs data directory
   ansible.builtin.file:
-    path: "{{ wikijs_dir }}"
+    path: "{{ wikijs_data_dir }}"
     state: directory
     mode: "0755"
-    access_time: preserve
-    modification_time: preserve
 
 - name: Create wikijs ssh directory
   ansible.builtin.file:
     path: "{{ wikijs_ssh_dir }}"
     state: directory
     mode: "0755"
-    owner: sysadm
-    group: sysadm
-    access_time: preserve
-    modification_time: preserve
 
 - name: Generate SSH key
   openssh_keypair:

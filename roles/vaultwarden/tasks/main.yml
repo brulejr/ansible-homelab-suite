@@ -17,9 +17,11 @@
   community.docker.docker_container:
     name: vaultwarden
     image: vaultwarden/server:latest
-    pull: true
     state: started
     restart_policy: unless-stopped
+    pull: true
+    ports:
+      - "{{ server_bind_ip }}:80:80"
     volumes:
       - "{{ vaultwarden_data_dir }}/data:/data"
     networks:

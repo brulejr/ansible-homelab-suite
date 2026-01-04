@@ -13,7 +13,7 @@ services:
     volumes:
       - wikijs-db-data:/var/lib/postgresql/data
     networks:
-      - wikijs
+      - {{ docker_network }}
 
   wikijs:
     image: ghcr.io/requarks/wiki:2

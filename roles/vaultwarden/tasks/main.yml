@@ -21,7 +21,7 @@
     restart_policy: unless-stopped
     pull: true
     ports:
-      - "{{ server_bind_ip }}:80:80"
+      - "{{ server_bind_ip }}:8180:80"
     volumes:
       - "{{ vaultwarden_data_dir }}/data:/data"
     networks:

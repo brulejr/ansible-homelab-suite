@@ -1,13 +1,13 @@
 ---
 # tasks file for plantuml
 
-- name: "Ensure wikijs app directory exists"
+- name: "Ensure plantuml app directory exists"
   ansible.builtin.file:
     path: "{{ plantuml_app_dir }}"
     state: directory
     mode: "0755"
 
-- name: "Ensure wikijs data directory exists"
+- name: "Ensure plantuml data directory exists"
   ansible.builtin.file:
     path: "{{ plantuml_data_dir }}"
     state: directory

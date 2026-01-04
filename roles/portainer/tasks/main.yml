@@ -9,7 +9,7 @@
     state: started
     restart_policy: unless-stopped
     ports:
-      - "{{ server_bind_ip }}:9000:9000"
+      - "{{ server_bind_ip }}:{{ app_port_portainer }}:9000"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro

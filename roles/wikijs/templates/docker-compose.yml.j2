@@ -29,7 +29,7 @@ services:
       DB_NAME: wiki
     restart: unless-stopped
     ports:
-      - "{{ server_bind_ip }}:3000:3000"
+      - "{{ server_bind_ip }}:{{ app_port_wikijs }}:3000"
     volumes:
       - "{{ wikijs_ssh_dir }}:/wiki/ssh:ro"
     networks:

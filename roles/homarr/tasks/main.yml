@@ -9,7 +9,7 @@
     restart_policy: unless-stopped
     pull: true
     ports:
-      - "{{ server_bind_ip }}:7575:7575"
+      - "{{ server_bind_ip }}:{{ app_port_homarr }}:7575"
     networks:
       - name: "{{ docker_network }}"
     volumes:

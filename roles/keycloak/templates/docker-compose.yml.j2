@@ -36,7 +36,8 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
       KC_METRICS_ENABLED: "true"
-
+    ports:
+      - "{{ server_bind_ip }}:{{ app_port_keycloak }}:8080"
     command:
       - start
 {% if keycloak_import_realm | bool %}

@@ -5,7 +5,7 @@ services:
     container_name: plantuml
     restart: unless-stopped
     ports:
-      - "{{ server_bind_ip }}:8190:8080"
+      - "{{ server_bind_ip }}:{{ app_port_plantuml }}:8080"
     networks:
       - {{ docker_network }}
 

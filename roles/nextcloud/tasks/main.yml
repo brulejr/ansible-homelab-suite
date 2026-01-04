@@ -23,7 +23,7 @@
       - name: "{{ docker_network }}"
     pull: true
     ports:
-      - "{{ server_bind_ip }}:8280:80"
+      - "{{ server_bind_ip }}:{{ app_port_nextcloud }}:80"
     env:
       PUID: "{{ puid }}"
       PGID: "{{ pgid }}"

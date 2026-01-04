@@ -2,6 +2,7 @@ services:
 
   plantuml-server:
     image: plantuml/plantuml-server:jetty
+    container_name: plantuml
     ports:
       - "{{ server_bind_ip }}:8190:8080"
     networks:

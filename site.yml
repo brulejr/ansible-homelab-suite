@@ -9,6 +9,7 @@
     - homarr
     - wikijs
     - vaultwarden
+    - nextcloud
 
 - name: Setup the devops servers
   hosts: devops_servers
@@ -18,6 +19,7 @@
     - docker
     - watchtower
     - nexus
+    - plantuml
 
 - name: Setup the home automation servers
   hosts: ha_servers

@@ -1,0 +1,26 @@
+---
+# tasks file for plantuml
+
+- name: "Ensure plantuml app directory exists"
+  ansible.builtin.file:
+    path: "{{ plantuml_app_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "Ensure plantuml data directory exists"
+  ansible.builtin.file:
+    path: "{{ plantuml_data_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "Render docker-compose.yml"
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ plantuml_app_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: "Start docker container"
+  community.docker.docker_compose_v2:
+    project_src: "{{ plantuml_app_dir }}"
+    project_name: "{{ plantuml_stack_name }}"
+    state: present

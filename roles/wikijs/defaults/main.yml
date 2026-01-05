@@ -1,0 +1,8 @@
+wikijs_enabled: true
+
+wikijs_stack_name: "wikijs"
+wikijs_app_dir: "{{ docker_dir }}/wikijs"
+wikijs_data_dir: "{{ data_dir }}/wikijs"
+
+wikijs_ssh_dir: "{{ wikijs_app_dir }}/ssh"
+wikijs_ssh_key_filename: wikijs_rsa

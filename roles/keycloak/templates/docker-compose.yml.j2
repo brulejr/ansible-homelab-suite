@@ -36,7 +36,8 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
       KC_METRICS_ENABLED: "true"
-
+    ports:
+      - "{{ server_bind_ip }}:{{ app_port_keycloak }}:8080"
     command:
       - start
 {% if keycloak_import_realm | bool %}
@@ -50,19 +51,6 @@ services:
 
     networks:
       - {{ docker_network }}
-
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.keycloak.entrypoints=http"
-      - "traefik.http.routers.keycloak.rule=Host(`{{ keycloak_fqdn }}`)"
-      - "traefik.http.middlewares.keycloak-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.keycloak.middlewares=keycloak-https-redirect"
-      - "traefik.http.routers.keycloak-secure.entrypoints=https"
-      - "traefik.http.routers.keycloak-secure.rule=Host(`{{ keycloak_fqdn }}`)"
-      - "traefik.http.routers.keycloak-secure.tls=true"
-      - "traefik.http.routers.keycloak-secure.service=keycloak"
-      - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
-      - "traefik.docker.network={{ docker_network }}"
 
 volumes:
   keycloak_db_data:

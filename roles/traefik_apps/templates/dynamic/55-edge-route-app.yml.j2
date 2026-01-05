@@ -1,0 +1,29 @@
+# Managed by Ansible (traefik_app)
+# App: {{ edge_app.name }}
+
+{% set fqdn = edge_app.fqdn %}
+{% set redirect_http = edge_app.redirect_http | default(true) %}
+{% set backend_url = edge_app.backend_url %}
+
+http:
+  routers:
+{% if redirect_http %}
+    {{ edge_app.name }}-http:
+      rule: "Host(`{{ fqdn }}`)"
+      entryPoints: [ "http" ]
+      middlewares: [ "redirect-to-https" ]
+      service: noop@internal
+{% endif %}
+
+    {{ edge_app.name }}:
+      rule: "Host(`{{ fqdn }}`)"
+      entryPoints: [ "https" ]
+      tls: {}
+      service: "{{ edge_app.name }}"
+
+  services:
+    {{ edge_app.name }}:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "{{ backend_url }}"

@@ -1,23 +1,6 @@
 ---
 # tasks file for nexus
 
-- name: Create nexus base directory
-  ansible.builtin.file:
-    path: "{{ nexus_dir }}"
-    state: directory
-    mode: '0755'
-    owner: sysadm
-    group: sysadm
-    access_time: preserve
-    modification_time: preserve
-
-- name: copy nexus files
-  template:
-    src: templates/{{ item }}
-    dest: "{{ nexus_dir }}"
-  loop:
-    - docker-compose.yml
-
 - name: Create nexus group
   ansible.builtin.group:
     name: nexus
@@ -30,18 +13,30 @@
     uid: 200
     group: nexus
 
-- name: Create nexus data directory
+- name: "Ensure nexus app directory exists"
+  ansible.builtin.file:
+    path: "{{ nexus_app_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "Ensure nexus data directory exists"
   ansible.builtin.file:
     path: "{{ nexus_data_dir }}"
     state: directory
-    mode: '0755'
     owner: nexus
     group: nexus
+    mode: "0755"
     access_time: preserve
     modification_time: preserve
 
-- name: Run nexus docker compose
+- name: "Render docker-compose.yml"
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ nexus_app_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: "Start docker container"
   community.docker.docker_compose_v2:
-    project_src: "{{ nexus_dir }}"
-    files:
-      - docker-compose.yml
+    project_src: "{{ nexus_app_dir }}"
+    project_name: "{{ nexus_stack_name }}"
+    state: present

@@ -1,0 +1,5 @@
+nextcloud_enabled: true
+
+nextcloud_stack_name: "nextcloud"
+nextcloud_app_dir: "{{ docker_dir }}/nextcloud"
+nextcloud_data_dir: "{{ data_dir }}/nextcloud"

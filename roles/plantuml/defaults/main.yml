@@ -1,0 +1,5 @@
+plantuml_enabled: true
+
+plantuml_stack_name: "plantuml"
+plantuml_app_dir: "{{ docker_dir }}/plantuml"
+plantuml_data_dir: "{{ data_dir }}/plantuml"

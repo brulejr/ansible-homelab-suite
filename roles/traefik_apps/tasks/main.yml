@@ -1,5 +1,3 @@
-- name: "Traefik Apps | Deploy Edge routes config"
-  template:
-    src: 50-edge-routes.yml.j2
-    dest: "{{ traefik_dynamic_dir }}/50-edge-routes.yml"
-    mode: "0644"
+---
+- name: Edge routes
+  ansible.builtin.import_tasks: edge_routes.yml

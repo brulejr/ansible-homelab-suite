@@ -1,30 +1,23 @@
 ---
 # tasks file for wikijs
 
-- name: Create wikijs data directory
+- name: "Ensure wikijs app directory exists"
   ansible.builtin.file:
-    path: "{{ wikijs_dir }}"
+    path: "{{ wikijs_app_dir }}"
     state: directory
-    mode: '0755'
-    access_time: preserve
-    modification_time: preserve
+    mode: "0755"
 
-- name: copy wikijs files
-  template:
-    src: templates/{{ item }}
-    dest: "{{ wikijs_dir }}"
-  loop:
-    - docker-compose.yml
+- name: "Ensure wikijs data directory exists"
+  ansible.builtin.file:
+    path: "{{ wikijs_data_dir }}"
+    state: directory
+    mode: "0755"
 
 - name: Create wikijs ssh directory
   ansible.builtin.file:
     path: "{{ wikijs_ssh_dir }}"
     state: directory
-    mode: '0755'
-    owner: sysadm
-    group: sysadm
-    access_time: preserve
-    modification_time: preserve
+    mode: "0755"
 
 - name: Generate SSH key
   openssh_keypair:
@@ -38,8 +31,14 @@
     force: no
   register: generated_key
 
-- name: Run wikijs docker compose
+- name: "Render docker-compose.yml"
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ wikijs_app_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: "Start stack"
   community.docker.docker_compose_v2:
-    project_src: "{{ wikijs_dir }}"
-    files:
-      - docker-compose.yml
+    project_src: "{{ wikijs_app_dir }}"
+    project_name: "{{ wikijs_stack_name }}"
+    state: present

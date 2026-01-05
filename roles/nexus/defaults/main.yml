@@ -1,0 +1,5 @@
+nexus_enabled: true
+
+nexus_stack_name: "nexus"
+nexus_app_dir: "{{ docker_dir }}/nexus"
+nexus_data_dir: "{{ data_dir }}/nexus"

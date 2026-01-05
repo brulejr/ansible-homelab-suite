@@ -1,22 +1,28 @@
 ---
 # tasks file for vaultwarden
 
+- name: "Ensure vaultwarden app directory exists"
+  ansible.builtin.file:
+    path: "{{ vaultwarden_app_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "Ensure vaultwarden data directory exists"
+  ansible.builtin.file:
+    path: "{{ vaultwarden_data_dir }}"
+    state: directory
+    mode: "0755"
+
 - name: Create vaultwarden container
   community.docker.docker_container:
     name: vaultwarden
     image: vaultwarden/server:latest
-    pull: true
     state: started
     restart_policy: unless-stopped
+    pull: true
+    ports:
+      - "{{ server_bind_ip }}:{{ app_port_vaultwarden }}:80"
     volumes:
-      - "{{ vaultwarden_dir }}/data:/data"
+      - "{{ vaultwarden_data_dir }}/data:/data"
     networks:
       - name: "{{ docker_network }}"
-    labels:
-      traefik.enable: "true"
-      traefik.http.routers.vault-secure.entrypoints: "https"
-      traefik.http.routers.vault-secure.rule: "Host(`vault.{{ domain }}`)"
-      traefik.http.routers.vault-secure.tls: "true"
-      traefik.http.routers.vault-secure.service: "vault"
-      traefik.http.services.vault.loadbalancer.server.port: "80"
-      traefik.docker.network: "{{ docker_network }}"

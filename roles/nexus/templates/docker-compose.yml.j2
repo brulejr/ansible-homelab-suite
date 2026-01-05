@@ -1,0 +1,20 @@
+services:
+
+  nexus:
+    image: sonatype/nexus3
+    container_name: nexus
+    restart: unless-stopped
+    ports:
+      - "{{ server_bind_ip }}:{{ app_port_nexus }}:8081"
+      - "{{ server_bind_ip }}:10001:10001"
+    volumes:
+      - "{{ nexus_data_dir }}:/nexus-data"
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - {{ docker_network }}      
+
+
+networks:
+  {{ docker_network }}:
+    external: true

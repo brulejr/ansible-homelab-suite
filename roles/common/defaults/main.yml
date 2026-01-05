@@ -39,3 +39,21 @@ server_bind_ip: "0.0.0.0"
 # ==========================
 keycloak_fqdn: "keycloak.{{ domain_name }}"
 keycloak_realm: "{{ homelab_name }}"
+
+# ================
+# Port Assignments
+# ================
+app_port_esphome: 6052
+app_port_guacamole: 8101
+app_port_homarr: 7575
+app_port_homeassistant: 8123
+app_port_jellyfin: 8103
+app_port_jenkins: 8104
+app_port_keycloak: 8105
+app_port_nextcloud: 8106
+app_port_nexus: 8107
+app_port_nodered: 1880
+app_port_plantuml: 8108
+app_port_portainer: 9000
+app_port_vaultwarden: 8109
+app_port_wikijs: 8110

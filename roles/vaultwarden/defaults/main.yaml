@@ -1,0 +1,5 @@
+vaultwarden_enabled: true
+
+vaultwarden_stack_name: "vaultwarden"
+vaultwarden_app_dir: "{{ docker_dir }}/vaultwarden"
+vaultwarden_data_dir: "{{ data_dir }}/vaultwarden"

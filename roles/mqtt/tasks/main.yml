@@ -6,7 +6,7 @@
     name: mqtt
     uid: 1883
     create_home: no
-    home: "{{ mqtt_dir }}"
+    home: "{{ mqtt_app_dir }}"
 
 - name: "Ensure mqtt app directory exists"
   ansible.builtin.file:

@@ -1,0 +1,5 @@
+zigbee2mqtt_enabled: true
+
+zigbee2mqtt_stack_name: "zigbee2mqtt"
+zigbee2mqtt_app_dir: "{{ docker_dir }}/zigbee2mqtt"
+zigbee2mqtt_data_dir: "{{ data_dir }}/zigbee2mqtt"

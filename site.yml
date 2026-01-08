@@ -28,9 +28,9 @@
     - common
     - docker
     - watchtower
-    - homeassistant
-    - nodered
+    - esphome
     - mqtt
+    - zigbee2mqtt
 
 - name: Setup the media servers
   hosts: media_servers

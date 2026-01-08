@@ -1,18 +1,28 @@
 ---
 # tasks file for mqtt
 
-- name: Create mqqt user
+- name: Create mqtt user
   ansible.builtin.user:
     name: mqtt
     uid: 1883
     create_home: no
     home: "{{ mqtt_dir }}"
 
-- name: Create mqtt base directory
+- name: "Ensure mqtt app directory exists"
   ansible.builtin.file:
-    path: "{{ mqtt_dir }}"
+    path: "{{ mqtt_app_dir }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
+    owner: mqtt
+    group: mqtt
+    access_time: preserve
+    modification_time: preserve
+
+- name: "Ensure mqtt data directory exists"
+  ansible.builtin.file:
+    path: "{{ mqtt_data_dir }}"
+    state: directory
+    mode: "0755"
     owner: mqtt
     group: mqtt
     access_time: preserve
@@ -22,7 +32,7 @@
   ansible.builtin.file:
     path: "{{ mqtt_config_dir }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
     owner: mqtt
     group: mqtt
     access_time: preserve
@@ -32,7 +42,7 @@
   ansible.builtin.file:
     path: "{{ mqtt_data_dir }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
     owner: mqtt
     group: mqtt
     access_time: preserve
@@ -42,18 +52,11 @@
   ansible.builtin.file:
     path: "{{ mqtt_log_dir }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
     owner: mqtt
     group: mqtt
     access_time: preserve
     modification_time: preserve
-
-- name: copy docker files
-  template:
-    src: templates/{{ item }}
-    dest: "{{ mqtt_dir }}"
-  loop:
-    - docker-compose.yml
 
 - name: copy config files
   template:
@@ -62,8 +65,14 @@
   loop:
     - mosquitto.conf
 
-- name: Run mqtt docker compose
+- name: "Render docker-compose.yml"
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ mqtt_app_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: "Start stack"
   community.docker.docker_compose_v2:
-    project_src: "{{ mqtt_dir }}"
-    files:
-      - docker-compose.yml
+    project_src: "{{ mqtt_app_dir }}"
+    project_name: "{{ mqtt_stack_name }}"
+    state: present

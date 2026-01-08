@@ -1,0 +1,22 @@
+services:
+
+  zigbee2mqtt:
+    image: ghcr.io/koenkk/zigbee2mqtt
+    container_name: zigbee2mqtt
+    restart: unless-stopped
+    ports:
+      - "{{ server_bind_ip }}:{{ app_port_zigbee2mqtt }}:8080"
+    volumes:
+      - "{{ zigbee2mqtt_data_dir }}:/app/data"
+      - /run/udev:/run/udev:ro
+    environment:
+      - TZ=America/New_York
+    networks:
+      - {{ docker_network }}
+
+networks:
+  {{ docker_network }}:
+    external: true
+
+volumes:
+  zigbee2mqtt-db-data:

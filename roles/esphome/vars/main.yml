@@ -1,5 +1,0 @@
----
-# vars file for esphome
-
-esphome_dir: "{{ docker_dir }}/esphome"
-esphome_config_dir: "{{ esphome_dir }}/config"

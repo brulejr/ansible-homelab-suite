@@ -1,35 +1,32 @@
 ---
 # tasks file for esphome
 
-- name: Create esphome base directory
+- name: "Ensure esphome app directory exists"
   ansible.builtin.file:
-    path: "{{ esphome_dir }}"
+    path: "{{ esphome_app_dir }}"
     state: directory
-    mode: '0755'
-    owner: sysadm
-    group: sysadm
-    access_time: preserve
-    modification_time: preserve
+    mode: "0755"
 
-- name: copy esphome files
-  template:
-    src: templates/{{ item }}
-    dest: "{{ esphome_dir }}"
-  loop:
-    - docker-compose.yml
+- name: "Ensure esphome data directory exists"
+  ansible.builtin.file:
+    path: "{{ esphome_data_dir }}"
+    state: directory
+    mode: "0755"
 
 - name: Create esphome config directory
   ansible.builtin.file:
     path: "{{ esphome_config_dir }}"
     state: directory
-    mode: '0755'
-    owner: sysadm
-    group: sysadm
-    access_time: preserve
-    modification_time: preserve
+    mode: "0755"
 
-- name: Run esphome docker compose
+- name: "Render docker-compose.yml"
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ esphome_app_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: "Start stack"
   community.docker.docker_compose_v2:
-    project_src: "{{ esphome_dir }}"
-    files:
-      - docker-compose.yml
+    project_src: "{{ esphome_app_dir }}"
+    project_name: "{{ esphome_stack_name }}"
+    state: present

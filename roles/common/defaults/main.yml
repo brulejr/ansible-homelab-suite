@@ -57,3 +57,4 @@ app_port_plantuml: 8108
 app_port_portainer: 9000
 app_port_vaultwarden: 8109
 app_port_wikijs: 8110
+app_port_zigbee2mqtt: 8200

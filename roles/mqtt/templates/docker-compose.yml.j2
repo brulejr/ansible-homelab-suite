@@ -1,0 +1,21 @@
+services:
+  mqtt:
+    container_name: mqtt
+    image: eclipse-mosquitto:latest
+    restart: unless-stopped
+    ports:
+      - 0.0.0.0:1883:1883
+      - 0.0.0.0:9001:9001    
+    environment:
+      - mqtt_DASHBOARD_USE_PING=true      
+    volumes:
+      - "{{ mqtt_config_dir }}:/mosquitto/config"
+      - "{{ mqtt_data_dir }}:/mosquitto/data"
+      - "{{ mqtt_log_dir }}:/mosquitto/log"
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - {{ docker_network }}
+
+networks:
+  {{ docker_network }}:
+    external: true

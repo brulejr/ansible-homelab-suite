@@ -1,7 +1,0 @@
----
-# vars file for mqtt
-
-mqtt_dir: "{{ docker_dir }}/mqtt"
-mqtt_config_dir: "{{ mqtt_dir }}/config"
-mqtt_data_dir: "{{ mqtt_dir }}/data"
-mqtt_log_dir: "{{ mqtt_dir }}/log"

@@ -1,0 +1,9 @@
+mqtt_enabled: true
+
+mqtt_stack_name: "mqtt"
+mqtt_app_dir: "{{ docker_dir }}/mqtt"
+mqtt_data_dir: "{{ data_dir }}/mqtt"
+
+mqtt_config_dir: "{{ mqtt_app_dir }}/config"
+mqtt_data_dir: "{{ mqtt_data_dir }}/data"
+mqtt_log_dir: "{{ mqtt_data_dir }}/log"

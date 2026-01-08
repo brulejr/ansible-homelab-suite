@@ -1,0 +1,7 @@
+esphome_enabled: true
+
+esphome_stack_name: "esphome"
+esphome_app_dir: "{{ docker_dir }}/esphome"
+esphome_data_dir: "{{ data_dir }}/esphome"
+
+esphome_config_dir: "{{ esphome_app_dir }}/config"

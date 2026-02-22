@@ -61,3 +61,14 @@
     - traefik
     - traefik_apps
     - keycloak
+
+- name: Setup the mini development servers
+  hosts: minidev_servers
+  become: true
+  roles:
+    - common
+    - docker
+    - watchtower
+    - plantuml
+    - traefik
+    - traefik_apps

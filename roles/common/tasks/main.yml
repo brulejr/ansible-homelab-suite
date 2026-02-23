@@ -37,23 +37,18 @@
     name: "{{ packages }}"
     state: present
 
-- name: Ensure venv support exists (Ubuntu 24)
+- name: Ensure venv support exists
   ansible.builtin.apt:
     name:
       - python3-venv
       - python3-pip
     state: present
     update_cache: true
-  when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version | int >= 24
+  when: ansible_distribution == "Ubuntu"
 
-- name: Install pip packages into common venv (works on 22+24)
+- name: Install pip packages into common venv
   ansible.builtin.pip:
     name: "{{ pip_packages }}"
     virtualenv: /opt/common-venv
     virtualenv_command: python3 -m venv
-    state: present
-
-- name: Install pip packages
-  ansible.builtin.pip:
-    name: "{{ pip_packages }}"
     state: present

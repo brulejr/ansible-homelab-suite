@@ -2,13 +2,28 @@
 # roles/traefik_app/tasks/edge_routes.yml
 #
 # Generates Traefik dynamic edge route config in parts:
-#  - 50-edge-route-common.yml      (middlewares only)
-#  - 55-edge-route-<app>.yml       (one router+service per app)
+# - 50-edge-route-common.yml (middlewares only)
+# - 55-edge-route-*.yml (one router+service per app)
 #
 # App definitions are sourced from inventory group_vars/*_servers.yml files
 # as a flattened list: edge_apps: [ {name,fqdn,backend_url,...}, ... ]
 #
-# NOTE: Since filenames are based on edge_apps.name, names must be globally unique.
+# Namespace notes:
+# - Each app may specify:
+#     namespace: "homelab"
+#   OR
+#     namespaces: ["homelab","mobile"]
+# - If neither is set, traefik_apps_default_namespace is used (default "default")
+# - Files are rendered as:
+#     default namespace: 55-edge-route-<name>.yml   (backwards-compatible)
+#     other namespaces: 55-edge-route-<ns>-<name>.yml
+#
+# Filtering:
+# - traefik_apps_namespaces: [] => render all namespaces
+# - traefik_apps_namespaces: ["mobile"] => render only "mobile" apps
+#
+# Pruning:
+# - If filtering, prune ONLY the namespaces being rendered.
 
 - name: Ensure Traefik dynamic config directory exists
   ansible.builtin.file:
@@ -25,20 +40,21 @@
   notify: restart traefik
 
 # 2) Determine which inventory groups contribute edge apps.
-#    By default, include any group ending with "_servers".
-#    You may override with traefik_edge_route_groups in inventory.
+# By default, include any group ending with "_servers".
+# You may override with traefik_edge_route_groups in inventory.
 - name: Determine route source groups
   ansible.builtin.set_fact:
     _edge_route_groups: >-
       {{
         (traefik_edge_route_groups | default([]))
         if (traefik_edge_route_groups | default([]) | length > 0)
-        else (groups | dict2items | map(attribute='key') | select('match', '.*_servers$') | list)
+        else
+        (groups | dict2items | map(attribute='key') | select('match', '.*_servers$') | list)
       }}
   run_once: true
 
 # 3) Collect edge_apps ONCE per group (not once per host).
-#    Because group_vars apply to all hosts, using a representative host avoids duplication.
+# Because group_vars apply to all hosts, using a representative host avoids duplication.
 - name: Initialize aggregated edge apps list
   ansible.builtin.set_fact:
     traefik_edge_apps_all: []
@@ -47,10 +63,7 @@
 - name: Collect edge apps from group_vars via representative host
   ansible.builtin.set_fact:
     traefik_edge_apps_all: >-
-      {{
-        traefik_edge_apps_all
-        + (hostvars[groups[item][0]].edge_apps | default([]))
-      }}
+      {{ traefik_edge_apps_all + (hostvars[groups[item][0]].edge_apps | default([])) }}
   loop: "{{ _edge_route_groups }}"
   when:
     - groups[item] is defined
@@ -63,8 +76,51 @@
     traefik_edge_apps_all: "{{ traefik_edge_apps_all | reject('equalto', None) | list }}"
   run_once: true
 
-# 4) Validate required fields
-- name: Validate edge apps have required fields
+# 4) Expand apps into per-(namespace,app) entries.
+# Supports "namespace" (single) and "namespaces" (multi).
+- name: Expand edge apps across namespaces
+  ansible.builtin.set_fact:
+    traefik_edge_apps_expanded: >-
+      {%- set out = [] -%}
+      {%- for app in traefik_edge_apps_all -%}
+        {%- set ns_list = [] -%}
+
+        {# Prefer "namespaces" if present #}
+        {%- if app.namespaces is defined and (app.namespaces is not string) -%}
+          {%- set ns_list = app.namespaces -%}
+        {%- elif app.namespace is defined -%}
+          {%- set ns_list = [app.namespace] -%}
+        {%- else -%}
+          {%- set ns_list = [traefik_apps_default_namespace] -%}
+        {%- endif -%}
+
+        {%- for ns in (ns_list | default([])) -%}
+          {%- set _ = out.append(app | combine({'_ns': ns})) -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      {{ out }}
+  run_once: true
+
+# 5) Apply namespace filter (if configured)
+- name: Apply namespace filter (if configured)
+  ansible.builtin.set_fact:
+    traefik_edge_apps_selected: >-
+      {{
+        traefik_edge_apps_expanded
+        | selectattr('_ns', 'in', traefik_apps_namespaces)
+        | list
+      }}
+  when: (traefik_apps_namespaces | default([]) | length) > 0
+  run_once: true
+
+- name: Use all expanded apps when no namespace filter is configured
+  ansible.builtin.set_fact:
+    traefik_edge_apps_selected: "{{ traefik_edge_apps_expanded }}"
+  when: (traefik_apps_namespaces | default([]) | length) == 0
+  run_once: true
+
+# 6) Validate required fields and namespace correctness
+- name: Validate edge apps have required fields and valid namespaces
   ansible.builtin.assert:
     that:
       - item.name is defined
@@ -73,21 +129,32 @@
       - item.fqdn | length > 0
       - item.backend_url is defined
       - item.backend_url | length > 0
+      - item._ns is defined
+      - item._ns | length > 0
+      # Namespace slug validation: lowercase letters/numbers/hyphen, cannot start with hyphen
+      - (item._ns | lower) is match('^[a-z0-9][a-z0-9-]*$')
     fail_msg: "Invalid edge app entry: {{ item }}"
-  loop: "{{ traefik_edge_apps_all }}"
+  loop: "{{ traefik_edge_apps_selected }}"
   run_once: true
 
-# 5) Ensure unique names (filenames are based on name)
-- name: Ensure edge app names are globally unique
+# 7) Ensure edge app identity (namespace+name) is unique
+- name: Ensure edge app identity (namespace:name) is unique
   ansible.builtin.assert:
     that:
-      - (traefik_edge_apps_all | map(attribute='name') | list | length)
+      - >
+        (traefik_edge_apps_selected
+         | map(attribute='_ns') | zip(traefik_edge_apps_selected | map(attribute='name'))
+         | map('join', ':')
+         | list | length)
         ==
-        (traefik_edge_apps_all | map(attribute='name') | list | unique | length)
-    fail_msg: "Duplicate edge_apps.name found; without owner, names must be globally unique."
+        (traefik_edge_apps_selected
+         | map(attribute='_ns') | zip(traefik_edge_apps_selected | map(attribute='name'))
+         | map('join', ':')
+         | list | unique | length)
+    fail_msg: "Duplicate edge app found by (namespace:name)."
   run_once: true
 
-# 6) Prune old per-app route files to avoid stale routes
+# 8) Prune old per-app route files to avoid stale routes
 - name: Find existing per-app edge route files
   ansible.builtin.find:
     paths: "{{ traefik_dynamic_dir }}"
@@ -95,23 +162,78 @@
     file_type: file
   register: _edge_route_existing
 
-- name: Remove existing per-app edge route files
+# Determine which namespaces should be pruned:
+# - if filter configured => prune only those namespaces
+# - else => prune all namespaces present in inventory (expanded list)
+- name: Compute per-namespace prune list
+  ansible.builtin.set_fact:
+    _traefik_namespaces_to_prune: >-
+      {{
+        (traefik_apps_namespaces | default([]))
+        if (traefik_apps_namespaces | default([]) | length > 0)
+        else
+        (traefik_edge_apps_expanded | map(attribute='_ns') | unique | list)
+      }}
+    _traefik_known_non_default_namespaces: >-
+      {{
+        (traefik_edge_apps_expanded | map(attribute='_ns') | unique | list)
+        | reject('equalto', traefik_apps_default_namespace)
+        | list
+      }}
+  run_once: true
+
+# Build the file list to delete, scoped to namespaces we are rendering/pruning.
+# Heuristic:
+# - any file named 55-edge-route-<ns>-*.yml belongs to <ns> (for ns != default)
+# - any file named 55-edge-route-*.yml that does NOT begin with a known non-default ns + "-"
+#   is treated as default namespace (legacy format)
+- name: Determine per-app edge route files to delete (namespace-scoped)
+  ansible.builtin.set_fact:
+    _edge_route_files_to_delete: >-
+      {%- set del = [] -%}
+      {%- set ns_prune = _traefik_namespaces_to_prune -%}
+      {%- set known_non_default = _traefik_known_non_default_namespaces -%}
+      {%- for f in (_edge_route_existing.files | default([])) -%}
+        {%- set b = (f.path | basename) -%}
+        {%- if b.startswith('55-edge-route-') and b.endswith('.yml') -%}
+          {%- set stem = b[13:-4] -%} {# strip '55-edge-route-' and '.yml' #}
+          {%- set fns = traefik_apps_default_namespace -%}
+          {%- for ns in known_non_default -%}
+            {%- if stem.startswith(ns ~ '-') -%}
+              {%- set fns = ns -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {%- if fns in ns_prune -%}
+            {%- set _ = del.append(f.path) -%}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ del }}
+  when: traefik_edge_routes_prune | default(true)
+  run_once: true
+
+- name: Remove existing per-app edge route files (namespace-scoped)
   ansible.builtin.file:
-    path: "{{ item.path }}"
+    path: "{{ item }}"
     state: absent
-  loop: "{{ _edge_route_existing.files }}"
+  loop: "{{ _edge_route_files_to_delete | default([]) }}"
   when: traefik_edge_routes_prune | default(true)
   notify: restart traefik
 
-# 7) Render one file per app (no owner in filename)
+# 9) Render one file per (namespace, app)
 - name: Render per-app edge route files
   ansible.builtin.template:
     src: "dynamic/55-edge-route-app.yml.j2"
-    dest: "{{ traefik_dynamic_dir }}/55-edge-route-{{ item.name }}.yml"
+    dest: >-
+      {{
+        traefik_dynamic_dir ~ '/55-edge-route-'
+        ~ ( (item._ns | lower) != (traefik_apps_default_namespace | lower) | ternary((item._ns | lower) ~ '-', '') )
+        ~ item.name ~ '.yml'
+      }}
     mode: "0644"
   vars:
     edge_app: "{{ item }}"
-  loop: "{{ traefik_edge_apps_all }}"
+  loop: "{{ traefik_edge_apps_selected }}"
   run_once: true
   notify: restart traefik
 
@@ -120,6 +242,7 @@
   ansible.builtin.debug:
     msg:
       - "Route groups: {{ _edge_route_groups }}"
-      - "Apps: {{ traefik_edge_apps_all | map(attribute='name') | list }}"
+      - "Selected namespaces: {{ traefik_apps_namespaces | default([]) }}"
+      - "Apps (ns:name): {{ traefik_edge_apps_selected | map(attribute='_ns') | zip(traefik_edge_apps_selected | map(attribute='name')) | map('join', ':') | list }}"
   when: traefik_edge_routes_debug | default(false)
   run_once: true

@@ -1,1 +1,13 @@
 traefik_apps_enabled: true
+
+# Namespace support (optional)
+# If an app does not specify "namespace" or "namespaces", this is used.
+traefik_apps_default_namespace: default
+
+# If empty => render all namespaces (default behavior)
+# If non-empty => render only apps whose namespace is in this list
+traefik_apps_namespaces: []
+
+# If true (default), old per-app route files are removed before rendering.
+# When traefik_apps_namespaces is non-empty, pruning is scoped only to those namespaces.
+traefik_edge_routes_prune: true

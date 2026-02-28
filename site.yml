@@ -71,3 +71,4 @@
     - watchtower
     - plantuml
     - traefik
+    - traefik_apps

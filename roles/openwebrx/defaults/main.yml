@@ -1,0 +1,9 @@
+openwebrx_enabled: true
+
+openwebrx_stack_name: "openwebrx"
+openwebrx_app_dir: "{{ docker_dir }}/openwebrx"
+openwebrx_data_dir: "{{ data_dir }}/openwebrx"
+
+openwebrx_tmpfs: "/tmp/openwebrx"
+
+openwebrx_device: "/dev/bus/usb/002/002"

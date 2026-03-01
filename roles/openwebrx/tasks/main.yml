@@ -1,0 +1,26 @@
+---
+# tasks file for openwebrx
+
+- name: "Ensure openwebrx app directory exists"
+  ansible.builtin.file:
+    path: "{{ openwebrx_app_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "Ensure openwebrx data directory exists"
+  ansible.builtin.file:
+    path: "{{ openwebrx_data_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "Render docker-compose.yml"
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ openwebrx_app_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: "Start docker container"
+  community.docker.docker_compose_v2:
+    project_src: "{{ openwebrx_app_dir }}"
+    project_name: "{{ openwebrx_stack_name }}"
+    state: present

@@ -70,5 +70,7 @@
     - docker
     - watchtower
     - plantuml
+    - mqtt
+    - openwebrx
     - traefik
     - traefik_apps

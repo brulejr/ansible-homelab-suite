@@ -1,0 +1,20 @@
+services:
+
+  openwebrx:
+    image: jketterl/openwebrx:stable
+    container_name: openwebrx
+    restart: unless-stopped
+    volumes:
+      - ./settings:/var/lib/openwebrx
+    ports:
+      - "{{ server_bind_ip }}:{{ app_port_openwebrx }}:8073"
+    devices:
+      - "{{ openwebrx_device }}:{{ openwebrx_device }}"
+    tmpfs:
+      - "{{ openwebrx_tmpfs }}"
+    networks:
+      - {{ docker_network }}
+
+networks:
+  {{ docker_network }}:
+  external: true

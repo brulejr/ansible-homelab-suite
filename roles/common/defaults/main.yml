@@ -53,6 +53,7 @@ app_port_keycloak: 8105
 app_port_nextcloud: 8106
 app_port_nexus: 8107
 app_port_nodered: 1880
+app_port_openwebrx: 8073
 app_port_plantuml: 8108
 app_port_portainer: 9000
 app_port_vaultwarden: 8109

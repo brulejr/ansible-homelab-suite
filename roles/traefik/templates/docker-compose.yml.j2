@@ -29,7 +29,7 @@ services:
       traefik.enable: "true"
 
       traefik.http.routers.traefik.entrypoints: "http"
-      traefik.http.routers.traefik.rule: "Host(`traefik.{{ domain_name }}`)"
+      traefik.http.routers.traefik.rule: "Host(`{{ traefik_dashboard_host | default('traefik.' ~ domain_name) }}`)"
 
       traefik.http.middlewares.traefik-auth.basicauth.users: "{{ traefik_basic_auth_hash }}"
       traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme: "https"
@@ -38,12 +38,17 @@ services:
       traefik.http.routers.traefik.middlewares: "traefik-https-redirect"
 
       traefik.http.routers.traefik-secure.entrypoints: "https"
-      traefik.http.routers.traefik-secure.rule: "Host(`traefik.{{ domain_name }}`)"
+      traefik.http.routers.traefik-secure.rule: "Host(`{{ traefik_dashboard_host | default('traefik.' ~ domain_name) }}`)"
       traefik.http.routers.traefik-secure.middlewares: "traefik-auth"
       traefik.http.routers.traefik-secure.tls: "true"
       traefik.http.routers.traefik-secure.tls.certresolver: "cloudflare"
-      traefik.http.routers.traefik-secure.tls.domains[0].main: "{{ domain_name }}"
-      traefik.http.routers.traefik-secure.tls.domains[0].sans: "*.{{ domain_name }}"
+{% set tls_domains = traefik_tls_domains | default([{'main': domain_name, 'sans': ['*.' ~ domain_name]}]) %}
+{% for d in tls_domains %}
+      traefik.http.routers.traefik-secure.tls.domains[{{ loop.index0 }}].main: "{{ d.main }}"
+{% if d.sans is defined and d.sans %}
+      traefik.http.routers.traefik-secure.tls.domains[{{ loop.index0 }}].sans: "{{ d.sans | join(',') }}"
+{% endif %}
+{% endfor %}
       traefik.http.routers.traefik-secure.service: "api@internal"
 
 networks:

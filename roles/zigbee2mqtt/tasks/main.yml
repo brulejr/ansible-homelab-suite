@@ -19,10 +19,10 @@
     dest: "{{ zigbee2mqtt_app_dir }}/docker-compose.yml"
     mode: "0644"
 
-- name: "Render configuration.yml"
+- name: "Render configuration.yaml"
   ansible.builtin.template:
     src: "configuration.yaml.j2"
-    dest: "{{ zigbee2mqtt_data_dir }}/docker-compose.yml"
+    dest: "{{ zigbee2mqtt_data_dir }}/configuration.yaml"
     mode: "0644"
 
 - name: "Start stack"

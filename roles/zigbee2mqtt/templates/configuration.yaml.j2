@@ -1,9 +1,17 @@
- homeassistant: false
- permit_join: false
- mqtt:
-   base_topic: zigbee2mqtt
-   server: 'mqtt://10.10.100.42:1883'
- serial:
-   port: 'tcp://10.10.30.200:6638'
- frontend:
-   port: 8080
+version: 4
+mqtt:
+  base_topic: zigbee2mqtt
+  server: {{ zigbee_mqtt_server_url }}
+serial:
+  port: {{ zigbee_coordinator_url }}
+  adapter: zstack
+advanced:
+  channel: {{ zigbee_chanel }}
+  network_key: {{ zigbee_network_key }}
+  pan_id: {{ zigbee_pan_id }}
+  ext_pan_id: {{ zigbee_ext_pan_id }}
+  log_level: info
+frontend:
+  enabled: true
+homeassistant:
+  enabled: true

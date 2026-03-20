@@ -1,17 +1,21 @@
 services:
 
   openwebrx:
-    image: jketterl/openwebrx:stable
+    image: slechev/openwebrxplus-softmbe:latest
     container_name: openwebrx
     restart: unless-stopped
+    environment:
+      TZ: America/New_York
+      OPENWEBRX_ADMIN_USER: admin
+      OPENWEBRX_ADMIN_PASSWORD: password
     volumes:
-      - ./settings:/var/lib/openwebrx
+      - "{{ openwebrx_data_dir }}/etc:/etc/openwebrx"
+      - "{{ openwebrx_data_dir }}/var:/var/lib/openwebrx"
+      - "{{ openwebrx_data_dir }}/plugins:/usr/lib/python3/dist-packages/htdocs/plugins"      
     ports:
       - "{{ server_bind_ip }}:{{ app_port_openwebrx }}:8073"
     devices:
       - "{{ openwebrx_device }}:{{ openwebrx_device }}"
-    tmpfs:
-      - "{{ openwebrx_tmpfs }}"
     networks:
       - {{ docker_network }}
 

@@ -44,6 +44,7 @@ keycloak_realm: "{{ homelab_name }}"
 # Port Assignments
 # ================
 app_port_esphome: 6052
+app_port_gitea: 3000
 app_port_guacamole: 8101
 app_port_homarr: 7575
 app_port_homeassistant: 8123

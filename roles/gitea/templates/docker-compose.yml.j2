@@ -1,0 +1,21 @@
+services:
+
+  gitea:
+    image: gitea/gitea:latest
+    container_name: gitea
+    restart: unless-stopped
+    environment:
+      - USER_UID={{ puid }}
+      - USER_GID={{ pgid }}
+    volumes:
+      - "{{ gitea_data_dir }}:/data"
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "{{ server_bind_ip }}:{{ app_port_gitea }}:3000"
+    networks:
+      - {{ docker_network }}
+
+networks:
+  {{ docker_network }}:
+    external: true

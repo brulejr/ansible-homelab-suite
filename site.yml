@@ -69,6 +69,7 @@
     - common
     - docker
     - watchtower
+    - gitea
     - plantuml
     - mqtt
     - openwebrx

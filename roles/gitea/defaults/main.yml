@@ -1,0 +1,5 @@
+gitea_enabled: true
+
+gitea_stack_name: "gitea"
+gitea_app_dir: "{{ docker_dir }}/gitea"
+gitea_data_dir: "{{ data_dir }}/gitea"

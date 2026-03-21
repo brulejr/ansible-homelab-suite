@@ -1,0 +1,32 @@
+---
+# tasks file for gitea
+
+- name: "Ensure gitea app directory exists"
+  ansible.builtin.file:
+    path: "{{ gitea_app_dir }}"
+    state: directory
+    owner: "{{ puid }}"
+    group: "{{ pgid }}"
+    mode: "0755"
+
+- name: "Ensure gitea data directory exists"
+  ansible.builtin.file:
+    path: "{{ gitea_data_dir }}"
+    state: directory
+    owner: "{{ puid }}"
+    group: "{{ pgid }}"
+    mode: "0755"
+
+- name: "Render docker-compose.yml"
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ gitea_app_dir }}/docker-compose.yml"
+    owner: "{{ puid }}"
+    group: "{{ pgid }}"
+    mode: "0644"
+
+- name: "Start docker container"
+  community.docker.docker_compose_v2:
+    project_src: "{{ gitea_app_dir }}"
+    project_name: "{{ gitea_stack_name }}"
+    state: present

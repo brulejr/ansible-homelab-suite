@@ -1,12 +1,11 @@
 services:
-
   db:
-    image: postgres:15-alpine
-    container_name: wikijs-postgres
+    image: {{ wikijs_postgres_image }}
+    container_name: {{ wikijs_postgres_container_name }}
     environment:
-      POSTGRES_DB: wiki
-      POSTGRES_PASSWORD: W1k1jsR0cks
-      POSTGRES_USER: wikijs
+      POSTGRES_DB: {{ wikijs_postgres_db }}
+      POSTGRES_PASSWORD: {{ wikijs_postgres_password }}
+      POSTGRES_USER: {{ wikijs_postgres_user }}
     logging:
       driver: "none"
     restart: unless-stopped
@@ -24,9 +23,9 @@ services:
       DB_TYPE: postgres
       DB_HOST: db
       DB_PORT: 5432
-      DB_USER: wikijs
-      DB_PASS: W1k1jsR0cks
-      DB_NAME: wiki
+      DB_USER: {{ wikijs_postgres_user }}
+      DB_PASS: {{ wikijs_postgres_password }}
+      DB_NAME: {{ wikijs_postgres_db }}
     restart: unless-stopped
     ports:
       - "{{ server_bind_ip }}:{{ app_port_wikijs }}:3000"

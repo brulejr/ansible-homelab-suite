@@ -3,6 +3,18 @@ wikijs_enabled: true
 wikijs_stack_name: "wikijs"
 wikijs_app_dir: "{{ docker_dir }}/wikijs"
 wikijs_data_dir: "{{ data_dir }}/wikijs"
-
 wikijs_ssh_dir: "{{ wikijs_app_dir }}/ssh"
 wikijs_ssh_key_filename: wikijs_rsa
+
+# Supported values: postgres, sqlite3
+wikijs_database: "postgres"
+
+# Postgres settings (used only when wikijs_database == 'postgres')
+wikijs_postgres_image: "postgres:15-alpine"
+wikijs_postgres_container_name: "wikijs-postgres"
+wikijs_postgres_db: "wiki"
+wikijs_postgres_user: "wikijs"
+wikijs_postgres_password: "W1k1jsR0cks"
+
+# SQLite settings (used only when wikijs_database == 'sqlite3')
+wikijs_sqlite_filepath: "/wiki/data/db.sqlite"

@@ -1,0 +1,19 @@
+services:
+  wikijs:
+    image: ghcr.io/requarks/wiki:2
+    container_name: wikijs
+    environment:
+      DB_TYPE: sqlite
+      DB_FILEPATH: {{ wikijs_sqlite_filepath }}
+    restart: unless-stopped
+    ports:
+      - "{{ server_bind_ip }}:{{ app_port_wikijs }}:3000"
+    volumes:
+      - "{{ wikijs_ssh_dir }}:/wiki/ssh:ro"
+      - "{{ wikijs_data_dir }}:/wiki/data"
+    networks:
+      - {{ docker_network }}
+
+networks:
+  {{ docker_network }}:
+    external: true

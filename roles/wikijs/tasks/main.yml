@@ -1,13 +1,19 @@
 ---
 # tasks file for wikijs
 
-- name: "Ensure wikijs app directory exists"
+- name: Validate wikijs database selection
+  ansible.builtin.assert:
+    that:
+      - wikijs_database in ['postgres', 'sqlite3']
+    fail_msg: "wikijs_database must be either 'postgres' or 'sqlite3'"
+
+- name: Ensure wikijs app directory exists
   ansible.builtin.file:
     path: "{{ wikijs_app_dir }}"
     state: directory
     mode: "0755"
 
-- name: "Ensure wikijs data directory exists"
+- name: Ensure wikijs data directory exists
   ansible.builtin.file:
     path: "{{ wikijs_data_dir }}"
     state: directory
@@ -31,13 +37,18 @@
     force: no
   register: generated_key
 
-- name: "Render docker-compose.yml"
+- name: Select wikijs compose template
+  ansible.builtin.set_fact:
+    wikijs_compose_template: >-
+      {{ 'docker-compose.postgres.yml.j2' if wikijs_database == 'postgres' else 'docker-compose.sqlite3.yml.j2' }}
+
+- name: Render docker-compose.yml
   ansible.builtin.template:
-    src: "docker-compose.yml.j2"
+    src: "{{ wikijs_compose_template }}"
     dest: "{{ wikijs_app_dir }}/docker-compose.yml"
     mode: "0644"
 
-- name: "Start stack"
+- name: Start stack
   community.docker.docker_compose_v2:
     project_src: "{{ wikijs_app_dir }}"
     project_name: "{{ wikijs_stack_name }}"

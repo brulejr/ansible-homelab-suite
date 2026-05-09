@@ -1,4 +1,36 @@
 ---
-# defaults file for watchtower
+watchtower_enabled: true
 
-docker_network: homelab
+# Identity
+watchtower_stack_name: watchtower
+watchtower_container_name: watchtower
+
+# Paths
+watchtower_app_dir: "{{ docker_dir }}/watchtower"
+
+# Image/runtime
+watchtower_image: "containrrr/watchtower:latest"
+watchtower_restart_policy: unless-stopped
+
+# Networking
+watchtower_docker_network: "{{ docker_network }}"
+
+# Behavior
+watchtower_cleanup: true
+watchtower_log_level: info
+watchtower_poll_interval: 86400
+watchtower_label_enable: false
+watchtower_rolling_restart: true
+
+# Docker API
+watchtower_docker_api_version: "1.52"
+
+# Optional registry auth config
+watchtower_registry_auth_enabled: false
+watchtower_registry_config_path: ""
+
+# Optional explicit container list
+watchtower_monitor_containers: []
+
+# Verification
+watchtower_verify_enabled: true

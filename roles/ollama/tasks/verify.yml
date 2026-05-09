@@ -1,0 +1,23 @@
+---
+- name: Wait for Ollama API
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ ollama_host_port }}/api/tags"
+    method: GET
+    status_code: 200
+  register: ollama_api_check
+  retries: 20
+  delay: 3
+  until: ollama_api_check.status == 200
+  when: ollama_publish_enabled | bool
+
+- name: Check Ollama container state
+  community.docker.docker_container_info:
+    name: "{{ ollama_container_name }}"
+  register: ollama_container_info
+
+- name: Assert Ollama container is running
+  ansible.builtin.assert:
+    that:
+      - ollama_container_info.exists
+      - ollama_container_info.container.State.Running
+    fail_msg: "Ollama container is not running"

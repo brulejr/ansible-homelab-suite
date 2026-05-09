@@ -1,0 +1,36 @@
+---
+services:
+  ollama:
+    image: "{{ ollama_image }}"
+    container_name: "{{ ollama_container_name }}"
+    restart: "{{ ollama_restart_policy }}"
+    volumes:
+      - "{{ ollama_data_dir }}:/root/.ollama"
+{% if ollama_publish_enabled | bool %}
+    ports:
+      - "{{ ollama_bind_ip }}:{{ ollama_host_port }}:{{ ollama_container_port }}"
+{% endif %}
+    networks:
+      - {{ ollama_docker_network }}
+{% if ollama_environment | length > 0 %}
+    environment:
+{% for key, value in ollama_environment.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+{% if ollama_gpu_enabled | bool %}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      NVIDIA_VISIBLE_DEVICES: "{{ ollama_nvidia_visible_devices }}"
+      NVIDIA_DRIVER_CAPABILITIES: "{{ ollama_nvidia_driver_capabilities }}"
+{% endif %}
+
+networks:
+  {{ ollama_docker_network }}:
+    external: true

@@ -1,0 +1,11 @@
+---
+- name: Setup the home automation servers
+  hosts: ha_servers
+  become: true
+  roles:
+    - common
+    - docker
+    - watchtower
+    - esphome
+    - mqtt
+    - zigbee2mqtt

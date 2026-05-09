@@ -1,0 +1,6 @@
+---
+- name: Restart ollama
+  community.docker.docker_compose_v2:
+    project_src: "{{ ollama_app_dir }}"
+    project_name: "{{ ollama_stack_name }}"
+    state: restarted

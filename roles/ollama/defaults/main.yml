@@ -1,0 +1,33 @@
+---
+ollama_enabled: true
+
+# Identity
+ollama_stack_name: ollama
+ollama_container_name: ollama
+
+# Paths
+ollama_app_dir: "{{ docker_dir }}/ollama"
+ollama_data_dir: "{{ data_dir }}/ollama"
+
+# Image/runtime
+ollama_image: "ollama/ollama:latest"
+ollama_restart_policy: unless-stopped
+ollama_container_port: 11434
+
+# Networking
+ollama_docker_network: "{{ docker_network }}"
+ollama_publish_enabled: false
+ollama_bind_ip: "{{ server_bind_ip | default('127.0.0.1') }}"
+ollama_host_port: 11434
+
+# GPU support - disabled by default
+ollama_gpu_enabled: false
+ollama_nvidia_visible_devices: "all"
+ollama_nvidia_driver_capabilities: "compute,utility"
+
+# Environment
+ollama_environment: {}
+
+# Verification
+ollama_verify_enabled: true
+ollama_verify_timeout: 120

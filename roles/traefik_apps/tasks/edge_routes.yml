@@ -224,15 +224,16 @@
 - name: Render per-app edge route files
   ansible.builtin.template:
     src: "dynamic/55-edge-route-app.yml.j2"
-    dest: >-
-      {{
-        traefik_dynamic_dir ~ '/55-edge-route-'
-        ~ ( (item._ns | lower) != (traefik_apps_default_namespace | lower) | ternary((item._ns | lower) ~ '-', '') )
-        ~ item.name ~ '.yml'
-      }}
+    dest: "{{ traefik_dynamic_dir }}/55-edge-route-{{ traefik_edge_route_file_prefix }}{{ item.name }}.yml"
     mode: "0644"
   vars:
     edge_app: "{{ item }}"
+    traefik_edge_route_file_prefix: >-
+      {{
+        ((item._ns | lower) ~ '-')
+        if (item._ns | lower) != (traefik_apps_default_namespace | lower)
+        else ''
+      }}
   loop: "{{ traefik_edge_apps_selected }}"
   run_once: true
   notify: restart traefik

@@ -1,0 +1,25 @@
+---
+services:
+  openwebui:
+    image: "{{ openwebui_image }}"
+    container_name: "{{ openwebui_container_name }}"
+    restart: "{{ openwebui_restart_policy }}"
+    volumes:
+      - "{{ openwebui_data_dir }}:/app/backend/data"
+    ports:
+      - "{{ openwebui_bind_ip }}:{{ openwebui_host_port }}:{{ openwebui_container_port }}"
+    environment:
+      OLLAMA_BASE_URL: "{{ openwebui_ollama_base_url }}"
+      WEBUI_AUTH: "{{ openwebui_webui_auth | string | lower }}"
+      WEBUI_SECRET_KEY: "{{ openwebui_secret_key }}"
+{% for key, value in openwebui_environment.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+    networks:
+      - {{ openwebui_docker_network }}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  {{ openwebui_docker_network }}:
+    external: true

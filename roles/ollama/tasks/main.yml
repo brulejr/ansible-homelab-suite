@@ -1,0 +1,14 @@
+---
+- name: Validate ollama configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: ollama_enabled | bool
+
+- name: Install and configure ollama
+  ansible.builtin.include_tasks: install.yml
+  when: ollama_enabled | bool
+
+- name: Verify ollama
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - ollama_enabled | bool
+    - ollama_verify_enabled | bool

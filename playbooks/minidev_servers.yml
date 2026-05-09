@@ -1,0 +1,15 @@
+---
+- name: Setup the mini development servers
+  hosts: minidev_servers
+  become: true
+  roles:
+    - common
+    - docker
+    - watchtower
+    - gitea
+    - plantuml
+    - mqtt
+    - openwebrx
+    - traefik
+    - traefik_apps
+    - wikijs

@@ -1,0 +1,10 @@
+---
+- name: Setup the devops servers
+  hosts: devops_servers
+  become: true
+  roles:
+    - common
+    - docker
+    - watchtower
+    - nexus
+    - plantuml

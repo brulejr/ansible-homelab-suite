@@ -17,7 +17,7 @@ openwebui_container_port: 8080
 # Networking
 openwebui_docker_network: "{{ docker_network }}"
 openwebui_bind_ip: "{{ server_bind_ip }}"
-openwebui_host_port: "{{ app_port_openwebui | default(3000) }}"
+openwebui_host_port: "{{ app_port_openwebui | default(8120) }}"
 
 # Ollama integration
 openwebui_ollama_base_url: "http://ollama:11434"

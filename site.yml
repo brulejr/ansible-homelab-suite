@@ -1,9 +1,9 @@
 ---
-- import_playbook: admin_servers.yml
-- import_playbook: ai_servers.yml
-- import_playbook: devops_servers.yml
-- import_playbook: ha_servers.yml
-- import_playbook: id_servers.yml
-- import_playbook: media_servers.yml
-- import_playbook: minidev_servers.yml
-- import_playbook: network_servers.yml
+- import_playbook: playbooks/admin_servers.yml
+- import_playbook: playbooks/ai_servers.yml
+- import_playbook: playbooks/devops_servers.yml
+- import_playbook: playbooks/ha_servers.yml
+- import_playbook: playbooks/id_servers.yml
+- import_playbook: playbooks/media_servers.yml
+- import_playbook: playbooks/minidev_servers.yml
+- import_playbook: playbooks/network_servers.yml

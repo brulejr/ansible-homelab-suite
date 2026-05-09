@@ -1,0 +1,9 @@
+---
+- name: Setup the network servers
+  hosts: network_servers
+  become: true
+  roles:
+    - common
+    - docker
+    - watchtower
+    - guacamole

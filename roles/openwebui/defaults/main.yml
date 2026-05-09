@@ -1,0 +1,32 @@
+---
+openwebui_enabled: true
+
+# Identity
+openwebui_stack_name: openwebui
+openwebui_container_name: openwebui
+
+# Paths
+openwebui_app_dir: "{{ docker_dir }}/openwebui"
+openwebui_data_dir: "{{ data_dir }}/openwebui"
+
+# Image/runtime
+openwebui_image: "ghcr.io/open-webui/open-webui:main"
+openwebui_restart_policy: unless-stopped
+openwebui_container_port: 8080
+
+# Networking
+openwebui_docker_network: "{{ docker_network }}"
+openwebui_bind_ip: "{{ server_bind_ip }}"
+openwebui_host_port: "{{ app_port_openwebui | default(8120) }}"
+
+# Ollama integration
+openwebui_ollama_base_url: "http://ollama:11434"
+
+# App config
+openwebui_webui_auth: true
+openwebui_secret_key: ""
+openwebui_environment: {}
+
+# Verification
+openwebui_verify_enabled: true
+openwebui_verify_timeout: 120

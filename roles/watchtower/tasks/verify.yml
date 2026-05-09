@@ -1,0 +1,12 @@
+---
+- name: Check Watchtower container state
+  community.docker.docker_container_info:
+    name: "{{ watchtower_container_name }}"
+  register: watchtower_container_info
+
+- name: Assert Watchtower container is running
+  ansible.builtin.assert:
+    that:
+      - watchtower_container_info.exists
+      - watchtower_container_info.container.State.Running
+    fail_msg: "Watchtower container is not running"

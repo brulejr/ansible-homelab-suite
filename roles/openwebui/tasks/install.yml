@@ -1,0 +1,32 @@
+---
+- name: Ensure Open WebUI app directory exists
+  ansible.builtin.file:
+    path: "{{ openwebui_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure Open WebUI data directory exists
+  ansible.builtin.file:
+    path: "{{ openwebui_data_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render Open WebUI docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ openwebui_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Restart openwebui
+
+- name: Start Open WebUI stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ openwebui_app_dir }}"
+    project_name: "{{ openwebui_stack_name }}"
+    state: present
+    pull: always

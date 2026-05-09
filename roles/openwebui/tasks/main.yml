@@ -1,0 +1,14 @@
+---
+- name: Validate Open WebUI configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: openwebui_enabled | bool
+
+- name: Install and configure Open WebUI
+  ansible.builtin.include_tasks: install.yml
+  when: openwebui_enabled | bool
+
+- name: Verify Open WebUI
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - openwebui_enabled | bool
+    - openwebui_verify_enabled | bool

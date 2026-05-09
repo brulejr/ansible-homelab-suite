@@ -1,0 +1,30 @@
+---
+services:
+  watchtower:
+    image: "{{ watchtower_image }}"
+    container_name: "{{ watchtower_container_name }}"
+    restart: "{{ watchtower_restart_policy }}"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+{% if watchtower_registry_auth_enabled | bool %}
+      - "{{ watchtower_registry_config_path }}:/config.json:ro"
+{% endif %}
+    environment:
+      WATCHTOWER_CLEANUP: "{{ watchtower_cleanup | string | lower }}"
+      WATCHTOWER_LOG_LEVEL: "{{ watchtower_log_level }}"
+      WATCHTOWER_POLL_INTERVAL: "{{ watchtower_poll_interval | string }}"
+      WATCHTOWER_LABEL_ENABLE: "{{ watchtower_label_enable | string | lower }}"
+      WATCHTOWER_ROLLING_RESTART: "{{ watchtower_rolling_restart | string | lower }}"
+      DOCKER_API_VERSION: "{{ watchtower_docker_api_version }}"
+    networks:
+      - {{ watchtower_docker_network }}
+{% if watchtower_monitor_containers | length > 0 %}
+    command:
+{% for container_name in watchtower_monitor_containers %}
+      - "{{ container_name }}"
+{% endfor %}
+{% endif %}
+
+networks:
+  {{ watchtower_docker_network }}:
+    external: true

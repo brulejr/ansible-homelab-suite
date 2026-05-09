@@ -8,6 +8,8 @@
 {% set fqdn = edge_app.fqdn %}
 {% set redirect_http = edge_app.redirect_http | default(true) %}
 {% set backend_url = edge_app.backend_url %}
+{% set streaming = edge_app.streaming | default(false) | bool %}
+{% set middlewares = edge_app.middlewares | default([]) %}
 
 http:
   routers:
@@ -23,10 +25,20 @@ http:
       entryPoints: [ "https" ]
       tls: {}
       service: "{{ app_id }}"
+{% if middlewares | length > 0 %}
+      middlewares:
+{% for middleware in middlewares %}
+        - "{{ middleware }}"
+{% endfor %}
+{% endif %}
 
   services:
     {{ app_id }}:
       loadBalancer:
         passHostHeader: true
+{% if streaming %}
+        responseForwarding:
+          flushInterval: "100ms"
+{% endif %}
         servers:
           - url: "{{ backend_url }}"

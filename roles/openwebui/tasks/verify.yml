@@ -1,0 +1,43 @@
+---
+- name: Check Open WebUI container state
+  community.docker.docker_container_info:
+    name: "{{ openwebui_container_name }}"
+  register: openwebui_container_info
+
+- name: Assert Open WebUI container exists
+  ansible.builtin.assert:
+    that:
+      - openwebui_container_info.exists
+    fail_msg: "Open WebUI container does not exist"
+
+- name: Assert Open WebUI container is running
+  ansible.builtin.assert:
+    that:
+      - openwebui_container_info.container.State.Running
+    fail_msg: >-
+      Open WebUI container is not running.
+      Current status={{ openwebui_container_info.container.State.Status | default('unknown') }},
+      exit_code={{ openwebui_container_info.container.State.ExitCode | default('unknown') }},
+      error={{ openwebui_container_info.container.State.Error | default('') }}
+
+- name: Set Open WebUI verification host
+  ansible.builtin.set_fact:
+    openwebui_verify_host: >-
+      {{
+        '127.0.0.1'
+        if openwebui_bind_ip in ['0.0.0.0', '127.0.0.1']
+        else openwebui_bind_ip
+      }}
+
+- name: Wait for Open WebUI HTTP endpoint
+  ansible.builtin.uri:
+    url: "http://{{ openwebui_verify_host }}:{{ openwebui_host_port }}"
+    method: GET
+    status_code:
+      - 200
+      - 302
+      - 403
+  register: openwebui_http_check
+  retries: 30
+  delay: 3
+  until: openwebui_http_check.status in [200, 302, 403]

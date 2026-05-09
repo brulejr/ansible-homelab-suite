@@ -1,0 +1,6 @@
+---
+- name: Restart plantuml
+  community.docker.docker_compose_v2:
+    project_src: "{{ plantuml_app_dir }}"
+    project_name: "{{ plantuml_stack_name }}"
+    state: restarted

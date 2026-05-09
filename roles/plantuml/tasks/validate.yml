@@ -1,0 +1,19 @@
+---
+- name: Assert PlantUML stack name is defined
+  ansible.builtin.assert:
+    that:
+      - plantuml_stack_name | length > 0
+    fail_msg: "plantuml_stack_name must be defined"
+
+- name: Assert PlantUML bind IP is defined
+  ansible.builtin.assert:
+    that:
+      - plantuml_bind_ip | length > 0
+    fail_msg: "plantuml_bind_ip must be defined"
+
+- name: Assert PlantUML host port is valid
+  ansible.builtin.assert:
+    that:
+      - plantuml_host_port | int > 0
+      - plantuml_host_port | int < 65536
+    fail_msg: "plantuml_host_port must be a valid TCP port"

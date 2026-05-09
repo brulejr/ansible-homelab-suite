@@ -1,0 +1,24 @@
+---
+- name: Assert Watchtower stack name is defined
+  ansible.builtin.assert:
+    that:
+      - watchtower_stack_name | length > 0
+    fail_msg: "watchtower_stack_name must be defined"
+
+- name: Assert Watchtower app directory is defined
+  ansible.builtin.assert:
+    that:
+      - watchtower_app_dir | length > 0
+    fail_msg: "watchtower_app_dir must be defined"
+
+- name: Assert Watchtower poll interval is valid
+  ansible.builtin.assert:
+    that:
+      - watchtower_poll_interval | int > 0
+    fail_msg: "watchtower_poll_interval must be greater than 0"
+
+- name: Assert registry config path is defined when registry auth is enabled
+  ansible.builtin.assert:
+    that:
+      - not watchtower_registry_auth_enabled or (watchtower_registry_config_path | length > 0)
+    fail_msg: "watchtower_registry_config_path must be defined when watchtower_registry_auth_enabled is true"

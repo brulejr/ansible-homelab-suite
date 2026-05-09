@@ -1,5 +1,23 @@
+---
 plantuml_enabled: true
 
-plantuml_stack_name: "plantuml"
+# Identity
+plantuml_stack_name: plantuml
+plantuml_container_name: plantuml
+
+# Paths
 plantuml_app_dir: "{{ docker_dir }}/plantuml"
 plantuml_data_dir: "{{ data_dir }}/plantuml"
+
+# Image/runtime
+plantuml_image: "plantuml/plantuml-server:jetty"
+plantuml_restart_policy: unless-stopped
+plantuml_container_port: 8080
+
+# Networking
+plantuml_docker_network: "{{ docker_network }}"
+plantuml_bind_ip: "{{ server_bind_ip }}"
+plantuml_host_port: "{{ app_port_plantuml | default(8080) }}"
+
+# Verification
+plantuml_verify_enabled: true

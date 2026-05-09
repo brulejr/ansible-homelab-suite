@@ -1,0 +1,24 @@
+---
+- name: Assert Ollama stack name is defined
+  ansible.builtin.assert:
+    that:
+      - ollama_stack_name | length > 0
+    fail_msg: "ollama_stack_name must be defined"
+
+- name: Assert Ollama app directory is defined
+  ansible.builtin.assert:
+    that:
+      - ollama_app_dir | length > 0
+    fail_msg: "ollama_app_dir must be defined"
+
+- name: Assert Ollama data directory is defined
+  ansible.builtin.assert:
+    that:
+      - ollama_data_dir | length > 0
+    fail_msg: "ollama_data_dir must be defined"
+
+- name: Assert Ollama host port is valid when publishing is enabled
+  ansible.builtin.assert:
+    that:
+      - not ollama_publish_enabled or (ollama_host_port | int > 0 and ollama_host_port | int < 65536)
+    fail_msg: "ollama_host_port must be a valid TCP port when ollama_publish_enabled is true"

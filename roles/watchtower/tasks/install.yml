@@ -1,0 +1,24 @@
+---
+- name: Ensure Watchtower app directory exists
+  ansible.builtin.file:
+    path: "{{ watchtower_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render Watchtower docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ watchtower_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart watchtower
+
+- name: Start Watchtower stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ watchtower_app_dir }}"
+    project_name: "{{ watchtower_stack_name }}"
+    state: present
+    pull: always

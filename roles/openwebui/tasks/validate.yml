@@ -1,0 +1,37 @@
+---
+- name: Assert Open WebUI stack name is defined
+  ansible.builtin.assert:
+    that:
+      - openwebui_stack_name | length > 0
+    fail_msg: "openwebui_stack_name must be defined"
+
+- name: Assert Open WebUI app directory is defined
+  ansible.builtin.assert:
+    that:
+      - openwebui_app_dir | length > 0
+    fail_msg: "openwebui_app_dir must be defined"
+
+- name: Assert Open WebUI data directory is defined
+  ansible.builtin.assert:
+    that:
+      - openwebui_data_dir | length > 0
+    fail_msg: "openwebui_data_dir must be defined"
+
+- name: Assert Open WebUI bind IP is defined
+  ansible.builtin.assert:
+    that:
+      - openwebui_bind_ip | length > 0
+    fail_msg: "openwebui_bind_ip must be defined"
+
+- name: Assert Open WebUI host port is valid
+  ansible.builtin.assert:
+    that:
+      - openwebui_host_port | int > 0
+      - openwebui_host_port | int < 65536
+    fail_msg: "openwebui_host_port must be a valid TCP port"
+
+- name: Assert Open WebUI secret key is defined
+  ansible.builtin.assert:
+    that:
+      - openwebui_secret_key | length > 0
+    fail_msg: "openwebui_secret_key must be defined, preferably from vaulted private inventory"

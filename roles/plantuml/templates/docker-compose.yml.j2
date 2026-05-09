@@ -1,14 +1,14 @@
+---
 services:
-
-  plantuml-server:
-    image: plantuml/plantuml-server:jetty
-    container_name: plantuml
-    restart: unless-stopped
+  plantuml:
+    image: "{{ plantuml_image }}"
+    container_name: "{{ plantuml_container_name }}"
+    restart: "{{ plantuml_restart_policy }}"
     ports:
-      - "{{ server_bind_ip }}:{{ app_port_plantuml }}:8080"
+      - "{{ plantuml_bind_ip }}:{{ plantuml_host_port }}:{{ plantuml_container_port }}"
     networks:
-      - {{ docker_network }}
+      - {{ plantuml_docker_network }}
 
 networks:
-  {{ docker_network }}:
+  {{ plantuml_docker_network }}:
     external: true

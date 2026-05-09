@@ -1,0 +1,10 @@
+---
+- name: Setup AI servers
+  hosts: ai_servers
+  become: true
+  roles:
+    - common
+    - docker
+    - watchtower
+    - ollama
+    - openwebui

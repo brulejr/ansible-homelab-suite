@@ -1,78 +1,9 @@
 ---
-- name: Setup the admin servers
-  hosts: admin_servers
-  become: true
-  roles:
-    - common
-    - docker
-    - watchtower
-    - homarr
-    - wikijs
-    - vaultwarden
-    - nextcloud
-
-- name: Setup the devops servers
-  hosts: devops_servers
-  become: true
-  roles:
-    - common
-    - docker
-    - watchtower
-    - nexus
-    - plantuml
-
-- name: Setup the home automation servers
-  hosts: ha_servers
-  become: true
-  roles:
-    - common
-    - docker
-    - watchtower
-    - esphome
-    - mqtt
-    - zigbee2mqtt
-
-- name: Setup the media servers
-  hosts: media_servers
-  become: true
-  roles:
-    - common
-    - docker
-    - watchtower
-    - jellyfin
-
-- name: Setup the network servers
-  hosts: network_servers
-  become: true
-  roles:
-    - common
-    - docker
-    - watchtower
-    - guacamole
-
-- name: Setup the identification servers
-  hosts: id_servers
-  become: true
-  roles:
-    - common
-    - docker
-    - watchtower
-    - portainer
-    - traefik
-    - traefik_apps
-    - keycloak
-
-- name: Setup the mini development servers
-  hosts: minidev_servers
-  become: true
-  roles:
-    - common
-    - docker
-    - watchtower
-    - gitea
-    - plantuml
-    - mqtt
-    - openwebrx
-    - traefik
-    - traefik_apps
-    - wikijs
+- import_playbook: admin_servers.yml
+- import_playbook: ai_servers.yml
+- import_playbook: devops_servers.yml
+- import_playbook: ha_servers.yml
+- import_playbook: id_servers.yml
+- import_playbook: media_servers.yml
+- import_playbook: minidev_servers.yml
+- import_playbook: network_servers.yml

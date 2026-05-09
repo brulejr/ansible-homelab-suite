@@ -1,5 +1,32 @@
+---
 homarr_enabled: true
 
-homarr_stack_name: "homarr"
+# Identity
+homarr_stack_name: homarr
+homarr_container_name: homarr
+
+# Paths
 homarr_app_dir: "{{ docker_dir }}/homarr"
 homarr_data_dir: "{{ data_dir }}/homarr"
+homarr_config_dir: "{{ homarr_data_dir }}/configs"
+homarr_icons_dir: "{{ homarr_data_dir }}/icons"
+
+# Image/runtime
+homarr_image: "ghcr.io/ajnart/homarr:latest"
+homarr_restart_policy: unless-stopped
+homarr_container_port: 7575
+
+# Networking
+homarr_docker_network: "{{ docker_network }}"
+homarr_bind_ip: "{{ server_bind_ip }}"
+homarr_host_port: "{{ app_port_homarr }}"
+
+# Docker socket
+homarr_mount_docker_socket: true
+
+# Environment
+homarr_environment: {}
+
+# Verification
+homarr_verify_enabled: true
+homarr_verify_timeout: 120

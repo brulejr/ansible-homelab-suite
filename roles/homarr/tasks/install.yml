@@ -1,0 +1,40 @@
+---
+- name: Ensure Homarr app directory exists
+  ansible.builtin.file:
+    path: "{{ homarr_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure Homarr config directory exists
+  ansible.builtin.file:
+    path: "{{ homarr_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure Homarr icons directory exists
+  ansible.builtin.file:
+    path: "{{ homarr_icons_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render Homarr docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ homarr_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart homarr
+
+- name: Start Homarr stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ homarr_app_dir }}"
+    project_name: "{{ homarr_stack_name }}"
+    state: present
+    pull: always

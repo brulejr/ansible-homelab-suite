@@ -1,0 +1,24 @@
+---
+services:
+  nextcloud:
+    image: "{{ nextcloud_image }}"
+    container_name: "{{ nextcloud_container_name }}"
+    restart: "{{ nextcloud_restart_policy }}"
+    ports:
+      - "{{ nextcloud_bind_ip }}:{{ nextcloud_host_port }}:{{ nextcloud_container_port }}"
+    environment:
+      PUID: "{{ nextcloud_puid }}"
+      PGID: "{{ nextcloud_pgid }}"
+      TZ: "{{ nextcloud_timezone }}"
+{% for key, value in nextcloud_environment.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+    volumes:
+      - "{{ nextcloud_config_dir }}:/config"
+      - "{{ nextcloud_user_data_dir }}:/data"
+    networks:
+      - {{ nextcloud_docker_network }}
+
+networks:
+  {{ nextcloud_docker_network }}:
+    external: true

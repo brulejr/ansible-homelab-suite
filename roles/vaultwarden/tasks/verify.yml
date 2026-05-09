@@ -1,0 +1,16 @@
+---
+- name: Wait for Vaultwarden HTTP endpoint
+  ansible.builtin.uri:
+    url: "http://{{ vaultwarden_bind_ip }}:{{ vaultwarden_host_port }}"
+    method: GET
+    status_code:
+      - 200
+      - 301
+      - 302
+      - 401
+      - 404
+    validate_certs: false
+  register: vaultwarden_verify_result
+  retries: "{{ (vaultwarden_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
+  delay: 5
+  until: vaultwarden_verify_result.status in [200, 301, 302, 401, 404]

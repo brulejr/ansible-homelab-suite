@@ -1,18 +1,14 @@
 ---
-# tasks file for homarr
+- name: Validate Homarr configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: homarr_enabled | bool
 
-- name: Create homarr container
-  community.docker.docker_container:
-    name: homarr
-    image: ghcr.io/ajnart/homarr:latest
-    state: started
-    restart_policy: unless-stopped
-    pull: true
-    ports:
-      - "{{ server_bind_ip }}:{{ app_port_homarr }}:7575"
-    networks:
-      - name: "{{ docker_network }}"
-    volumes:
-      - "{{ homarr_data_dir }}/configs:/app/data/configs"
-      - "{{ homarr_data_dir }}/icons:/app/public/icons"
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+- name: Install and configure Homarr
+  ansible.builtin.include_tasks: install.yml
+  when: homarr_enabled | bool
+
+- name: Verify Homarr
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - homarr_enabled | bool
+    - homarr_verify_enabled | bool

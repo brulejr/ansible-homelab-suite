@@ -1,28 +1,14 @@
 ---
-# tasks file for vaultwarden
+- name: Validate Vaultwarden configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: vaultwarden_enabled | bool
 
-- name: "Ensure vaultwarden app directory exists"
-  ansible.builtin.file:
-    path: "{{ vaultwarden_app_dir }}"
-    state: directory
-    mode: "0755"
+- name: Install and configure Vaultwarden
+  ansible.builtin.include_tasks: install.yml
+  when: vaultwarden_enabled | bool
 
-- name: "Ensure vaultwarden data directory exists"
-  ansible.builtin.file:
-    path: "{{ vaultwarden_data_dir }}"
-    state: directory
-    mode: "0755"
-
-- name: Create vaultwarden container
-  community.docker.docker_container:
-    name: vaultwarden
-    image: vaultwarden/server:latest
-    state: started
-    restart_policy: unless-stopped
-    pull: true
-    ports:
-      - "{{ server_bind_ip }}:{{ app_port_vaultwarden }}:80"
-    volumes:
-      - "{{ vaultwarden_data_dir }}/data:/data"
-    networks:
-      - name: "{{ docker_network }}"
+- name: Verify Vaultwarden
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - vaultwarden_enabled | bool
+    - vaultwarden_verify_enabled | bool

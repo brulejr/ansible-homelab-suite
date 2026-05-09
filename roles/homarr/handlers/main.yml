@@ -1,0 +1,6 @@
+---
+- name: Restart homarr
+  community.docker.docker_compose_v2:
+    project_src: "{{ homarr_app_dir }}"
+    project_name: "{{ homarr_stack_name }}"
+    state: restarted

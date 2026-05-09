@@ -1,5 +1,34 @@
+---
 nextcloud_enabled: true
 
-nextcloud_stack_name: "nextcloud"
+# Identity
+nextcloud_stack_name: nextcloud
+nextcloud_container_name: nextcloud
+
+# Paths
 nextcloud_app_dir: "{{ docker_dir }}/nextcloud"
 nextcloud_data_dir: "{{ data_dir }}/nextcloud"
+nextcloud_config_dir: "{{ nextcloud_app_dir }}/config"
+nextcloud_user_data_dir: "{{ nextcloud_data_dir }}/data"
+
+# Image/runtime
+nextcloud_image: "lscr.io/linuxserver/nextcloud:latest"
+nextcloud_restart_policy: unless-stopped
+nextcloud_container_port: 80
+
+# Networking
+nextcloud_docker_network: "{{ docker_network }}"
+nextcloud_bind_ip: "{{ server_bind_ip }}"
+nextcloud_host_port: "{{ app_port_nextcloud }}"
+
+# LinuxServer settings
+nextcloud_puid: "{{ puid }}"
+nextcloud_pgid: "{{ pgid }}"
+nextcloud_timezone: "{{ timezone }}"
+
+# Environment
+nextcloud_environment: {}
+
+# Verification
+nextcloud_verify_enabled: true
+nextcloud_verify_timeout: 180

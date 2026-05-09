@@ -1,0 +1,12 @@
+---
+- name: Validate Vaultwarden required variables
+  ansible.builtin.assert:
+    that:
+      - vaultwarden_stack_name | length > 0
+      - vaultwarden_container_name | length > 0
+      - vaultwarden_app_dir | length > 0
+      - vaultwarden_data_dir | length > 0
+      - vaultwarden_image | length > 0
+      - vaultwarden_docker_network | length > 0
+      - vaultwarden_host_port is defined
+    fail_msg: "Vaultwarden role configuration is invalid."

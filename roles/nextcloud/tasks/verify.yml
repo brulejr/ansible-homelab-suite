@@ -1,0 +1,16 @@
+---
+- name: Wait for Nextcloud HTTP endpoint
+  ansible.builtin.uri:
+    url: "http://{{ nextcloud_bind_ip }}:{{ nextcloud_host_port }}"
+    method: GET
+    status_code:
+      - 200
+      - 301
+      - 302
+      - 401
+      - 403
+    validate_certs: false
+  register: nextcloud_verify_result
+  retries: "{{ (nextcloud_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
+  delay: 5
+  until: nextcloud_verify_result.status in [200, 301, 302, 401, 403]

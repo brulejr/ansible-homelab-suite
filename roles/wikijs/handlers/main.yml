@@ -1,0 +1,6 @@
+---
+- name: Restart wikijs
+  community.docker.docker_compose_v2:
+    project_src: "{{ wikijs_app_dir }}"
+    project_name: "{{ wikijs_stack_name }}"
+    state: restarted

@@ -1,0 +1,40 @@
+---
+- name: Ensure Nextcloud app directory exists
+  ansible.builtin.file:
+    path: "{{ nextcloud_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure Nextcloud config directory exists
+  ansible.builtin.file:
+    path: "{{ nextcloud_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure Nextcloud data directory exists
+  ansible.builtin.file:
+    path: "{{ nextcloud_user_data_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render Nextcloud docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ nextcloud_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart nextcloud
+
+- name: Start Nextcloud stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ nextcloud_app_dir }}"
+    project_name: "{{ nextcloud_stack_name }}"
+    state: present
+    pull: always

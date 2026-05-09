@@ -1,0 +1,26 @@
+---
+services:
+  homarr:
+    image: "{{ homarr_image }}"
+    container_name: "{{ homarr_container_name }}"
+    restart: "{{ homarr_restart_policy }}"
+    ports:
+      - "{{ homarr_bind_ip }}:{{ homarr_host_port }}:{{ homarr_container_port }}"
+    volumes:
+      - "{{ homarr_config_dir }}:/app/data/configs"
+      - "{{ homarr_icons_dir }}:/app/public/icons"
+{% if homarr_mount_docker_socket | bool %}
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+{% endif %}
+    networks:
+      - {{ homarr_docker_network }}
+{% if homarr_environment | length > 0 %}
+    environment:
+{% for key, value in homarr_environment.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+
+networks:
+  {{ homarr_docker_network }}:
+    external: true

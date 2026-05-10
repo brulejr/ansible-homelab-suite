@@ -10,12 +10,20 @@ entryPoints:
         entryPoint:
           to: "https"
           scheme: "https"
+
   https:
     address: ":443"
+
   mqtt:
     address: ":1883"
+
   websocket:
     address: ":9001"
+
+{% if traefik_gitea_ssh_enabled | bool %}
+  {{ traefik_gitea_ssh_entrypoint }}:
+    address: ":{{ traefik_gitea_ssh_bind_port }}"
+{% endif %}
 
 serversTransport:
   insecureSkipVerify: true
@@ -24,6 +32,7 @@ providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
+
   file:
     directory: "{{ traefik_dynamic_mount }}"
     watch: true

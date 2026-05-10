@@ -9,6 +9,26 @@
       Invalid traefik_acme_mode='{{ traefik_acme_mode }}'.
       Must be one of: {{ traefik_acme_servers.keys() | list | join(', ') }}
 
+- name: Validate Gitea SSH TCP forwarding configuration
+  ansible.builtin.assert:
+    that:
+      - traefik_gitea_ssh_entrypoint | length > 0
+      - traefik_gitea_ssh_bind_port | int > 0
+      - traefik_gitea_ssh_backend_host | length > 0
+      - traefik_gitea_ssh_backend_port | int > 0
+    fail_msg: >
+      Gitea SSH TCP forwarding is enabled, but one or more required
+      traefik_gitea_ssh_* variables are invalid.
+  when: traefik_gitea_ssh_enabled | bool
+
+- name: Create traefik app directory
+  ansible.builtin.file:
+    path: "{{ traefik_app_dir }}"
+    state: directory
+    mode: "0755"
+    access_time: preserve
+    modification_time: preserve
+
 - name: Create traefik data directory
   ansible.builtin.file:
     path: "{{ traefik_data_dir }}"
@@ -41,6 +61,23 @@
     owner: "{{ username }}"
     group: "{{ groupname }}"
   notify: Traefik | Compose up
+
+- name: Render Gitea SSH TCP route
+  ansible.builtin.template:
+    src: gitea-ssh-tcp.yml.j2
+    dest: "{{ traefik_dynamic_dir }}/gitea-ssh-tcp.yml"
+    mode: "0644"
+    owner: "{{ username }}"
+    group: "{{ groupname }}"
+  notify: Traefik | Compose up
+  when: traefik_gitea_ssh_enabled | bool
+
+- name: Remove Gitea SSH TCP route when disabled
+  ansible.builtin.file:
+    path: "{{ traefik_dynamic_dir }}/gitea-ssh-tcp.yml"
+    state: absent
+  notify: Traefik | Compose up
+  when: not (traefik_gitea_ssh_enabled | bool)
 
 - name: Render docker-compose.yml
   ansible.builtin.template:

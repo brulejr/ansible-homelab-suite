@@ -9,8 +9,14 @@ services:
     ports:
       - "80:80"
       - "443:443"
+{% if traefik_gitea_ssh_enabled | bool %}
+      - "{{ traefik_gitea_ssh_bind_port }}:{{ traefik_gitea_ssh_bind_port }}"
+{% endif %}
       # - "{{ traefik_bind_ip }}:80:80"
       # - "{{ traefik_bind_ip }}:443:443"
+{% if traefik_gitea_ssh_enabled | bool %}
+      # - "{{ traefik_bind_ip }}:{{ traefik_gitea_ssh_bind_port }}:{{ traefik_gitea_ssh_bind_port }}"
+{% endif %}
 
     networks:
       - "{{ docker_network }}"
@@ -30,11 +36,9 @@ services:
 
       traefik.http.routers.traefik.entrypoints: "http"
       traefik.http.routers.traefik.rule: "Host(`{{ traefik_dashboard_host | default('traefik.' ~ domain_name) }}`)"
-
       traefik.http.middlewares.traefik-auth.basicauth.users: "{{ traefik_basic_auth_hash }}"
       traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme: "https"
       traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto: "https"
-
       traefik.http.routers.traefik.middlewares: "traefik-https-redirect"
 
       traefik.http.routers.traefik-secure.entrypoints: "https"
@@ -42,6 +46,7 @@ services:
       traefik.http.routers.traefik-secure.middlewares: "traefik-auth"
       traefik.http.routers.traefik-secure.tls: "true"
       traefik.http.routers.traefik-secure.tls.certresolver: "cloudflare"
+
 {% set tls_domains = traefik_tls_domains | default([{'main': domain_name, 'sans': ['*.' ~ domain_name]}]) %}
 {% for d in tls_domains %}
       traefik.http.routers.traefik-secure.tls.domains[{{ loop.index0 }}].main: "{{ d.main }}"
@@ -49,6 +54,7 @@ services:
       traefik.http.routers.traefik-secure.tls.domains[{{ loop.index0 }}].sans: "{{ d.sans | join(',') }}"
 {% endif %}
 {% endfor %}
+
       traefik.http.routers.traefik-secure.service: "api@internal"
 
 networks:

@@ -1,5 +1,37 @@
+---
 gitea_enabled: true
 
-gitea_stack_name: "gitea"
+# Identity
+gitea_stack_name: gitea
+gitea_container_name: gitea
+
+# Paths
 gitea_app_dir: "{{ docker_dir }}/gitea"
 gitea_data_dir: "{{ data_dir }}/gitea"
+
+# Image/runtime
+gitea_image: "gitea/gitea:latest"
+gitea_restart_policy: unless-stopped
+gitea_container_port: 3000
+gitea_ssh_container_port: 22
+
+# Networking
+gitea_bind_ip: "{{ server_bind_ip }}"
+gitea_host_port: "{{ app_port_gitea }}"
+gitea_ssh_host_port: "{{ app_port_gitea_ssh | default(2222) }}"
+gitea_docker_network: "{{ docker_network }}"
+
+# User
+gitea_user_uid: "{{ puid }}"
+gitea_user_gid: "{{ pgid }}"
+
+# Public URL used by Gitea itself and by other roles like Jekyll
+gitea_root_url: "http://{{ gitea_bind_ip }}:{{ gitea_host_port }}/"
+gitea_external_url: "{{ gitea_root_url }}"
+
+# Optional environment
+gitea_environment: {}
+
+# Verification
+gitea_verify_enabled: true
+gitea_verify_timeout: 120

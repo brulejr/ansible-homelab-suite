@@ -1,0 +1,25 @@
+---
+services:
+  jekyll:
+    build:
+      context: "{{ jekyll_app_dir }}"
+    image: "{{ jekyll_image }}"
+    container_name: "{{ jekyll_container_name }}"
+    restart: "{{ jekyll_restart_policy }}"
+    working_dir: /srv/jekyll
+    command: >-
+      sh -c 'bundle install &&
+      bundle exec jekyll serve
+      --host {{ jekyll_host }}
+      --port {{ jekyll_container_port }}{% if jekyll_incremental | bool %} --incremental{% endif %}{% if jekyll_livereload | bool %} --livereload{% endif %}{% if jekyll_force_polling | bool %} --force_polling{% endif %}'
+    ports:
+      - "{{ jekyll_bind_ip }}:{{ jekyll_host_port }}:{{ jekyll_container_port }}"
+    volumes:
+      - "{{ jekyll_site_dir }}:/srv/jekyll"
+      - "{{ jekyll_bundle_cache_dir }}:/usr/local/bundle"
+    networks:
+      - {{ jekyll_docker_network }}
+
+networks:
+  {{ jekyll_docker_network }}:
+    external: true

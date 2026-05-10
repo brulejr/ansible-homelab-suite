@@ -1,0 +1,18 @@
+---
+- name: Validate Jekyll required variables
+  ansible.builtin.assert:
+    that:
+      - jekyll_stack_name | length > 0
+      - jekyll_container_name | length > 0
+      - jekyll_app_dir | length > 0
+      - jekyll_data_dir | length > 0
+      - jekyll_site_dir | length > 0
+      - jekyll_bundle_cache_dir | length > 0
+      - jekyll_image | length > 0
+      - jekyll_restart_policy | length > 0
+      - jekyll_container_port | int > 0
+      - jekyll_bind_ip | length > 0
+      - jekyll_host_port | int > 0
+      - jekyll_docker_network | length > 0
+      - jekyll_verify_timeout | int > 0
+    fail_msg: "Jekyll role configuration is invalid"

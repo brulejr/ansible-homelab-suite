@@ -44,7 +44,9 @@
       gem "jekyll", "4.4.1"
       gem "just-the-docs", "0.12.0"
       gem "sass-embedded", "1.98.0"
-  when: jekyll_bootstrap_site | bool
+  when:
+    - jekyll_bootstrap_site | bool
+    - not (jekyll_git_sync_enabled | bool)
 
 - name: Bootstrap Just the Docs config
   ansible.builtin.copy:
@@ -66,7 +68,9 @@
       aux_links:
         "Homelab Git":
           - "{{ gitea_external_url | default('') }}"
-  when: jekyll_bootstrap_site | bool
+  when:
+    - jekyll_bootstrap_site | bool
+    - not (jekyll_git_sync_enabled | bool)
 
 - name: Bootstrap Just the Docs home page
   ansible.builtin.copy:
@@ -85,7 +89,9 @@
       # {{ jekyll_site_title }}
 
       Homelab documentation powered by Jekyll and Just the Docs.
-  when: jekyll_bootstrap_site | bool
+  when:
+    - jekyll_bootstrap_site | bool
+    - not (jekyll_git_sync_enabled | bool)
 
 - name: Render Jekyll Dockerfile
   ansible.builtin.template:
@@ -94,6 +100,15 @@
     owner: root
     group: root
     mode: "0644"
+  notify: Restart jekyll
+
+- name: Render Jekyll startup script
+  ansible.builtin.template:
+    src: start-jekyll.sh.j2
+    dest: "{{ jekyll_app_dir }}/start-jekyll.sh"
+    owner: root
+    group: root
+    mode: "0755"
   notify: Restart jekyll
 
 - name: Render Jekyll docker-compose.yml

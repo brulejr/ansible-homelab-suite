@@ -7,16 +7,21 @@ services:
     container_name: "{{ jekyll_container_name }}"
     restart: "{{ jekyll_restart_policy }}"
     working_dir: /srv/jekyll
-    command: >-
-      sh -c 'bundle install &&
-      bundle exec jekyll serve
-      --host {{ jekyll_host }}
-      --port {{ jekyll_container_port }}{% if jekyll_incremental | bool %} --incremental{% endif %}{% if jekyll_livereload | bool %} --livereload{% endif %}{% if jekyll_force_polling | bool %} --force_polling{% endif %}'
+    command: /usr/local/bin/start-jekyll.sh
     ports:
       - "{{ jekyll_bind_ip }}:{{ jekyll_host_port }}:{{ jekyll_container_port }}"
     volumes:
       - "{{ jekyll_site_dir }}:/srv/jekyll"
       - "{{ jekyll_bundle_cache_dir }}:/usr/local/bundle"
+      - "{{ jekyll_app_dir }}/start-jekyll.sh:/usr/local/bin/start-jekyll.sh:ro"
+{% if jekyll_git_sync_enabled | bool %}
+      - "{{ jekyll_git_ssh_key_path }}:/root/.ssh/id_rsa:ro"
+      - "{{ jekyll_git_known_hosts_path }}:/root/.ssh/known_hosts:ro"
+{% endif %}
+{% if jekyll_git_sync_enabled | bool %}
+    environment:
+      GIT_SSH_COMMAND: "ssh -i /root/.ssh/id_rsa -o IdentitiesOnly=yes -o UserKnownHostsFile=/root/.ssh/known_hosts"
+{% endif %}
     networks:
       - {{ jekyll_docker_network }}
 

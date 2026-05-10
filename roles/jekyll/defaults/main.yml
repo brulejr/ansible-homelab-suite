@@ -27,12 +27,30 @@ jekyll_incremental: false
 jekyll_livereload: false
 jekyll_force_polling: true
 
-# Optional site bootstrap
+# Optional site bootstrap.
+#
+# Bootstrap mode is intended for a local, non-Git-managed starter site.
+# When jekyll_git_sync_enabled=true, bootstrap tasks are skipped so the Git
+# repository remains the source of truth.
 jekyll_bootstrap_site: true
 jekyll_site_title: "BruleNet Docs"
 jekyll_site_description: "Homelab documentation"
 jekyll_site_baseurl: ""
 jekyll_site_url: ""
+
+# Optional Git sync on container startup.
+#
+# When enabled, the startup script clones/pulls this repository into
+# jekyll_site_dir before running bundle install and jekyll serve.
+jekyll_git_sync_enabled: false
+jekyll_git_repo: ""
+jekyll_git_branch: main
+jekyll_git_reset_hard: true
+
+# These paths are on the Docker host and are mounted read-only into the
+# container as /root/.ssh/id_rsa and /root/.ssh/known_hosts.
+jekyll_git_ssh_key_path: "/home/sysadm/.ssh/id_rsa"
+jekyll_git_known_hosts_path: "/home/sysadm/.ssh/known_hosts"
 
 # UID/GID
 jekyll_puid: "{{ puid | default(1000) }}"

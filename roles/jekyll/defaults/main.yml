@@ -1,0 +1,61 @@
+---
+jekyll_enabled: true
+
+# Identity
+jekyll_stack_name: jekyll
+jekyll_container_name: jekyll
+
+# Paths
+jekyll_app_dir: "{{ docker_dir }}/jekyll"
+jekyll_data_dir: "{{ data_dir }}/jekyll"
+jekyll_site_dir: "{{ jekyll_data_dir }}/site"
+jekyll_bundle_cache_dir: "{{ jekyll_data_dir }}/bundle"
+
+# Image/runtime
+jekyll_image: "brulenet/jekyll-just-the-docs:latest"
+jekyll_restart_policy: unless-stopped
+jekyll_container_port: 4000
+
+# Networking
+jekyll_bind_ip: "{{ server_bind_ip }}"
+jekyll_host_port: "{{ app_port_jekyll | default(8111) }}"
+jekyll_docker_network: "{{ docker_network }}"
+
+# Site behavior
+jekyll_host: "0.0.0.0"
+jekyll_incremental: false
+jekyll_livereload: false
+jekyll_force_polling: true
+
+# Optional site bootstrap.
+#
+# Bootstrap mode is intended for a local, non-Git-managed starter site.
+# When jekyll_git_sync_enabled=true, bootstrap tasks are skipped so the Git
+# repository remains the source of truth.
+jekyll_bootstrap_site: true
+jekyll_site_title: "BruleNet Docs"
+jekyll_site_description: "Homelab documentation"
+jekyll_site_baseurl: ""
+jekyll_site_url: ""
+
+# Optional Git sync on container startup.
+#
+# When enabled, the startup script clones/pulls this repository into
+# jekyll_site_dir before running bundle install and jekyll serve.
+jekyll_git_sync_enabled: false
+jekyll_git_repo: ""
+jekyll_git_branch: main
+jekyll_git_reset_hard: true
+
+# These paths are on the Docker host and are mounted read-only into the
+# container as /root/.ssh/id_rsa and /root/.ssh/known_hosts.
+jekyll_git_ssh_key_path: "/home/sysadm/.ssh/id_rsa"
+jekyll_git_known_hosts_path: "/home/sysadm/.ssh/known_hosts"
+
+# UID/GID
+jekyll_puid: "{{ puid | default(1000) }}"
+jekyll_pgid: "{{ pgid | default(1000) }}"
+
+# Verification
+jekyll_verify_enabled: true
+jekyll_verify_timeout: 120

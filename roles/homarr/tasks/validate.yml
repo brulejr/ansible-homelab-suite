@@ -1,0 +1,12 @@
+---
+- name: Validate Homarr required variables
+  ansible.builtin.assert:
+    that:
+      - homarr_stack_name | length > 0
+      - homarr_container_name | length > 0
+      - homarr_app_dir | length > 0
+      - homarr_data_dir | length > 0
+      - homarr_image | length > 0
+      - homarr_docker_network | length > 0
+      - homarr_host_port is defined
+    fail_msg: "Homarr role configuration is invalid."

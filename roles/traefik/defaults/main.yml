@@ -1,4 +1,6 @@
+---
 traefik_stack_name: "traefik"
+
 traefik_app_dir: "{{ docker_dir }}/traefik"
 traefik_data_dir: "{{ data_dir }}/traefik"
 traefik_dynamic_dir: "{{ traefik_data_dir }}/dynamic"
@@ -14,3 +16,28 @@ traefik_acme_mode: staging # allowed: production|staging
 traefik_acme_servers:
   production: "https://acme-v02.api.letsencrypt.org/directory"
   staging: "https://acme-staging-v02.api.letsencrypt.org/directory"
+
+# Optional dashboard hostname.
+# Defaults to traefik.<domain_name> in docker-compose.yml.j2 when not set.
+# traefik_dashboard_host: "traefik.example.com"
+
+# Optional TLS domains.
+# Defaults to:
+#   - main: "{{ domain_name }}"
+#     sans:
+#       - "*.{{ domain_name }}"
+# traefik_tls_domains:
+#   - main: "{{ domain_name }}"
+#     sans:
+#       - "*.{{ domain_name }}"
+
+# TCP forwarding for Gitea SSH.
+#
+# This exposes a raw TCP entrypoint on the Traefik edge host and forwards it to
+# the Gitea SSH listener. SSH is not HTTP, so this cannot use normal HTTP
+# Host(...) routing. A dedicated TCP port is used instead.
+traefik_gitea_ssh_enabled: false
+traefik_gitea_ssh_entrypoint: "gitssh"
+traefik_gitea_ssh_bind_port: 2222
+traefik_gitea_ssh_backend_host: ""
+traefik_gitea_ssh_backend_port: 2222

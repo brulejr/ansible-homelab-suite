@@ -1,0 +1,26 @@
+---
+- name: Wait for Gitea HTTP endpoint
+  ansible.builtin.uri:
+    url: "http://{{ gitea_bind_ip }}:{{ gitea_host_port }}"
+    method: GET
+    status_code:
+      - 200
+      - 301
+      - 302
+    validate_certs: false
+  register: gitea_http_check
+  retries: "{{ (gitea_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
+  delay: 5
+  until: gitea_http_check.status in [200, 301, 302]
+
+- name: Check Gitea container state
+  community.docker.docker_container_info:
+    name: "{{ gitea_container_name }}"
+  register: gitea_container_info
+
+- name: Assert Gitea container is running
+  ansible.builtin.assert:
+    that:
+      - gitea_container_info.exists
+      - gitea_container_info.container.State.Running
+    fail_msg: "Gitea container is not running"

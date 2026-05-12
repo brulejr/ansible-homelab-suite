@@ -1,0 +1,15 @@
+---
+- name: Validate Nextcloud required variables
+  ansible.builtin.assert:
+    that:
+      - nextcloud_stack_name | length > 0
+      - nextcloud_container_name | length > 0
+      - nextcloud_app_dir | length > 0
+      - nextcloud_data_dir | length > 0
+      - nextcloud_image | length > 0
+      - nextcloud_docker_network | length > 0
+      - nextcloud_host_port is defined
+      - nextcloud_puid is defined
+      - nextcloud_pgid is defined
+      - nextcloud_timezone | length > 0
+    fail_msg: "Nextcloud role configuration is invalid."

@@ -1,0 +1,28 @@
+---
+services:
+  vaultwarden:
+    image: "{{ vaultwarden_image }}"
+    container_name: "{{ vaultwarden_container_name }}"
+    restart: "{{ vaultwarden_restart_policy }}"
+    ports:
+      - "{{ vaultwarden_bind_ip }}:{{ vaultwarden_host_port }}:{{ vaultwarden_container_port }}"
+    volumes:
+      - "{{ vaultwarden_data_dir }}:/data"
+    networks:
+      - {{ vaultwarden_docker_network }}
+    environment:
+{% if vaultwarden_domain | length > 0 %}
+      DOMAIN: "{{ vaultwarden_domain }}"
+{% endif %}
+{% if vaultwarden_admin_token | length > 0 %}
+      ADMIN_TOKEN: "{{ vaultwarden_admin_token }}"
+{% endif %}
+      SIGNUPS_ALLOWED: "{{ vaultwarden_signups_allowed | ternary('true', 'false') }}"
+      WEBSOCKET_ENABLED: "{{ vaultwarden_websocket_enabled | ternary('true', 'false') }}"
+{% for key, value in vaultwarden_environment.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+
+networks:
+  {{ vaultwarden_docker_network }}:
+    external: true

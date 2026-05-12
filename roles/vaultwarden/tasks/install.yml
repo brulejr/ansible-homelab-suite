@@ -1,0 +1,32 @@
+---
+- name: Ensure Vaultwarden app directory exists
+  ansible.builtin.file:
+    path: "{{ vaultwarden_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure Vaultwarden data directory exists
+  ansible.builtin.file:
+    path: "{{ vaultwarden_data_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render Vaultwarden docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ vaultwarden_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart vaultwarden
+
+- name: Start Vaultwarden stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ vaultwarden_app_dir }}"
+    project_name: "{{ vaultwarden_stack_name }}"
+    state: present
+    pull: always

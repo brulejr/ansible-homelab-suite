@@ -1,21 +1,27 @@
+---
 services:
-
   gitea:
-    image: gitea/gitea:latest
-    container_name: gitea
-    restart: unless-stopped
+    image: "{{ gitea_image }}"
+    container_name: "{{ gitea_container_name }}"
+    restart: "{{ gitea_restart_policy }}"
     environment:
-      - USER_UID={{ puid }}
-      - USER_GID={{ pgid }}
+      USER_UID: "{{ gitea_user_uid }}"
+      USER_GID: "{{ gitea_user_gid }}"
+      GITEA__server__ROOT_URL: "{{ gitea_root_url }}"
+{% for key, value in gitea_environment.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
     volumes:
       - "{{ gitea_data_dir }}:/data"
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     ports:
-      - "{{ server_bind_ip }}:{{ app_port_gitea }}:3000"
+      - "{{ gitea_bind_ip }}:{{ gitea_host_port }}:{{ gitea_container_port }}"
+      - "{{ gitea_bind_ip }}:{{ gitea_ssh_host_port }}:{{ gitea_ssh_container_port }}"
     networks:
-      - {{ docker_network }}
+      - {{ gitea_docker_network }}
 
 networks:
-  {{ docker_network }}:
+  {{ gitea_docker_network }}:
     external: true
+  

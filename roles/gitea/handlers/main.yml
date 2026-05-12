@@ -1,0 +1,6 @@
+---
+- name: Restart gitea
+  community.docker.docker_compose_v2:
+    project_src: "{{ gitea_app_dir }}"
+    project_name: "{{ gitea_stack_name }}"
+    state: restarted

@@ -1,0 +1,42 @@
+---
+- name: Validate wikijs database selection
+  ansible.builtin.assert:
+    that:
+      - wikijs_database in ['postgres', 'sqlite3']
+    fail_msg: "wikijs_database must be either 'postgres' or 'sqlite3'"
+
+- name: Validate wikijs required configuration
+  ansible.builtin.assert:
+    that:
+      - wikijs_stack_name | length > 0
+      - wikijs_container_name | length > 0
+      - wikijs_app_dir | length > 0
+      - wikijs_data_dir | length > 0
+      - wikijs_ssh_dir | length > 0
+      - wikijs_ssh_key_filename | length > 0
+      - wikijs_image | length > 0
+      - wikijs_restart_policy | length > 0
+      - wikijs_container_port | int > 0
+      - wikijs_bind_ip | length > 0
+      - wikijs_host_port is defined
+      - wikijs_docker_network | length > 0
+      - wikijs_verify_enabled is defined
+      - wikijs_verify_timeout | int > 0
+    fail_msg: "wikijs role configuration is invalid"
+
+- name: Validate wikijs postgres configuration
+  ansible.builtin.assert:
+    that:
+      - wikijs_postgres_image | length > 0
+      - wikijs_postgres_db | length > 0
+      - wikijs_postgres_user | length > 0
+      - wikijs_postgres_password | length > 0
+    fail_msg: "wikijs postgres configuration is invalid"
+  when: wikijs_database == 'postgres'
+
+- name: Validate wikijs sqlite configuration
+  ansible.builtin.assert:
+    that:
+      - wikijs_sqlite_filepath | length > 0
+    fail_msg: "wikijs sqlite configuration is invalid"
+  when: wikijs_database == 'sqlite3'

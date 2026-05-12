@@ -1,0 +1,131 @@
+---
+- name: Ensure Jekyll app directory exists
+  ansible.builtin.file:
+    path: "{{ jekyll_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure Jekyll data directory exists
+  ansible.builtin.file:
+    path: "{{ jekyll_data_dir }}"
+    state: directory
+    owner: "{{ jekyll_puid }}"
+    group: "{{ jekyll_pgid }}"
+    mode: "0755"
+
+- name: Ensure Jekyll site directory exists
+  ansible.builtin.file:
+    path: "{{ jekyll_site_dir }}"
+    state: directory
+    owner: "{{ jekyll_puid }}"
+    group: "{{ jekyll_pgid }}"
+    mode: "0755"
+
+- name: Ensure Jekyll bundle cache directory exists
+  ansible.builtin.file:
+    path: "{{ jekyll_bundle_cache_dir }}"
+    state: directory
+    owner: "{{ jekyll_puid }}"
+    group: "{{ jekyll_pgid }}"
+    mode: "0755"
+
+- name: Bootstrap Just the Docs Gemfile
+  ansible.builtin.copy:
+    dest: "{{ jekyll_site_dir }}/Gemfile"
+    owner: "{{ jekyll_puid }}"
+    group: "{{ jekyll_pgid }}"
+    mode: "0644"
+    force: false
+    content: |
+      source "https://rubygems.org"
+
+      gem "jekyll", "4.4.1"
+      gem "just-the-docs", "0.12.0"
+      gem "sass-embedded", "1.98.0"
+  when:
+    - jekyll_bootstrap_site | bool
+    - not (jekyll_git_sync_enabled | bool)
+
+- name: Bootstrap Just the Docs config
+  ansible.builtin.copy:
+    dest: "{{ jekyll_site_dir }}/_config.yml"
+    owner: "{{ jekyll_puid }}"
+    group: "{{ jekyll_pgid }}"
+    mode: "0644"
+    force: false
+    content: |
+      title: "{{ jekyll_site_title }}"
+      description: "{{ jekyll_site_description }}"
+      theme: just-the-docs
+
+      url: "{{ jekyll_site_url }}"
+      baseurl: "{{ jekyll_site_baseurl }}"
+
+      search_enabled: true
+
+      aux_links:
+        "Homelab Git":
+          - "{{ gitea_external_url | default('') }}"
+  when:
+    - jekyll_bootstrap_site | bool
+    - not (jekyll_git_sync_enabled | bool)
+
+- name: Bootstrap Just the Docs home page
+  ansible.builtin.copy:
+    dest: "{{ jekyll_site_dir }}/index.md"
+    owner: "{{ jekyll_puid }}"
+    group: "{{ jekyll_pgid }}"
+    mode: "0644"
+    force: false
+    content: |
+      ---
+      layout: home
+      title: Home
+      nav_order: 1
+      ---
+
+      # {{ jekyll_site_title }}
+
+      Homelab documentation powered by Jekyll and Just the Docs.
+  when:
+    - jekyll_bootstrap_site | bool
+    - not (jekyll_git_sync_enabled | bool)
+
+- name: Render Jekyll Dockerfile
+  ansible.builtin.template:
+    src: Dockerfile.j2
+    dest: "{{ jekyll_app_dir }}/Dockerfile"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart jekyll
+
+- name: Render Jekyll startup script
+  ansible.builtin.template:
+    src: start-jekyll.sh.j2
+    dest: "{{ jekyll_app_dir }}/start-jekyll.sh"
+    owner: root
+    group: root
+    mode: "0755"
+  notify: Restart jekyll
+
+- name: Render Jekyll docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ jekyll_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart jekyll
+
+- name: Start Jekyll stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ jekyll_app_dir }}"
+    project_name: "{{ jekyll_stack_name }}"
+    state: present
+    build: always
+    pull: missing
+    remove_orphans: true
+    recreate: auto

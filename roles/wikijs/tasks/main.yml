@@ -1,55 +1,14 @@
 ---
-# tasks file for wikijs
+- name: Validate Wiki.js configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: wikijs_enabled | bool
 
-- name: Validate wikijs database selection
-  ansible.builtin.assert:
-    that:
-      - wikijs_database in ['postgres', 'sqlite3']
-    fail_msg: "wikijs_database must be either 'postgres' or 'sqlite3'"
+- name: Install and configure Wiki.js
+  ansible.builtin.include_tasks: install.yml
+  when: wikijs_enabled | bool
 
-- name: Ensure wikijs app directory exists
-  ansible.builtin.file:
-    path: "{{ wikijs_app_dir }}"
-    state: directory
-    mode: "0755"
-
-- name: Ensure wikijs data directory exists
-  ansible.builtin.file:
-    path: "{{ wikijs_data_dir }}"
-    state: directory
-    mode: "0755"
-
-- name: Create wikijs ssh directory
-  ansible.builtin.file:
-    path: "{{ wikijs_ssh_dir }}"
-    state: directory
-    mode: "0755"
-
-- name: Generate SSH key
-  openssh_keypair:
-    path: "{{ wikijs_ssh_dir }}/{{ wikijs_ssh_key_filename }}"
-    comment: "wikijs@{{ inventory_hostname }}"
-    owner: sysadm
-    group: sysadm
-    type: rsa
-    size: 4096
-    state: present
-    force: no
-  register: generated_key
-
-- name: Select wikijs compose template
-  ansible.builtin.set_fact:
-    wikijs_compose_template: >-
-      {{ 'docker-compose.postgres.yml.j2' if wikijs_database == 'postgres' else 'docker-compose.sqlite3.yml.j2' }}
-
-- name: Render docker-compose.yml
-  ansible.builtin.template:
-    src: "{{ wikijs_compose_template }}"
-    dest: "{{ wikijs_app_dir }}/docker-compose.yml"
-    mode: "0644"
-
-- name: Start stack
-  community.docker.docker_compose_v2:
-    project_src: "{{ wikijs_app_dir }}"
-    project_name: "{{ wikijs_stack_name }}"
-    state: present
+- name: Verify Wiki.js
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - wikijs_enabled | bool
+    - wikijs_verify_enabled | bool

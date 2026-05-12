@@ -1,0 +1,13 @@
+tcp:
+  routers:
+    gitea-ssh:
+      entryPoints:
+        - "{{ traefik_gitea_ssh_entrypoint }}"
+      rule: "HostSNI(`*`)"
+      service: gitea-ssh
+
+  services:
+    gitea-ssh:
+      loadBalancer:
+        servers:
+          - address: "{{ traefik_gitea_ssh_backend_host }}:{{ traefik_gitea_ssh_backend_port }}"

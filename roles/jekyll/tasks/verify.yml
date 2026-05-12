@@ -1,0 +1,26 @@
+---
+- name: Wait for Jekyll HTTP endpoint
+  ansible.builtin.uri:
+    url: "http://{{ jekyll_bind_ip }}:{{ jekyll_host_port }}"
+    method: GET
+    status_code:
+      - 200
+      - 301
+      - 302
+    validate_certs: false
+  register: jekyll_http_check
+  retries: "{{ (jekyll_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
+  delay: 5
+  until: jekyll_http_check.status in [200, 301, 302]
+
+- name: Check Jekyll container state
+  community.docker.docker_container_info:
+    name: "{{ jekyll_container_name }}"
+  register: jekyll_container_info
+
+- name: Assert Jekyll container is running
+  ansible.builtin.assert:
+    that:
+      - jekyll_container_info.exists
+      - jekyll_container_info.container.State.Running
+    fail_msg: "Jekyll container is not running"

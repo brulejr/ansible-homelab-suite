@@ -1,41 +1,40 @@
+---
 services:
   db:
-    image: {{ wikijs_postgres_image }}
-    container_name: {{ wikijs_postgres_container_name }}
+    image: "{{ wikijs_postgres_image }}"
+    container_name: "{{ wikijs_postgres_container_name }}"
     environment:
-      POSTGRES_DB: {{ wikijs_postgres_db }}
-      POSTGRES_PASSWORD: {{ wikijs_postgres_password }}
-      POSTGRES_USER: {{ wikijs_postgres_user }}
-    logging:
-      driver: "none"
-    restart: unless-stopped
+      POSTGRES_DB: "{{ wikijs_postgres_db }}"
+      POSTGRES_USER: "{{ wikijs_postgres_user }}"
+      POSTGRES_PASSWORD: "{{ wikijs_postgres_password }}"
+    restart: "{{ wikijs_restart_policy }}"
     volumes:
       - wikijs-db-data:/var/lib/postgresql/data
     networks:
-      - {{ docker_network }}
+      - {{ wikijs_docker_network }}
 
   wikijs:
-    image: ghcr.io/requarks/wiki:2
-    container_name: wikijs
+    image: "{{ wikijs_image }}"
+    container_name: "{{ wikijs_container_name }}"
     depends_on:
       - db
     environment:
       DB_TYPE: postgres
       DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: {{ wikijs_postgres_user }}
-      DB_PASS: {{ wikijs_postgres_password }}
-      DB_NAME: {{ wikijs_postgres_db }}
-    restart: unless-stopped
+      DB_PORT: "5432"
+      DB_USER: "{{ wikijs_postgres_user }}"
+      DB_PASS: "{{ wikijs_postgres_password }}"
+      DB_NAME: "{{ wikijs_postgres_db }}"
+    restart: "{{ wikijs_restart_policy }}"
     ports:
-      - "{{ server_bind_ip }}:{{ app_port_wikijs }}:3000"
+      - "{{ wikijs_bind_ip }}:{{ wikijs_host_port }}:{{ wikijs_container_port }}"
     volumes:
       - "{{ wikijs_ssh_dir }}:/wiki/ssh:ro"
     networks:
-      - {{ docker_network }}
+      - {{ wikijs_docker_network }}
 
 networks:
-  {{ docker_network }}:
+  {{ wikijs_docker_network }}:
     external: true
 
 volumes:

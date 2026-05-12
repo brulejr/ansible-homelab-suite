@@ -1,0 +1,14 @@
+---
+- name: Wait for wikijs HTTP endpoint
+  ansible.builtin.uri:
+    url: "http://{{ server_bind_ip }}:{{ app_port_wikijs }}"
+    method: GET
+    status_code:
+      - 200
+      - 302
+      - 401
+    validate_certs: false
+  register: wikijs_verify_result
+  retries: "{{ (wikijs_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
+  delay: 5
+  until: wikijs_verify_result.status in [200, 302, 401]

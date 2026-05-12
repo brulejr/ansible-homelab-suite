@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SITE_DIR="/srv/jekyll"
+
+echo "Starting Jekyll startup process..."
+echo "Site directory: ${SITE_DIR}"
+
+mkdir -p "${SITE_DIR}"
+cd "${SITE_DIR}"
+
+# The site directory is bind-mounted from the host and may be owned by sysadm.
+# Git running as root inside the container can otherwise reject it.
+git config --global --add safe.directory "${SITE_DIR}" || true
+
+{% if jekyll_git_sync_enabled | bool %}
+echo "Git sync enabled."
+
+if [ -z "{{ jekyll_git_repo }}" ]; then
+  echo "ERROR: jekyll_git_repo is required when jekyll_git_sync_enabled=true"
+  exit 1
+fi
+
+if [ -d "${SITE_DIR}/.git" ]; then
+  echo "Existing Git checkout found. Updating from origin/{{ jekyll_git_branch }}..."
+
+  git remote -v || true
+  git status --short || true
+
+  git fetch origin "{{ jekyll_git_branch }}"
+
+{% if jekyll_git_reset_hard | bool %}
+  echo "Resetting working tree to origin/{{ jekyll_git_branch }}..."
+  git reset --hard "origin/{{ jekyll_git_branch }}"
+  git clean -fd
+{% else %}
+  echo "Pulling origin/{{ jekyll_git_branch }}..."
+  git pull --ff-only origin "{{ jekyll_git_branch }}"
+{% endif %}
+
+else
+  echo "No Git checkout found."
+
+  if [ "$(find "${SITE_DIR}" -mindepth 1 -maxdepth 1 | wc -l)" -gt 0 ]; then
+    echo "Site directory is not empty. Moving existing bootstrap/local files aside..."
+
+    BACKUP_DIR="/tmp/jekyll-bootstrap-$(date +%Y%m%d%H%M%S)"
+    mkdir -p "${BACKUP_DIR}"
+
+    find "${SITE_DIR}" -mindepth 1 -maxdepth 1 -exec mv {} "${BACKUP_DIR}/" \;
+
+    echo "Existing files moved to ${BACKUP_DIR}"
+  fi
+
+  echo "Cloning {{ jekyll_git_repo }} branch {{ jekyll_git_branch }} into ${SITE_DIR}..."
+
+  TMP_DIR="$(mktemp -d)"
+  git clone --branch "{{ jekyll_git_branch }}" "{{ jekyll_git_repo }}" "${TMP_DIR}"
+
+  cp -a "${TMP_DIR}/." "${SITE_DIR}/"
+  rm -rf "${TMP_DIR}"
+fi
+
+{% else %}
+echo "Git sync disabled. Using mounted site directory as-is."
+{% endif %}
+
+if [ ! -f "${SITE_DIR}/Gemfile" ]; then
+  echo "ERROR: ${SITE_DIR}/Gemfile does not exist."
+  echo "Either disable git sync and enable bootstrap mode, or ensure the Git repo contains Gemfile."
+  exit 1
+fi
+
+if [ ! -f "${SITE_DIR}/_config.yml" ]; then
+  echo "ERROR: ${SITE_DIR}/_config.yml does not exist."
+  echo "Either disable git sync and enable bootstrap mode, or ensure the Git repo contains _config.yml."
+  exit 1
+fi
+
+echo "Installing bundle..."
+bundle install
+
+echo "Starting Jekyll..."
+exec bundle exec jekyll serve \
+  --host {{ jekyll_host }} \
+  --port {{ jekyll_container_port }}{% if jekyll_incremental | bool %} \
+  --incremental{% endif %}{% if jekyll_livereload | bool %} \
+  --livereload{% endif %}{% if jekyll_force_polling | bool %} \
+  --force_polling{% endif %}

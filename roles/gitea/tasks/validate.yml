@@ -1,0 +1,18 @@
+---
+- name: Validate Gitea required variables
+  ansible.builtin.assert:
+    that:
+      - gitea_stack_name | length > 0
+      - gitea_container_name | length > 0
+      - gitea_app_dir | length > 0
+      - gitea_data_dir | length > 0
+      - gitea_image | length > 0
+      - gitea_restart_policy | length > 0
+      - gitea_container_port | int > 0
+      - gitea_bind_ip | length > 0
+      - gitea_host_port | int > 0
+      - gitea_docker_network | length > 0
+      - gitea_user_uid is defined
+      - gitea_user_gid is defined
+      - gitea_verify_timeout | int > 0
+    fail_msg: "Gitea role configuration is invalid"

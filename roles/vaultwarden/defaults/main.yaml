@@ -1,5 +1,31 @@
+---
 vaultwarden_enabled: true
 
-vaultwarden_stack_name: "vaultwarden"
+# Identity
+vaultwarden_stack_name: vaultwarden
+vaultwarden_container_name: vaultwarden
+
+# Paths
 vaultwarden_app_dir: "{{ docker_dir }}/vaultwarden"
 vaultwarden_data_dir: "{{ data_dir }}/vaultwarden"
+
+# Image/runtime
+vaultwarden_image: "vaultwarden/server:latest"
+vaultwarden_restart_policy: unless-stopped
+vaultwarden_container_port: 80
+
+# Networking
+vaultwarden_docker_network: "{{ docker_network }}"
+vaultwarden_bind_ip: "{{ server_bind_ip }}"
+vaultwarden_host_port: "{{ app_port_vaultwarden }}"
+
+# App config
+vaultwarden_domain: ""
+vaultwarden_admin_token: ""
+vaultwarden_signups_allowed: false
+vaultwarden_websocket_enabled: true
+vaultwarden_environment: {}
+
+# Verification
+vaultwarden_verify_enabled: true
+vaultwarden_verify_timeout: 120

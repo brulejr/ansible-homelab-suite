@@ -1,0 +1,13 @@
+---
+- name: Setup the iot automation servers
+  hosts: iot_servers
+  become: true
+  roles:
+    - common
+    - docker
+    - watchtower
+    - esphome
+    - homeassistant
+    - mqtt
+    - nodered
+    - zigbee2mqtt

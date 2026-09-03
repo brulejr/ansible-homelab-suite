@@ -1,7 +1,7 @@
 ---
 - name: Wait for PlantUML HTTP endpoint
   ansible.builtin.uri:
-    url: "http://127.0.0.1:{{ plantuml_host_port }}"
+    url: "http://{{ plantuml_bind_ip }}:{{ plantuml_host_port }}/"
     method: GET
     status_code:
       - 200

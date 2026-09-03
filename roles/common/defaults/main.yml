@@ -54,6 +54,7 @@ app_port_jenkins: 8104
 app_port_keycloak: 8105
 app_port_nextcloud: 8106
 app_port_nexus: 8107
+app_port_nexus_docker: 10001
 app_port_nodered: 1880
 app_port_openwebrx: 8073
 app_port_openwebui: 8120

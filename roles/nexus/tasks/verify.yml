@@ -1,0 +1,22 @@
+---
+- name: Wait for Nexus HTTP endpoint
+  ansible.builtin.uri:
+    url: "http://{{ nexus_bind_ip }}:{{ nexus_host_port }}/"
+    method: GET
+    status_code: "{{ nexus_verify_status_codes }}"
+  register: nexus_http_check
+  retries: "{{ nexus_verify_retries }}"
+  delay: "{{ nexus_verify_delay }}"
+  until: nexus_http_check.status in nexus_verify_status_codes
+
+- name: Check Nexus container state
+  community.docker.docker_container_info:
+    name: "{{ nexus_container_name }}"
+  register: nexus_container_info
+
+- name: Assert Nexus container is running
+  ansible.builtin.assert:
+    that:
+      - nexus_container_info.exists
+      - nexus_container_info.container.State.Running
+    fail_msg: "Nexus container is not running"

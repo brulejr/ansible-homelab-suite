@@ -4,6 +4,7 @@
 - import_playbook: playbooks/devops_servers.yml
 - import_playbook: playbooks/ha_servers.yml
 - import_playbook: playbooks/id_servers.yml
+- import_playbook: playbooks/iot_servers.yml
 - import_playbook: playbooks/media_servers.yml
 - import_playbook: playbooks/minidev_servers.yml
 - import_playbook: playbooks/network_servers.yml

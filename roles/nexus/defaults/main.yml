@@ -1,5 +1,46 @@
+---
 nexus_enabled: true
 
-nexus_stack_name: "nexus"
+# Identity
+nexus_stack_name: nexus
+nexus_container_name: nexus
+
+# Linux user/group used by the Nexus container
+nexus_user: nexus
+nexus_group: nexus
+nexus_uid: 200
+nexus_gid: 200
+
+# Paths
 nexus_app_dir: "{{ docker_dir }}/nexus"
 nexus_data_dir: "{{ data_dir }}/nexus"
+
+# Image/runtime
+nexus_image: "sonatype/nexus3:latest"
+nexus_restart_policy: unless-stopped
+nexus_container_port: 8081
+
+# Networking
+nexus_docker_network: "{{ docker_network }}"
+nexus_bind_ip: "{{ server_bind_ip }}"
+nexus_host_port: "{{ app_port_nexus | default(8081) }}"
+
+# Optional Docker repository connector port.
+# This exposes the host/container port only; the matching hosted/proxy/group
+# Docker repository connector still needs to be configured inside Nexus.
+nexus_docker_repo_enabled: true
+nexus_docker_repo_host_port: "{{ app_port_nexus_docker | default(10001) }}"
+nexus_docker_repo_container_port: 10001
+
+# Extra compose customization hooks
+nexus_extra_environment: []
+nexus_extra_volumes: []
+
+# Verification
+nexus_verify_enabled: true
+nexus_verify_retries: 60
+nexus_verify_delay: 5
+nexus_verify_status_codes:
+  - 200
+  - 302
+  - 401

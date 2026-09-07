@@ -1,0 +1,32 @@
+---
+- name: Ensure Home Assistant app directory exists
+  ansible.builtin.file:
+    path: "{{ homeassistant_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure Home Assistant config directory exists
+  ansible.builtin.file:
+    path: "{{ homeassistant_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render Home Assistant docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ homeassistant_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart homeassistant
+
+- name: Start Home Assistant stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ homeassistant_app_dir }}"
+    project_name: "{{ homeassistant_stack_name }}"
+    state: present
+    pull: always

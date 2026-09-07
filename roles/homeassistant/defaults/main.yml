@@ -1,0 +1,26 @@
+---
+homeassistant_enabled: true
+
+homeassistant_stack_name: homeassistant
+homeassistant_container_name: homeassistant
+
+homeassistant_app_dir: "{{ docker_dir }}/homeassistant"
+homeassistant_data_dir: "{{ data_dir }}/homeassistant"
+homeassistant_config_dir: "{{ homeassistant_data_dir }}/config"
+
+homeassistant_image: "lscr.io/linuxserver/homeassistant:latest"
+homeassistant_restart_policy: unless-stopped
+homeassistant_container_port: 8123
+
+homeassistant_docker_network: "{{ docker_network }}"
+homeassistant_bind_ip: "{{ server_bind_ip }}"
+homeassistant_host_port: "{{ app_port_homeassistant }}"
+
+homeassistant_puid: "{{ puid }}"
+homeassistant_pgid: "{{ pgid }}"
+
+# Only needed if you use a HACS/integration that controls sibling containers
+homeassistant_mount_docker_socket: false
+
+homeassistant_verify_enabled: true
+homeassistant_verify_timeout: 120

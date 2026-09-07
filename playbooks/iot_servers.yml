@@ -6,6 +6,8 @@
     - common
     - docker
     - watchtower
+    - traefik
+    - traefik_apps
     - esphome
     - homeassistant
     - mqtt

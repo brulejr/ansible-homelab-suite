@@ -1,0 +1,12 @@
+---
+- name: Validate Home Assistant required variables
+  ansible.builtin.assert:
+    that:
+      - homeassistant_stack_name | length > 0
+      - homeassistant_container_name | length > 0
+      - homeassistant_app_dir | length > 0
+      - homeassistant_data_dir | length > 0
+      - homeassistant_image | length > 0
+      - homeassistant_docker_network | length > 0
+      - homeassistant_host_port is defined
+    fail_msg: "Home Assistant role configuration is invalid."

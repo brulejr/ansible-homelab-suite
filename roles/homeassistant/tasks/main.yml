@@ -1,35 +1,14 @@
 ---
-# tasks file for homeassistant
+- name: Validate Home Assistant configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: homeassistant_enabled | bool
 
-- name: Create homeassistant base directory
-  ansible.builtin.file:
-    path: "{{ homeassistant_dir }}"
-    state: directory
-    mode: '0755'
-    owner: sysadm
-    group: sysadm
-    access_time: preserve
-    modification_time: preserve
+- name: Install and configure Home Assistant
+  ansible.builtin.include_tasks: install.yml
+  when: homeassistant_enabled | bool
 
-- name: copy homeassistant files
-  template:
-    src: templates/{{ item }}
-    dest: "{{ homeassistant_dir }}"
-  loop:
-    - docker-compose.yml
-
-- name: Create homeassistant config directory
-  ansible.builtin.file:
-    path: "{{ homeassistant_config_dir }}"
-    state: directory
-    mode: '0755'
-    owner: sysadm
-    group: sysadm
-    access_time: preserve
-    modification_time: preserve
-
-- name: Run homeassistant docker compose
-  community.docker.docker_compose_v2:
-    project_src: "{{ homeassistant_dir }}"
-    files:
-      - docker-compose.yml
+- name: Verify Home Assistant
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_verify_enabled | bool

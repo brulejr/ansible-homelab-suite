@@ -1,0 +1,6 @@
+---
+- name: Restart nodered
+  community.docker.docker_compose_v2:
+    project_src: "{{ nodered_app_dir }}"
+    project_name: "{{ nodered_stack_name }}"
+    state: restarted

@@ -1,0 +1,19 @@
+---
+nodered_enabled: true
+
+nodered_stack_name: nodered
+nodered_container_name: nodered
+
+nodered_app_dir: "{{ docker_dir }}/nodered"
+nodered_data_dir: "{{ data_dir }}/nodered"
+
+nodered_image: "nodered/node-red:latest"
+nodered_restart_policy: unless-stopped
+nodered_container_port: 1880
+
+nodered_docker_network: "{{ docker_network }}"
+nodered_bind_ip: "{{ server_bind_ip }}"
+nodered_host_port: "{{ app_port_nodered }}"
+
+nodered_verify_enabled: true
+nodered_verify_timeout: 120

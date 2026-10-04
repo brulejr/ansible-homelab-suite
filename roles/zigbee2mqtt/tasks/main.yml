@@ -13,15 +13,27 @@
     state: directory
     mode: "0755"
 
+- name: "Install database merge tool"
+  ansible.builtin.copy:
+    src: "merge_z2m_db.py"
+    dest: "{{ zigbee2mqtt_app_dir }}/merge_z2m_db.py"
+    mode: "0755"
+
 - name: "Render docker-compose.yml"
   ansible.builtin.template:
     src: "docker-compose.yml.j2"
     dest: "{{ zigbee2mqtt_app_dir }}/docker-compose.yml"
     mode: "0644"
 
+- name: "Ensure zigbee2mqtt configuration is provided"
+  ansible.builtin.assert:
+    that:
+      - zigbee2mqtt_configuration | length > 0
+    fail_msg: "zigbee2mqtt_configuration must be defined in the inventory"
+
 - name: "Render configuration.yaml"
-  ansible.builtin.template:
-    src: "configuration.yaml.j2"
+  ansible.builtin.copy:
+    content: "{{ zigbee2mqtt_configuration | to_nice_yaml(indent=2, sort_keys=False, width=1000) }}"
     dest: "{{ zigbee2mqtt_data_dir }}/configuration.yaml"
     mode: "0644"
 

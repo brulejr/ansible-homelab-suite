@@ -1,0 +1,57 @@
+---
+- name: Validate Wiki-Go required variables
+  ansible.builtin.assert:
+    that:
+      - wikigo_stack_name | length > 0
+      - wikigo_container_name | length > 0
+      - wikigo_app_dir | length > 0
+      - wikigo_data_dir | length > 0
+      - wikigo_image | length > 0
+      - wikigo_docker_network | length > 0
+      - wikigo_container_port | int > 0
+      - wikigo_host_port is defined
+      - wikigo_log_level in ['debug', 'info', 'warn', 'error']
+    fail_msg: "Wiki-Go role configuration is invalid."
+
+- name: Validate Wiki-Go users
+  ansible.builtin.assert:
+    that:
+      - wikigo_users | length > 0
+      - wikigo_users | selectattr('role', 'equalto', 'admin') | list | length > 0
+      - wikigo_users | map(attribute='username') | unique | list | length == wikigo_users | length
+    fail_msg: >-
+      wikigo_users must define at least one admin user with unique usernames.
+      Without it Wiki-Go has no usable login.
+
+- name: Validate Wiki-Go user entries
+  ansible.builtin.assert:
+    that:
+      - item.username is defined
+      - item.username is match('^[A-Za-z0-9._-]+$')
+      - item.password is defined
+      - item.password is match('^\$2[aby]\$\d\d\$')
+      - item.role in ['admin', 'editor', 'viewer']
+    fail_msg: "Invalid Wiki-Go user '{{ item.username | default('?') }}' (password must be a bcrypt hash)."
+  loop: "{{ wikigo_users }}"
+  loop_control:
+    label: "{{ item.username | default('?') }}"
+
+- name: Validate Wiki-Go access rules
+  ansible.builtin.assert:
+    that:
+      - item.pattern is defined
+      - item.pattern | length > 0
+      - item.access in ['public', 'private', 'restricted']
+      - item.access != 'restricted' or (item.groups | default([]) | length > 0)
+    fail_msg: "Invalid Wiki-Go access rule: {{ item }}"
+  loop: "{{ wikigo_access_rules }}"
+  loop_control:
+    label: "{{ item.pattern | default('?') }}"
+
+# Entries are written unquoted, matching how Wiki-Go itself serializes them
+- name: Validate Wiki-Go trusted proxies
+  ansible.builtin.assert:
+    that:
+      - item is match('^[0-9A-Fa-f.:]+(/[0-9]+)?$')
+    fail_msg: "wikigo_trusted_proxies entries must be IPs or CIDRs: {{ item }}"
+  loop: "{{ wikigo_trusted_proxies }}"

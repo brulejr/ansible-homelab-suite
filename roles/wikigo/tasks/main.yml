@@ -1,0 +1,14 @@
+---
+- name: Validate Wiki-Go configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: wikigo_enabled | bool
+
+- name: Install and configure Wiki-Go
+  ansible.builtin.include_tasks: install.yml
+  when: wikigo_enabled | bool
+
+- name: Verify Wiki-Go
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - wikigo_enabled | bool
+    - wikigo_verify_enabled | bool

@@ -12,4 +12,5 @@
     - homeassistant
     - mqtt
     - nodered
+    - wikigo
     - zigbee2mqtt

@@ -1,0 +1,87 @@
+{#
+  Mirrors Wiki-Go's GetConfigTemplate()/SaveConfig() output byte-for-byte.
+  If this differs from what the app would write, Wiki-Go rewrites the file on
+  startup and every deploy reports a change and restarts the container.
+  Note: the file must end without a trailing newline after the last access rule.
+#}
+server:
+    host: "0.0.0.0"
+    port: {{ wikigo_container_port | int }}
+    # When set to true, allows cookies to be sent over non-HTTPS connections.
+    # WARNING: Only enable this in trusted environments like a homelab
+    # where HTTPS is not available. This reduces security by allowing
+    # cookies to be transmitted in plain text.
+    allow_insecure_cookies: {{ wikigo_allow_insecure_cookies | bool | lower }}
+    # Trust X-Forwarded-For and X-Real-IP only when the direct connection
+    # comes from one of these proxy IP addresses or CIDR networks.
+    # Leave empty when Wiki-Go is not behind a reverse proxy.
+    # Standalone Nginx using proxy_pass http://127.0.0.1:PORT: ["127.0.0.1"]
+    trusted_proxies: [{{ wikigo_effective_trusted_proxies | join(', ') }}]
+    # Enable native TLS. When true, application will run over HTTPS using the
+    # supplied certificate and key paths.
+    ssl: false
+    ssl_cert: ""
+    ssl_key: ""
+wiki:
+    root_dir: "data"
+    documents_dir: "documents"
+    title: "{{ wikigo_title }}"
+    owner: "{{ wikigo_owner }}"
+    notice: "{{ wikigo_notice }}"
+    timezone: "{{ wikigo_timezone }}"
+    private: {{ wikigo_private | bool | lower }}
+    disable_comments: {{ wikigo_disable_comments | bool | lower }}
+    disable_file_upload_checking: {{ wikigo_disable_file_upload_checking | bool | lower }}
+    enable_link_embedding: {{ wikigo_enable_link_embedding | bool | lower }}
+    hide_attachments: {{ wikigo_hide_attachments | bool | lower }}
+    disable_content_max_width: {{ wikigo_disable_content_max_width | bool | lower }}
+    always_open_children_in_sidebar: {{ wikigo_always_open_children_in_sidebar | bool | lower }}
+    max_versions: {{ wikigo_max_versions | int }}
+    # Maximum file upload size in MB
+    max_upload_size: {{ wikigo_max_upload_size | int }}
+    # Default language for the wiki interface (en, es, etc.)
+    language: "{{ wikigo_language }}"
+    # Log level: debug, info, warn, error
+    log_level: "{{ wikigo_log_level }}"
+security:
+    # cost factor for bcrypt password hashing
+    passwordstrength: {{ wikigo_password_strength | int }}
+    login_ban:
+        # Enable protection against brute force login attacks
+        enabled: {{ wikigo_login_ban_enabled | bool | lower }}
+        # Number of failed attempts before triggering a ban
+        max_failures: {{ wikigo_login_ban_max_failures | int }}
+        # Time window in seconds for counting failures
+        window_seconds: {{ wikigo_login_ban_window_seconds | int }}
+        # Duration in seconds for the first ban
+        initial_ban_seconds: {{ wikigo_login_ban_initial_ban_seconds | int }}
+        # Maximum ban duration in seconds (24 hours)
+        max_ban_seconds: {{ wikigo_login_ban_max_ban_seconds | int }}
+users:
+{% for user in wikigo_users %}
+    - username: {{ user.username }}
+      password: {{ user.password }}
+      role: {{ user.role }}
+{% if user.groups | default([]) | length > 0 %}
+      groups:
+{% for group in user.groups %}
+        - {{ group }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+access_rules:
+{% for rule in wikigo_access_rules %}
+    - pattern: "{{ rule.pattern }}"
+      access: {{ rule.access }}
+{%- if rule.groups | default([]) | length > 0 %}
+
+      groups: [{{ rule.groups | join(', ') }}]
+{%- endif %}
+{%- if rule.description | default('') | length > 0 %}
+
+      description: "{{ rule.description }}"
+{%- endif %}
+{%- if not loop.last %}
+
+{% endif %}
+{%- endfor %}

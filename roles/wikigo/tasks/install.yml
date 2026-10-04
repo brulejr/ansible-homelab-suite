@@ -1,0 +1,61 @@
+---
+- name: Ensure Wiki-Go app directory exists
+  ansible.builtin.file:
+    path: "{{ wikigo_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure Wiki-Go data directory exists
+  ansible.builtin.file:
+    path: "{{ wikigo_data_dir }}"
+    state: directory
+    owner: "{{ wikigo_uid }}"
+    group: "{{ wikigo_gid }}"
+    mode: "0755"
+
+- name: Look up Wiki-Go Docker network
+  community.docker.docker_network_info:
+    name: "{{ wikigo_docker_network }}"
+  register: wikigo_network_info
+  when: wikigo_trust_docker_network | bool
+
+- name: Determine Wiki-Go trusted proxies
+  ansible.builtin.set_fact:
+    wikigo_effective_trusted_proxies: >-
+      {{
+        (wikigo_trusted_proxies
+         + ((wikigo_network_info.network.IPAM.Config | default([], true)
+             | map(attribute='Subnet') | reject('search', ':') | list)
+            if (wikigo_trust_docker_network | bool) and (wikigo_network_info.exists | default(false))
+            else []))
+        | unique
+      }}
+
+# Rendered in exactly the format Wiki-Go writes, so the app does not rewrite it
+# on startup and subsequent deploys stay idempotent.
+- name: Render Wiki-Go config.yaml
+  ansible.builtin.template:
+    src: config.yaml.j2
+    dest: "{{ wikigo_data_dir }}/config.yaml"
+    owner: "{{ wikigo_uid }}"
+    group: "{{ wikigo_gid }}"
+    mode: "0600"
+  notify: Restart wikigo
+
+- name: Render Wiki-Go docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ wikigo_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart wikigo
+
+- name: Start Wiki-Go stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ wikigo_app_dir }}"
+    project_name: "{{ wikigo_stack_name }}"
+    state: present
+    pull: always

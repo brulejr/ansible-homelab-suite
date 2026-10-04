@@ -1,0 +1,6 @@
+---
+- name: Restart wikigo
+  community.docker.docker_compose_v2:
+    project_src: "{{ wikigo_app_dir }}"
+    project_name: "{{ wikigo_stack_name }}"
+    state: restarted

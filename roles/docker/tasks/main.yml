@@ -69,6 +69,28 @@
     groups: docker
     append: true
 
+- name: Ensure Docker systemd drop-in directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/docker.service.d
+    state: directory
+    mode: "0755"
+  when: docker_wait_for_network | bool
+
+- name: Configure Docker to wait for the network
+  ansible.builtin.template:
+    src: 10-wait-for-network.conf.j2
+    dest: /etc/systemd/system/docker.service.d/10-wait-for-network.conf
+    mode: "0644"
+  when: docker_wait_for_network | bool
+  notify: Reload systemd
+
+- name: Remove Docker wait-for-network drop-in
+  ansible.builtin.file:
+    path: /etc/systemd/system/docker.service.d/10-wait-for-network.conf
+    state: absent
+  when: not (docker_wait_for_network | bool)
+  notify: Reload systemd
+
 - name: Enable Docker service
   ansible.builtin.service:
     name: docker

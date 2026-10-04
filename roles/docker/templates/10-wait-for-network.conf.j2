@@ -1,0 +1,8 @@
+# Managed by Ansible (docker)
+# Wait for a default IPv4 route before starting Docker; start anyway on timeout.
+[Unit]
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStartPre=-/usr/bin/timeout {{ docker_wait_for_network_timeout }} /bin/sh -c 'until ip -4 route show default | grep -q default; do sleep 1; done'

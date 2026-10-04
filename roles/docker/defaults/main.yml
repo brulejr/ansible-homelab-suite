@@ -1,0 +1,6 @@
+---
+# Delay Docker startup until the host has a default IPv4 route. Without this,
+# Docker can start before DHCP completes, leaving containers that publish on a
+# specific host IP without their ports and bridge containers without routes.
+docker_wait_for_network: true
+docker_wait_for_network_timeout: 60

@@ -1,0 +1,23 @@
+lovelace:
+{% if homeassistant_frontend_modules %}
+  resource_mode: yaml
+  resources:
+{% for module in homeassistant_frontend_modules %}
+    - url: /local/{{ module.name }}/{{ module.version }}/{{ module.entrypoint }}
+      type: module
+{% endfor %}
+{% endif %}
+{% if homeassistant_dashboards %}
+  dashboards:
+{% for dashboard in homeassistant_dashboards %}
+    {{ dashboard.url_path }}:
+      mode: yaml
+      filename: dashboards/{{ dashboard.url_path }}.yaml
+      title: {{ dashboard.title | to_json }}
+{% if dashboard.icon is defined %}
+      icon: {{ dashboard.icon }}
+{% endif %}
+      show_in_sidebar: {{ dashboard.show_in_sidebar | default(true) | bool | lower }}
+      require_admin: {{ dashboard.require_admin | default(false) | bool | lower }}
+{% endfor %}
+{% endif %}

@@ -1,0 +1,59 @@
+---
+- name: "Check frontend module {{ homeassistant_frontend_module.name }}"
+  ansible.builtin.stat:
+    path: >-
+      {{ homeassistant_www_dir }}/{{ homeassistant_frontend_module.name }}/{{
+      homeassistant_frontend_module.version }}/{{ homeassistant_frontend_module.entrypoint }}
+  register: homeassistant_frontend_module_entrypoint
+
+# Releases can ship lazy-loaded chunks next to the entrypoint, so every .js
+# asset is downloaded into a per-version directory (which also busts caches).
+- name: "Download frontend module {{ homeassistant_frontend_module.name }}"
+  when: not homeassistant_frontend_module_entrypoint.stat.exists
+  block:
+    - name: "Look up release {{ homeassistant_frontend_module.version }}"
+      ansible.builtin.uri:
+        url: >-
+          https://api.github.com/repos/{{ homeassistant_frontend_module.repo
+          }}/releases/tags/{{ homeassistant_frontend_module.version }}
+        return_content: true
+      register: homeassistant_frontend_module_release
+      when: homeassistant_frontend_module.source | default('release') == 'release'
+
+    - name: "Ensure module directories exist"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ homeassistant_puid }}"
+        group: "{{ homeassistant_pgid }}"
+        mode: "0755"
+      loop:
+        - "{{ homeassistant_www_dir }}/{{ homeassistant_frontend_module.name }}"
+        - "{{ homeassistant_www_dir }}/{{ homeassistant_frontend_module.name }}/{{ homeassistant_frontend_module.version }}"
+
+    - name: "Download release assets"
+      ansible.builtin.get_url:
+        url: "{{ item.browser_download_url }}"
+        dest: "{{ homeassistant_www_dir }}/{{ homeassistant_frontend_module.name }}/{{ homeassistant_frontend_module.version }}/{{ item.name }}"
+        owner: "{{ homeassistant_puid }}"
+        group: "{{ homeassistant_pgid }}"
+        mode: "0644"
+      loop: >-
+        {{ homeassistant_frontend_module_release.json.assets
+           | selectattr('name', 'match', '.*\.js$') | list }}
+      loop_control:
+        label: "{{ item.name }}"
+      when: homeassistant_frontend_module.source | default('release') == 'release'
+
+    # Some cards commit their built bundle to the repo instead of attaching it
+    # to the release; fetch it from the tag.
+    - name: "Download repository file"
+      ansible.builtin.get_url:
+        url: >-
+          https://raw.githubusercontent.com/{{ homeassistant_frontend_module.repo }}/{{
+          homeassistant_frontend_module.version }}/{{ homeassistant_frontend_module.entrypoint }}
+        dest: "{{ homeassistant_www_dir }}/{{ homeassistant_frontend_module.name }}/{{ homeassistant_frontend_module.version }}/{{ homeassistant_frontend_module.entrypoint }}"
+        owner: "{{ homeassistant_puid }}"
+        group: "{{ homeassistant_pgid }}"
+        mode: "0644"
+      when: homeassistant_frontend_module.source | default('release') == 'repo'

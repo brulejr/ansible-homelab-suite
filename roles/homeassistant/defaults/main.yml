@@ -24,3 +24,28 @@ homeassistant_mount_docker_socket: false
 
 homeassistant_verify_enabled: true
 homeassistant_verify_timeout: 120
+
+# Frontend modules (custom cards) downloaded from GitHub releases into
+# /config/www/<name>/<version>/ and registered as Lovelace resources.
+# Setting any switches Lovelace to resource_mode: yaml, so resources added in
+# the UI (or by HACS) are ignored; declare them here instead.
+#   - name: room-summary-card
+#     repo: homeassistant-extras/room-summary-card
+#     version: "2.4.0"
+#     entrypoint: room-summary-card.js
+#     source: release   # release: every .js release asset (default)
+#                       # repo: just the entrypoint file from the tag
+homeassistant_frontend_modules: []
+
+# YAML-mode dashboards rendered into /config/dashboards/<url_path>.yaml.
+# UI edits to these dashboards are overwritten on deploy.
+#   - url_path: dashboard-rooms   # must contain a hyphen
+#     title: Rooms
+#     icon: mdi:floor-plan
+#     show_in_sidebar: true
+#     require_admin: false
+#     config: { views: [...] }    # complete Lovelace dashboard config
+homeassistant_dashboards: []
+
+homeassistant_www_dir: "{{ homeassistant_config_dir }}/www"
+homeassistant_dashboards_dir: "{{ homeassistant_config_dir }}/dashboards"

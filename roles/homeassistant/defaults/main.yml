@@ -49,3 +49,15 @@ homeassistant_dashboards: []
 
 homeassistant_www_dir: "{{ homeassistant_config_dir }}/www"
 homeassistant_dashboards_dir: "{{ homeassistant_config_dir }}/dashboards"
+
+# Home Assistant API access (long-lived access token), used for setup that
+# has no YAML equivalent. Tasks that need it are skipped while it is empty.
+homeassistant_api_url: "http://{{ homeassistant_bind_ip }}:{{ homeassistant_host_port }}"
+homeassistant_api_token: ""
+
+# Ping (ICMP) integration entries to ensure exist, matched by host. Each
+# creates binary_sensor.<host with dots as underscores>. Entries are never
+# removed, so dropping a host here leaves its entry in place.
+#   - name: devops01
+#     host: 10.10.40.44
+homeassistant_ping_hosts: []

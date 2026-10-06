@@ -1,0 +1,30 @@
+---
+- name: "Start Ping config flow for {{ homeassistant_ping_host.name }}"
+  ansible.builtin.uri:
+    url: "{{ homeassistant_api_url }}/api/config/config_entries/flow"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ homeassistant_api_token }}"
+    body_format: json
+    body:
+      handler: ping
+    return_content: true
+  register: homeassistant_ping_flow
+  no_log: true
+
+- name: "Create Ping entry for {{ homeassistant_ping_host.name }}"
+  ansible.builtin.uri:
+    url: "{{ homeassistant_api_url }}/api/config/config_entries/flow/{{ homeassistant_ping_flow.json.flow_id }}"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ homeassistant_api_token }}"
+    body_format: json
+    body:
+      host: "{{ homeassistant_ping_host.host }}"
+    return_content: true
+  register: homeassistant_ping_result
+  changed_when: homeassistant_ping_result.json.type == 'create_entry'
+  failed_when: >-
+    homeassistant_ping_result.json.type | default('') != 'create_entry'
+    and homeassistant_ping_result.json.reason | default('') != 'already_configured'
+  no_log: true

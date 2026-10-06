@@ -16,3 +16,10 @@
   when:
     - homeassistant_enabled | bool
     - homeassistant_verify_enabled | bool
+
+- name: Configure Home Assistant Ping hosts
+  ansible.builtin.include_tasks: ping_hosts.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_api_token | length > 0
+    - homeassistant_ping_hosts | length > 0

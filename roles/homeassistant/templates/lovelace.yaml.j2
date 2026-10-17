@@ -3,7 +3,7 @@ lovelace:
   resource_mode: yaml
   resources:
 {% for module in homeassistant_frontend_modules %}
-    - url: /local/{{ module.name }}/{{ module.version }}/{{ module.entrypoint }}
+    - url: /local/{{ module.name }}/{{ module.version }}/{{ module.entrypoint }}{{ ('?patch=' ~ (module.patches | to_json | hash('md5'))[:8]) if module.patches | default([]) else '' }}
       type: module
 {% endfor %}
 {% endif %}

@@ -35,6 +35,10 @@ homeassistant_verify_timeout: 120
 #     entrypoint: room-summary-card.js
 #     source: release   # release: every .js release asset (default)
 #                       # repo: just the entrypoint file from the tag
+#     patches:          # optional literal fixes to the entrypoint; the deploy
+#       - name: why     # fails if one neither matches nor is already applied
+#         search: "..."
+#         replace: "..."
 homeassistant_frontend_modules: []
 
 # YAML-mode dashboards rendered into /config/dashboards/<url_path>.yaml.

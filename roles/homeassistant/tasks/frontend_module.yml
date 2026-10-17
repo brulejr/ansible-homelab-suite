@@ -57,3 +57,41 @@
         group: "{{ homeassistant_pgid }}"
         mode: "0644"
       when: homeassistant_frontend_module.source | default('release') == 'repo'
+
+# Local fixes to the upstream entrypoint, re-applied on every deploy. A patch
+# whose search text is gone and whose replacement is absent means upstream
+# changed the code, so fail rather than ship an unpatched (or broken) file.
+- name: "Read {{ homeassistant_frontend_module.name }} entrypoint for patching"
+  ansible.builtin.slurp:
+    src: >-
+      {{ homeassistant_www_dir }}/{{ homeassistant_frontend_module.name }}/{{
+      homeassistant_frontend_module.version }}/{{ homeassistant_frontend_module.entrypoint }}
+  register: homeassistant_frontend_module_source
+  when: homeassistant_frontend_module.patches | default([]) | length > 0
+
+- name: "Check {{ homeassistant_frontend_module.name }} patches still apply"
+  ansible.builtin.assert:
+    that:
+      - >-
+        item.search in (homeassistant_frontend_module_source.content | b64decode)
+        or item.replace in (homeassistant_frontend_module_source.content | b64decode)
+    fail_msg: >-
+      Patch '{{ item.name }}' no longer matches {{ homeassistant_frontend_module.name }}
+      {{ homeassistant_frontend_module.version }}; update or drop it.
+    quiet: true
+  loop: "{{ homeassistant_frontend_module.patches | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: "Patch {{ homeassistant_frontend_module.name }}"
+  ansible.builtin.replace:
+    path: >-
+      {{ homeassistant_www_dir }}/{{ homeassistant_frontend_module.name }}/{{
+      homeassistant_frontend_module.version }}/{{ homeassistant_frontend_module.entrypoint }}
+    regexp: "{{ item.search | regex_escape }}"
+    # Folded scalar so the backslash escaping reaches Jinja unchanged
+    replace: >-
+      {{ item.replace | replace('\\', '\\\\') }}
+  loop: "{{ homeassistant_frontend_module.patches | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"

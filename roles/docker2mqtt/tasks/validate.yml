@@ -1,0 +1,12 @@
+---
+- name: Assert docker2mqtt MQTT host is defined
+  ansible.builtin.assert:
+    that:
+      - docker2mqtt_mqtt_host | length > 0
+    fail_msg: "docker2mqtt_mqtt_host must be defined"
+
+- name: Assert docker2mqtt hostname is defined
+  ansible.builtin.assert:
+    that:
+      - docker2mqtt_hostname | length > 0
+    fail_msg: "docker2mqtt_hostname must be defined"

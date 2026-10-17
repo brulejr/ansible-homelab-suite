@@ -1,0 +1,38 @@
+---
+docker2mqtt_enabled: true
+
+# Identity
+docker2mqtt_stack_name: docker2mqtt
+docker2mqtt_container_name: docker2mqtt
+
+# Paths
+docker2mqtt_app_dir: "{{ docker_dir }}/docker2mqtt"
+
+# Image/runtime
+docker2mqtt_image: "ghcr.io/miaucl/docker2mqtt:2.6.1"
+docker2mqtt_restart_policy: unless-stopped
+
+# Networking
+docker2mqtt_docker_network: "{{ docker_network }}"
+
+# Name of this host in topics and Home Assistant entity ids
+# (<hostname>_docker_<container>_<sensor>)
+docker2mqtt_hostname: "{{ inventory_hostname }}"
+
+# MQTT broker Home Assistant listens on; required
+docker2mqtt_mqtt_host: ""
+docker2mqtt_mqtt_port: 1883
+docker2mqtt_mqtt_user: ""
+docker2mqtt_mqtt_password: ""
+
+# Behavior
+docker2mqtt_events: true
+docker2mqtt_stats: true
+docker2mqtt_stats_record_seconds: 30
+# Seconds before a removed container's entities are dropped from HA
+docker2mqtt_destroyed_container_ttl: 86400
+docker2mqtt_container_blacklist: []
+docker2mqtt_log_level: 4
+
+# Verification
+docker2mqtt_verify_enabled: true

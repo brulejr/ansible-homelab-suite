@@ -1,0 +1,35 @@
+---
+services:
+  docker2mqtt:
+    image: "{{ docker2mqtt_image }}"
+    container_name: "{{ docker2mqtt_container_name }}"
+    restart: "{{ docker2mqtt_restart_policy }}"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    environment:
+      DOCKER2MQTT_HOSTNAME: "{{ docker2mqtt_hostname }}"
+      MQTT_HOST: "{{ docker2mqtt_mqtt_host }}"
+      MQTT_PORT: "{{ docker2mqtt_mqtt_port }}"
+      MQTT_CLIENT_ID: "docker2mqtt_{{ docker2mqtt_hostname }}"
+{% if docker2mqtt_mqtt_user | length > 0 %}
+      MQTT_USER: "{{ docker2mqtt_mqtt_user }}"
+      MQTT_PASSWD: "{{ docker2mqtt_mqtt_password }}"
+{% endif %}
+{% if docker2mqtt_events | bool %}
+      EVENTS: "true"
+{% endif %}
+{% if docker2mqtt_stats | bool %}
+      STATS: "true"
+{% endif %}
+      STATS_RECORD_SECONDS: "{{ docker2mqtt_stats_record_seconds }}"
+      DESTROYED_CONTAINER_TTL: "{{ docker2mqtt_destroyed_container_ttl }}"
+{% if docker2mqtt_container_blacklist | length > 0 %}
+      CONTAINER_BLACKLIST: "{{ docker2mqtt_container_blacklist | join(',') }}"
+{% endif %}
+      LOG_LEVEL: "{{ docker2mqtt_log_level }}"
+    networks:
+      - {{ docker2mqtt_docker_network }}
+
+networks:
+  {{ docker2mqtt_docker_network }}:
+    external: true

@@ -91,6 +91,38 @@
   when: not (docker_wait_for_network | bool)
   notify: Reload systemd
 
+- name: Ensure Docker configuration directory exists
+  ansible.builtin.file:
+    path: /etc/docker
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Check for existing Docker daemon configuration
+  ansible.builtin.stat:
+    path: /etc/docker/daemon.json
+  register: docker_daemon_json_stat
+
+- name: Read existing Docker daemon configuration
+  ansible.builtin.slurp:
+    src: /etc/docker/daemon.json
+  register: docker_daemon_json
+  when: docker_daemon_json_stat.stat.exists
+
+# Restarting the daemon restarts every container on the host once
+- name: Configure Docker daemon
+  ansible.builtin.copy:
+    content: >-
+      {{ ((docker_daemon_json.content | b64decode | from_json)
+          if docker_daemon_json_stat.stat.exists else {})
+         | combine(docker_daemon_config, recursive=true) | to_nice_json(indent=2) }}
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Docker
+
 - name: Enable Docker service
   ansible.builtin.service:
     name: docker

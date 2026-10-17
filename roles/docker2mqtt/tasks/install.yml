@@ -1,0 +1,25 @@
+---
+- name: Ensure docker2mqtt app directory exists
+  ansible.builtin.file:
+    path: "{{ docker2mqtt_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Mode 0600: the compose file can carry the MQTT password
+- name: Render docker2mqtt docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ docker2mqtt_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Restart docker2mqtt
+
+- name: Start docker2mqtt stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ docker2mqtt_app_dir }}"
+    project_name: "{{ docker2mqtt_stack_name }}"
+    state: present
+    pull: always

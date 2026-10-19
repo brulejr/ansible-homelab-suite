@@ -1,0 +1,121 @@
+---
+iot_pipeline_enabled: true
+
+iot_pipeline_stack_name: iot-pipeline
+iot_pipeline_container_prefix: iot-pipeline
+
+# Paths
+iot_pipeline_app_dir: "{{ docker_dir }}/iot-pipeline"
+iot_pipeline_src_dir: "{{ iot_pipeline_app_dir }}/src"
+iot_pipeline_secrets_dir: "{{ iot_pipeline_app_dir }}/secrets"
+iot_pipeline_ssh_dir: "{{ iot_pipeline_app_dir }}/ssh"
+iot_pipeline_data_dir: "{{ data_dir }}/iot-pipeline"
+
+# ---------------------------------------------------------------------------
+# Source checkout (over SSH)
+#
+# The application image is built on the target from this checkout; nothing is
+# pulled from or pushed to a registry. The checkout is owned by the role: local
+# changes on the host are discarded on the next deploy.
+#
+# Authentication uses an SSH key. Either supply the private key itself
+# (iot_pipeline_git_ssh_private_key, from the vault; it is written to
+# iot_pipeline_git_key_file), or leave it empty and point
+# iot_pipeline_git_key_file at a key already present on the host.
+# ---------------------------------------------------------------------------
+iot_pipeline_git_repo: "git@github.com:brulejr/iot-pipeline.git"
+iot_pipeline_git_version: main
+iot_pipeline_git_ssh_private_key: ""
+iot_pipeline_git_key_file: "{{ iot_pipeline_ssh_dir }}/id_deploy"
+iot_pipeline_git_known_hosts_file: "{{ iot_pipeline_ssh_dir }}/known_hosts"
+
+# ---------------------------------------------------------------------------
+# Application image build
+#
+# The image is tagged with the commit it was built from, so a deploy builds
+# only when the checked-out commit has no image yet. Gradle runs in a throwaway
+# JDK container (nothing Java is installed on the host); its cache lives in a
+# named volume so rebuilds do not download dependencies again.
+# Use "build" instead of "bootJar" to refuse a commit whose tests fail.
+# ---------------------------------------------------------------------------
+iot_pipeline_image_name: iot-pipeline
+iot_pipeline_builder_image: "eclipse-temurin:21-jdk"
+iot_pipeline_gradle_tasks:
+  - bootJar
+iot_pipeline_gradle_cache_volume: iot-pipeline-gradle
+iot_pipeline_force_rebuild: false
+
+# Images (keep them in step with the upstream docker/prod/compose.prod.yaml)
+iot_pipeline_postgres_image: "postgres:17"
+iot_pipeline_grafana_image: "grafana/grafana-oss:13.0.2"
+iot_pipeline_restart_policy: unless-stopped
+
+# Container users, which own their data directories on the host
+iot_pipeline_postgres_uid: 999
+iot_pipeline_grafana_uid: 472
+
+# Networking
+#
+# The application joins the shared Docker network to reach the MQTT broker by
+# container name. PostgreSQL stays on the stack's private network.
+iot_pipeline_docker_network: "{{ docker_network }}"
+iot_pipeline_bind_ip: "{{ server_bind_ip }}"
+
+# The REST API has no authentication, and demoting a device deletes it from
+# Home Assistant: keep it on a trusted network.
+iot_pipeline_host_port: "{{ app_port_iot_pipeline }}"
+iot_pipeline_grafana_host_port: "{{ app_port_iot_pipeline_grafana }}"
+
+# Loopback only, for psql from the host
+iot_pipeline_postgres_bind_ip: "127.0.0.1"
+iot_pipeline_postgres_host_port: "{{ app_port_iot_pipeline_postgres }}"
+
+# ---------------------------------------------------------------------------
+# Application settings
+# ---------------------------------------------------------------------------
+# The broker rtl_433 publishes to, and the one Home Assistant listens on
+iot_pipeline_ingest_mqtt_url: "tcp://mqtt:1883"
+iot_pipeline_ingest_mqtt_client_id: iot-pipeline
+iot_pipeline_publish_mqtt_url: "tcp://mqtt:1883"
+iot_pipeline_publish_mqtt_client_id: iot-pipeline-publisher
+
+# The database, and the role that owns the application's schema. Both are
+# created by the repository's docker/postgres/initdb on first start only.
+iot_pipeline_postgres_db: iot_pipeline
+iot_pipeline_postgres_app_username: iot_pipeline
+iot_pipeline_grafana_admin_user: admin
+iot_pipeline_timezone: "{{ timezone }}"
+
+# Additional environment for the application container, e.g. broker
+# credentials (PIPELINE_INGEST_MQTT_USERNAME) or MQTT_TOPIC
+iot_pipeline_environment: {}
+
+# ---------------------------------------------------------------------------
+# Secrets (keep them in the vault)
+#
+# Each is written to a file under iot_pipeline_secrets_dir and mounted into the
+# containers that need it as a Docker Compose secret (/run/secrets/...); none
+# appears in docker-compose.yml or in a container's environment as configured.
+#
+# All of them take effect only when their data directory is first
+# initialised: the PostgreSQL roles are created on the first start with an
+# empty data directory, and Grafana sets its admin password on creating its
+# database. To change one later, change it in the database as well
+# (ALTER ROLE ... PASSWORD, or grafana cli admin reset-admin-password).
+#
+# Generate them with:
+#   openssl rand -base64 24 | tr -d '/+='
+#
+# iot_pipeline_postgres_admin_password  the superuser, postgres (administration)
+# iot_pipeline_postgres_app_password    the application's role
+# iot_pipeline_postgres_grafana_password  Grafana's read-only grafana_reader
+# iot_pipeline_grafana_admin_password   Grafana's admin user
+# ---------------------------------------------------------------------------
+iot_pipeline_postgres_admin_password: ""
+iot_pipeline_postgres_app_password: ""
+iot_pipeline_postgres_grafana_password: ""
+iot_pipeline_grafana_admin_password: ""
+
+# Verification
+iot_pipeline_verify_enabled: true
+iot_pipeline_verify_timeout: 180

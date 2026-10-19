@@ -1,0 +1,40 @@
+---
+- name: Check iot-pipeline container state
+  community.docker.docker_container_info:
+    name: "{{ iot_pipeline_container_prefix }}{{ item }}"
+  register: iot_pipeline_container_info
+  loop: ['', '-postgres', '-grafana']
+
+- name: Assert iot-pipeline containers are running
+  ansible.builtin.assert:
+    that:
+      - item.exists
+      - item.container.State.Running
+    fail_msg: >-
+      Container {{ iot_pipeline_container_prefix }}{{ item.item }} is not running.
+      Status={{ item.container.State.Status | default('missing') }},
+      exit_code={{ item.container.State.ExitCode | default('unknown') }}
+  loop: "{{ iot_pipeline_container_info.results }}"
+  loop_control:
+    label: "{{ iot_pipeline_container_prefix }}{{ item.item }}"
+
+# 503 until PostgreSQL and both brokers are reachable
+- name: Wait for iot-pipeline health endpoint
+  ansible.builtin.uri:
+    url: "http://{{ iot_pipeline_bind_ip }}:{{ iot_pipeline_host_port }}/mgmt/health"
+    method: GET
+    status_code: 200
+  register: iot_pipeline_health
+  retries: "{{ (iot_pipeline_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
+  delay: 5
+  until: iot_pipeline_health.status == 200
+
+- name: Wait for iot-pipeline Grafana
+  ansible.builtin.uri:
+    url: "http://{{ iot_pipeline_bind_ip }}:{{ iot_pipeline_grafana_host_port }}/api/health"
+    method: GET
+    status_code: 200
+  register: iot_pipeline_grafana_health
+  retries: "{{ (iot_pipeline_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
+  delay: 5
+  until: iot_pipeline_grafana_health.status == 200

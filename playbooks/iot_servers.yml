@@ -12,6 +12,7 @@
     - esphome
     - homeassistant
     - mqtt
+    - iot_pipeline
     - nodered
     - wikigo
     - zigbee2mqtt

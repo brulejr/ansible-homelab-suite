@@ -51,6 +51,9 @@ app_port_gitea: 8112
 app_port_guacamole: 8101
 app_port_homarr: 7575
 app_port_homeassistant: 8123
+app_port_iot_pipeline: 8114
+app_port_iot_pipeline_grafana: 8115
+app_port_iot_pipeline_postgres: 5432
 app_port_jekyll: 8111
 app_port_jellyfin: 8103
 app_port_jenkins: 8104

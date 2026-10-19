@@ -1,0 +1,14 @@
+---
+- name: Validate iot-pipeline configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: iot_pipeline_enabled | bool
+
+- name: Install and configure iot-pipeline
+  ansible.builtin.include_tasks: install.yml
+  when: iot_pipeline_enabled | bool
+
+- name: Verify iot-pipeline
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - iot_pipeline_enabled | bool
+    - iot_pipeline_verify_enabled | bool

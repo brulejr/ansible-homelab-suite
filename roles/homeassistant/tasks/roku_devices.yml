@@ -1,0 +1,23 @@
+---
+# The Roku integration has no YAML configuration, so entries are created
+# through the config flow API. Each run starts a flow per Roku; one already
+# configured (matched by serial number) aborts, leaving its entry untouched.
+- name: Start the list of Roku devices to place
+  ansible.builtin.set_fact:
+    homeassistant_roku_device_areas: []
+
+- name: Add missing Home Assistant Rokus
+  ansible.builtin.include_tasks: roku_device.yml
+  loop: "{{ homeassistant_roku_devices }}"
+  loop_control:
+    loop_var: homeassistant_roku_device
+    label: "{{ homeassistant_roku_device.name }} ({{ homeassistant_roku_device.host }})"
+
+# A Roku's device carries no configuration URL, so it is found by the
+# integration's identifier, its serial number, read from each Roku by
+# roku_device.yml
+- name: Place Home Assistant Rokus in their areas
+  ansible.builtin.include_tasks: device_areas.yml
+  vars:
+    homeassistant_device_areas_kind: Rokus
+    homeassistant_device_areas: "{{ homeassistant_roku_device_areas }}"

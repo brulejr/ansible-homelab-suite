@@ -30,3 +30,10 @@
     - homeassistant_enabled | bool
     - homeassistant_api_token | length > 0
     - homeassistant_brother_printers | length > 0
+
+- name: Configure Home Assistant Rokus
+  ansible.builtin.include_tasks: roku_devices.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_api_token | length > 0
+    - homeassistant_roku_devices | length > 0

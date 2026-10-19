@@ -4,10 +4,16 @@ Run inside the Home Assistant container, whose Python has aiohttp. Reads JSON on
 stdin:
 
     {"token": "...", "url": "ws://127.0.0.1:8123/api/websocket",
-     "devices": [{"configuration_url": "http://10.10.120.70/", "area": "master_bedroom"}]}
+     "devices": [
+       {"label": "HL-L3220CDW", "area": "master_bedroom",
+        "configuration_url": "http://10.10.120.70/"},
+       {"label": "Roku Ultra", "area": "living_room",
+        "identifier": ["roku", "X01000CUPS96"]}]}
 
-and prints JSON naming the devices it moved, the ones it could not find, and any
-area that does not exist. A device already in its area is left alone.
+Each device is found by its configuration URL or by one of its integration
+identifiers. Prints JSON naming the devices it moved, the ones it could not
+find, and any area that does not exist. A device already in its area is left
+alone.
 """
 
 import asyncio
@@ -16,6 +22,12 @@ import json
 import sys
 
 import aiohttp
+
+
+def matches(device, wanted):
+    if "configuration_url" in wanted:
+        return device.get("configuration_url") == wanted["configuration_url"]
+    return list(wanted["identifier"]) in [list(i) for i in device.get("identifiers", [])]
 
 
 async def main(request):
@@ -46,10 +58,10 @@ async def main(request):
                 if wanted["area"] not in areas:
                     result["unknown_areas"].append(wanted["area"])
                     continue
-                matches = [d for d in devices if d.get("configuration_url") == wanted["configuration_url"]]
-                if not matches:
-                    result["missing"].append(wanted["configuration_url"])
-                for device in matches:
+                found = [d for d in devices if matches(d, wanted)]
+                if not found:
+                    result["missing"].append(wanted["label"])
+                for device in found:
                     if device.get("area_id") != wanted["area"]:
                         await call("config/device_registry/update",
                                    device_id=device["id"], area_id=wanted["area"])

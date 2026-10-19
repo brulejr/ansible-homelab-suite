@@ -1,0 +1,51 @@
+---
+# Puts devices in areas. Expects homeassistant_device_areas: a list of
+# {label, area} plus either configuration_url or identifier ([domain, id]).
+#
+# Device areas can only be set over the WebSocket API, which the uri module
+# cannot speak, so a script does it from inside the Home Assistant container
+# (which has Python and aiohttp). The token goes in on stdin, hence no_log.
+- name: "Place Home Assistant {{ homeassistant_device_areas_kind }} in their areas"
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - -i
+      - "{{ homeassistant_container_name }}"
+      - python3
+      - -c
+      - "{{ lookup('ansible.builtin.file', 'assign_device_areas.py') }}"
+    stdin: >-
+      {{ {'token': homeassistant_api_token,
+          'url': 'ws://127.0.0.1:' ~ homeassistant_container_port ~ '/api/websocket',
+          'devices': homeassistant_device_areas} | to_json }}
+  register: homeassistant_device_areas_result
+  changed_when: >-
+    homeassistant_device_areas_result.rc == 0
+    and (homeassistant_device_areas_result.stdout | from_json).changed | length > 0
+  # A new entry's device is registered as the integration finishes setting up
+  retries: 6
+  delay: 5
+  until: >-
+    homeassistant_device_areas_result.rc == 0
+    and (homeassistant_device_areas_result.stdout | from_json).missing | length == 0
+  # Judged by the next task, since no_log would hide the reason
+  ignore_errors: true
+  no_log: true
+
+- name: "Check Home Assistant {{ homeassistant_device_areas_kind }} areas"
+  ansible.builtin.assert:
+    that:
+      - homeassistant_device_areas_result.rc == 0
+      - (homeassistant_device_areas_result.stdout | from_json).unknown_areas | length == 0
+      - (homeassistant_device_areas_result.stdout | from_json).missing | length == 0
+    fail_msg: >-
+      {% if homeassistant_device_areas_result.rc != 0 %}Area assignment failed:
+      {{ homeassistant_device_areas_result.stderr_lines | default(['no output'], true) | last }}
+      {% else %}{% set r = homeassistant_device_areas_result.stdout | from_json %}
+      {% if r.unknown_areas %}No such Home Assistant area: {{ r.unknown_areas | join(', ') }}. {% endif %}
+      {% if r.missing %}No device found for {{ r.missing | join(', ') }}. {% endif %}
+      {% endif %}
+    success_msg: >-
+      {{ (homeassistant_device_areas_result.stdout | from_json).changed | default([], true)
+         or 'All ' ~ homeassistant_device_areas_kind ~ ' already in their areas' }}

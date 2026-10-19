@@ -76,3 +76,12 @@ homeassistant_ping_hosts: []
 #     area: master_bedroom    # area id, as in the room cards' "area:"
 #     snmp_community: public  # optional; also snmp_port (161)
 homeassistant_brother_printers: []
+
+# Rokus (Roku integration) to ensure exist, matched by serial number, and the
+# area each one's device belongs in, reapplied on every deploy. The serial
+# number is read from the Roku itself, which must be reachable from this host
+# on port 8060. Entries are never removed.
+#   - name: Roku Ultra          # label for the deploy output only
+#     host: 10.10.120.75
+#     area: living_room
+homeassistant_roku_devices: []

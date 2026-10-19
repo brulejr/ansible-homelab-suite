@@ -23,3 +23,10 @@
     - homeassistant_enabled | bool
     - homeassistant_api_token | length > 0
     - homeassistant_ping_hosts | length > 0
+
+- name: Configure Home Assistant Brother printers
+  ansible.builtin.include_tasks: brother_printers.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_api_token | length > 0
+    - homeassistant_brother_printers | length > 0

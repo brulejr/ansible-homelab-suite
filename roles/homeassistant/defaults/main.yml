@@ -65,3 +65,14 @@ homeassistant_api_token: ""
 #   - name: devops01
 #     host: 10.10.40.44
 homeassistant_ping_hosts: []
+
+# Brother printers (Brother integration, over SNMP) to ensure exist, matched by
+# the printer's serial number, and the area each one's device belongs in. The
+# area is reapplied on every deploy, so the inventory is the source of truth for
+# it. Entries are never removed.
+#   - name: HL-L3220CDW       # label for the deploy output only
+#     host: 10.10.120.70
+#     type: laser             # laser (default) or ink
+#     area: master_bedroom    # area id, as in the room cards' "area:"
+#     snmp_community: public  # optional; also snmp_port (161)
+homeassistant_brother_printers: []

@@ -1,0 +1,63 @@
+---
+# The Brother integration has no YAML configuration, so entries are created
+# through the config flow API. Each run starts a flow per printer; one already
+# configured (matched by serial number) aborts, leaving its entry untouched.
+- name: Add missing Home Assistant Brother printers
+  ansible.builtin.include_tasks: brother_printer.yml
+  loop: "{{ homeassistant_brother_printers }}"
+  loop_control:
+    loop_var: homeassistant_brother_printer
+    label: "{{ homeassistant_brother_printer.name }} ({{ homeassistant_brother_printer.host }})"
+
+# Device areas can only be set over the WebSocket API, which the uri module
+# cannot speak, so a script does it from inside the Home Assistant container
+# (which has Python and aiohttp). Each printer's device is found by the
+# configuration URL the integration gives it, http://<host>/. The token goes in
+# on stdin, hence no_log.
+- name: Place Home Assistant Brother printers in their areas
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - -i
+      - "{{ homeassistant_container_name }}"
+      - python3
+      - -c
+      - "{{ lookup('ansible.builtin.file', 'assign_device_areas.py') }}"
+    stdin: >-
+      {{ {'token': homeassistant_api_token,
+          'url': 'ws://127.0.0.1:' ~ homeassistant_container_port ~ '/api/websocket',
+          'devices': homeassistant_brother_printers
+                     | map(attribute='host') | map('regex_replace', '^(.*)$', 'http://\1/')
+                     | map('community.general.dict_kv', 'configuration_url')
+                     | zip(homeassistant_brother_printers | map(attribute='area')
+                           | map('community.general.dict_kv', 'area'))
+                     | map('combine') | list} | to_json }}
+  register: homeassistant_brother_areas
+  changed_when: >-
+    homeassistant_brother_areas.rc == 0
+    and (homeassistant_brother_areas.stdout | from_json).changed | length > 0
+  # A new entry's device is registered as the integration finishes setting up
+  retries: 6
+  delay: 5
+  until: >-
+    homeassistant_brother_areas.rc == 0
+    and (homeassistant_brother_areas.stdout | from_json).missing | length == 0
+  # Judged by the next task, since no_log would hide the reason
+  ignore_errors: true
+  no_log: true
+
+- name: Check Home Assistant Brother printer areas
+  ansible.builtin.assert:
+    that:
+      - homeassistant_brother_areas.rc == 0
+      - (homeassistant_brother_areas.stdout | from_json).unknown_areas | length == 0
+      - (homeassistant_brother_areas.stdout | from_json).missing | length == 0
+    fail_msg: >-
+      {% if homeassistant_brother_areas.rc != 0 %}Area assignment failed:
+      {{ homeassistant_brother_areas.stderr_lines | default(['no output'], true) | last }}
+      {% else %}{% set r = homeassistant_brother_areas.stdout | from_json %}
+      {% if r.unknown_areas %}No such Home Assistant area: {{ r.unknown_areas | join(', ') }}. {% endif %}
+      {% if r.missing %}No printer device found for {{ r.missing | join(', ') }}. {% endif %}
+      {% endif %}
+    success_msg: "{{ (homeassistant_brother_areas.stdout | from_json).changed | default([], true) or 'All printers already in their areas' }}"

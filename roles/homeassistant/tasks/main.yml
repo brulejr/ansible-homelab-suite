@@ -37,3 +37,10 @@
     - homeassistant_enabled | bool
     - homeassistant_api_token | length > 0
     - homeassistant_roku_devices | length > 0
+
+- name: Configure Home Assistant ONVIF cameras
+  ansible.builtin.include_tasks: onvif_cameras.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_api_token | length > 0
+    - homeassistant_onvif_cameras | length > 0

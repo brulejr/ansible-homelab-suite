@@ -85,3 +85,15 @@ homeassistant_brother_printers: []
 #     host: 10.10.120.75
 #     area: living_room
 homeassistant_roku_devices: []
+
+# ONVIF cameras (ONVIF integration, local only) to ensure exist, matched by the
+# camera's MAC address, and the area each one's device belongs in, reapplied on
+# every deploy. A camera already added has its name, host, port and credentials
+# refreshed from here on every deploy. Entries are never removed.
+#   - name: Oil Tank          # device name; camera entities are named after it
+#     host: 10.10.30.249
+#     port: 2020              # ONVIF service port (80 by default; Tapo uses 2020)
+#     username: camera-user   # the camera's own account, not a cloud login
+#     password: "{{ vault_camera_password }}"
+#     area: utility_room
+homeassistant_onvif_cameras: []

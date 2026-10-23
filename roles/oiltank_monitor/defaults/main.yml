@@ -1,0 +1,82 @@
+---
+oiltank_monitor_enabled: true
+
+oiltank_monitor_stack_name: oiltank-monitor
+oiltank_monitor_container_name: oiltank-monitor
+
+# Paths
+oiltank_monitor_app_dir: "{{ docker_dir }}/oiltank-monitor"
+oiltank_monitor_src_dir: "{{ oiltank_monitor_app_dir }}/src"
+oiltank_monitor_secrets_dir: "{{ oiltank_monitor_app_dir }}/secrets"
+
+# ---------------------------------------------------------------------------
+# Source checkout
+#
+# The application image is built on the target from this checkout; nothing is
+# pulled from or pushed to a registry. The repository is public, so it is
+# cloned over HTTPS without a key. The checkout is owned by the role: local
+# changes on the host are discarded on the next deploy.
+# ---------------------------------------------------------------------------
+oiltank_monitor_git_repo: "https://github.com/brulejr/oiltank-monitor.git"
+oiltank_monitor_git_version: main
+
+# ---------------------------------------------------------------------------
+# Application image build
+#
+# The image is tagged with the commit it was built from, so a deploy builds
+# only when the checked-out commit has no image yet. Gradle runs in a throwaway
+# JDK container (nothing Java is installed on the host); its cache lives in a
+# named volume so rebuilds do not download dependencies again.
+# Use "build" instead of "bootJar" to refuse a commit whose tests fail.
+# ---------------------------------------------------------------------------
+oiltank_monitor_image_name: oiltank-monitor
+oiltank_monitor_builder_image: "eclipse-temurin:21-jdk"
+oiltank_monitor_gradle_tasks:
+  - bootJar
+oiltank_monitor_gradle_cache_volume: oiltank-monitor-gradle
+oiltank_monitor_force_rebuild: false
+
+oiltank_monitor_restart_policy: unless-stopped
+
+# Networking
+#
+# The application joins the shared Docker network to reach the MQTT broker by
+# container name.
+oiltank_monitor_docker_network: "{{ docker_network }}"
+oiltank_monitor_bind_ip: "{{ server_bind_ip }}"
+
+# The REST API has no authentication and serves camera snapshots: keep it on a
+# trusted network.
+oiltank_monitor_host_port: "{{ app_port_oiltank_monitor }}"
+
+# ---------------------------------------------------------------------------
+# Application settings
+# ---------------------------------------------------------------------------
+# The broker Home Assistant listens on
+oiltank_monitor_mqtt_url: "tcp://mqtt:1883"
+oiltank_monitor_mqtt_client_id: oiltank-monitor
+oiltank_monitor_mqtt_username: ""
+oiltank_monitor_timezone: "{{ timezone }}"
+
+# Additional environment for the application container, e.g. CAMERA_ENABLED
+# or PUBLISH_ENABLED
+oiltank_monitor_environment: {}
+
+# ---------------------------------------------------------------------------
+# Secrets (keep them in the vault)
+#
+# Each is written to a file under oiltank_monitor_secrets_dir and mounted into
+# the container as a Docker Compose secret (/run/secrets/...); neither appears
+# in docker-compose.yml or in the container's environment as configured.
+#
+# oiltank_monitor_camera_rtsp_url  the camera's RTSP stream, credentials
+#                                  included (rtsp://user:password@host:554/stream1),
+#                                  each URL-encoded
+# oiltank_monitor_mqtt_password    the broker's, if it needs one
+# ---------------------------------------------------------------------------
+oiltank_monitor_camera_rtsp_url: ""
+oiltank_monitor_mqtt_password: ""
+
+# Verification
+oiltank_monitor_verify_enabled: true
+oiltank_monitor_verify_timeout: 180

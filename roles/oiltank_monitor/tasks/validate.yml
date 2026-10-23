@@ -1,0 +1,36 @@
+---
+- name: Validate oiltank-monitor required variables
+  ansible.builtin.assert:
+    that:
+      - oiltank_monitor_stack_name | length > 0
+      - oiltank_monitor_container_name | length > 0
+      - oiltank_monitor_app_dir | length > 0
+      - oiltank_monitor_src_dir | length > 0
+      - oiltank_monitor_secrets_dir | length > 0
+      - oiltank_monitor_docker_network | length > 0
+      - oiltank_monitor_bind_ip | length > 0
+      - oiltank_monitor_host_port | int > 0
+      - oiltank_monitor_gradle_tasks | length > 0
+      - oiltank_monitor_git_repo | length > 0
+      - oiltank_monitor_git_version | length > 0
+      - oiltank_monitor_mqtt_url is match('^(tcp|ssl|ws|wss)://')
+    fail_msg: "oiltank-monitor role configuration is invalid."
+
+# The application deliberately has no default camera, and a URL without
+# credentials fails only at the first capture
+- name: Validate oiltank-monitor camera URL
+  ansible.builtin.assert:
+    that:
+      - oiltank_monitor_camera_rtsp_url is match('^rtsps?://[^/@]+@[^/]+')
+    fail_msg: >-
+      oiltank_monitor_camera_rtsp_url must be the camera's RTSP stream with its
+      credentials (rtsp://user:password@host:554/stream1), preferably built from
+      the vault.
+  no_log: true
+
+- name: Validate oiltank-monitor broker credentials
+  ansible.builtin.assert:
+    that:
+      - (oiltank_monitor_mqtt_username | length > 0) == (oiltank_monitor_mqtt_password | length > 0)
+    fail_msg: "Set both oiltank_monitor_mqtt_username and oiltank_monitor_mqtt_password, or neither."
+  no_log: true

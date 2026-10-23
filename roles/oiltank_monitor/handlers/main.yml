@@ -1,0 +1,6 @@
+---
+- name: Restart oiltank-monitor
+  community.docker.docker_compose_v2:
+    project_src: "{{ oiltank_monitor_app_dir }}"
+    project_name: "{{ oiltank_monitor_stack_name }}"
+    state: restarted

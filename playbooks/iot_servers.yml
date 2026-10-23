@@ -13,6 +13,7 @@
     - homeassistant
     - mqtt
     - iot_pipeline
+    - oiltank_monitor
     - nodered
     - wikigo
     - zigbee2mqtt

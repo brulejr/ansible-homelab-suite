@@ -62,6 +62,7 @@ app_port_nextcloud: 8106
 app_port_nexus: 8107
 app_port_nexus_docker: 10001
 app_port_nodered: 1880
+app_port_oiltank_monitor: 8116
 app_port_openwebrx: 8073
 app_port_openwebui: 8120
 app_port_plantuml: 8108

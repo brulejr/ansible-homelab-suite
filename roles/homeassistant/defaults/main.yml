@@ -97,3 +97,34 @@ homeassistant_roku_devices: []
 #     password: "{{ vault_camera_password }}"
 #     area: utility_room
 homeassistant_onvif_cameras: []
+
+# Generic Cameras (Generic Camera integration) for RTSP streams, such as
+# ring-mqtt's, to ensure exist, matched by entity id. The integration names an
+# entry after the stream's host, so each new entity is renamed to entity_id,
+# and its name and area are reapplied on every deploy. The stream is opened
+# once while the entry is created, so it must be reachable then. A camera
+# already added keeps its stream URL and credentials; delete it in Home
+# Assistant to change them. Entries are never removed.
+#   - name: Front Door Stream
+#     entity_id: camera.front_door_stream
+#     stream_source: rtsp://ring-mqtt:8554/<device id>_live
+#     username: ring              # optional, with password
+#     password: "{{ vault_stream_password }}"
+#     area: foyer                 # optional; set on the entity
+homeassistant_generic_cameras: []
+
+# MQTT devices to place in areas, matched by the identifier their bridge
+# publishes (for ring-mqtt, the Ring device id in its topics). The area is
+# reapplied on every deploy.
+#   - name: Front Door        # label for the deploy output only
+#     identifier: 649a639d769b
+#     area: foyer
+homeassistant_mqtt_devices: []
+
+# Fixed entity ids, for entities matched by integration and unique id. Home
+# Assistant suffixes an id (_2) that another entity already holds; such an id
+# is assigned on the first deploy after that entity is gone.
+#   - platform: mqtt
+#     unique_id: 649a63e7dd20_light
+#     entity_id: light.front_light
+homeassistant_entity_ids: []

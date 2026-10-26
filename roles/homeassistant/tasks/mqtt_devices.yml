@@ -1,0 +1,21 @@
+---
+# MQTT devices (ring-mqtt and other bridges) carry no area, so each is placed
+# by the identifier its bridge gives it, which Home Assistant records as
+# ["mqtt", <id>]
+- name: List MQTT devices to place
+  ansible.builtin.set_fact:
+    homeassistant_mqtt_device_areas: >-
+      {{ homeassistant_mqtt_device_areas | default([])
+         + [{'label': homeassistant_mqtt_device.name,
+             'area': homeassistant_mqtt_device.area,
+             'identifier': ['mqtt', homeassistant_mqtt_device.identifier | string]}] }}
+  loop: "{{ homeassistant_mqtt_devices }}"
+  loop_control:
+    loop_var: homeassistant_mqtt_device
+    label: "{{ homeassistant_mqtt_device.name }} ({{ homeassistant_mqtt_device.identifier }})"
+
+- name: Place Home Assistant MQTT devices in their areas
+  ansible.builtin.include_tasks: device_areas.yml
+  vars:
+    homeassistant_device_areas_kind: MQTT devices
+    homeassistant_device_areas: "{{ homeassistant_mqtt_device_areas }}"

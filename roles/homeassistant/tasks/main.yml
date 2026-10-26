@@ -44,3 +44,24 @@
     - homeassistant_enabled | bool
     - homeassistant_api_token | length > 0
     - homeassistant_onvif_cameras | length > 0
+
+- name: Configure Home Assistant Generic Cameras
+  ansible.builtin.include_tasks: generic_cameras.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_api_token | length > 0
+    - homeassistant_generic_cameras | length > 0
+
+- name: Configure Home Assistant MQTT device areas
+  ansible.builtin.include_tasks: mqtt_devices.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_api_token | length > 0
+    - homeassistant_mqtt_devices | length > 0
+
+- name: Configure Home Assistant entity ids
+  ansible.builtin.include_tasks: entity_ids.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_api_token | length > 0
+    - homeassistant_entity_ids | length > 0

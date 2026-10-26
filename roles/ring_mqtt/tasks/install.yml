@@ -1,0 +1,44 @@
+---
+- name: Ensure ring-mqtt app directory exists
+  ansible.builtin.file:
+    path: "{{ ring_mqtt_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Mode 0700: ring-state.json holds the Ring refresh token
+- name: Ensure ring-mqtt data directory exists
+  ansible.builtin.file:
+    path: "{{ ring_mqtt_data_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+# ring-mqtt only reads config.json, so the role owns it outright. Mode 0600:
+# it carries the broker and live stream passwords.
+- name: Render ring-mqtt config.json
+  ansible.builtin.template:
+    src: config.json.j2
+    dest: "{{ ring_mqtt_data_dir }}/config.json"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  notify: Restart ring-mqtt
+
+- name: Render ring-mqtt docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ ring_mqtt_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start ring-mqtt stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ ring_mqtt_app_dir }}"
+    project_name: "{{ ring_mqtt_stack_name }}"
+    state: present
+    pull: always

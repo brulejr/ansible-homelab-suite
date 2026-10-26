@@ -67,6 +67,8 @@ app_port_openwebrx: 8073
 app_port_openwebui: 8120
 app_port_plantuml: 8108
 app_port_portainer: 9000
+app_port_ring_mqtt: 55123
+app_port_ring_mqtt_rtsp: 8554
 app_port_vaultwarden: 8109
 app_port_wikigo: 8113
 app_port_wikijs: 8110

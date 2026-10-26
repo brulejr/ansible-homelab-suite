@@ -15,5 +15,6 @@
     - iot_pipeline
     - oiltank_monitor
     - nodered
+    - ring_mqtt
     - wikigo
     - zigbee2mqtt

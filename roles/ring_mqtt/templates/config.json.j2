@@ -1,0 +1,14 @@
+{% set credentials = (ring_mqtt_mqtt_user | urlencode | replace('/', '%2F')) ~ ':' ~ (ring_mqtt_mqtt_password | urlencode | replace('/', '%2F')) ~ '@' if ring_mqtt_mqtt_user | length > 0 else '' %}
+{{ {
+  'mqtt_url': 'mqtt://' ~ credentials ~ ring_mqtt_mqtt_host ~ ':' ~ ring_mqtt_mqtt_port,
+  'mqtt_options': '',
+  'livestream_user': ring_mqtt_livestream_user,
+  'livestream_pass': ring_mqtt_livestream_password,
+  'disarm_code': ring_mqtt_disarm_code,
+  'enable_cameras': ring_mqtt_enable_cameras | bool,
+  'enable_modes': ring_mqtt_enable_modes | bool,
+  'enable_panic': ring_mqtt_enable_panic | bool,
+  'hass_topic': ring_mqtt_hass_topic,
+  'ring_topic': ring_mqtt_ring_topic,
+  'location_ids': ring_mqtt_location_ids
+} | to_nice_json(indent=4) }}

@@ -1,0 +1,9 @@
+notify:
+{% for group in homeassistant_notify_groups %}
+  - platform: group
+    name: {{ group.name }}
+    services:
+{% for service in group.services %}
+      - action: {{ service }}
+{% endfor %}
+{% endfor %}

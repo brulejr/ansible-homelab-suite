@@ -128,3 +128,23 @@ homeassistant_mqtt_devices: []
 #     unique_id: 649a63e7dd20_light
 #     entity_id: light.front_light
 homeassistant_entity_ids: []
+
+# Notify groups (the YAML group notify platform), each a notify.<name> service
+# that sends to every listed service. Unlike the UI's notify group helper, it
+# passes the message's data, such as iOS critical-alert options, through to
+# each phone. Changes take effect on the restart they trigger.
+#   - name: door_alerts
+#     services:
+#       - mobile_app_jons_iphone_16
+homeassistant_notify_groups: []
+
+# Automation files, one automation per file, deployed into
+# /config/automations_ansible/ and loaded beside the UI's automations.yaml.
+# Each needs an id (for its traces) that no UI automation uses. Files dropped
+# from the list are removed, and automations are reloaded through the API
+# (homeassistant_api_token) without a restart. These cannot be edited in the
+# UI; change the file and redeploy.
+#   - "{{ inventory_dir }}/files/homeassistant/door_left_open.yaml"
+homeassistant_automation_files: []
+
+homeassistant_automations_dir: "{{ homeassistant_config_dir }}/automations_ansible"

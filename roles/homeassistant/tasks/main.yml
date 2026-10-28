@@ -11,6 +11,14 @@
   ansible.builtin.include_tasks: frontend.yml
   when: homeassistant_enabled | bool
 
+- name: Configure Home Assistant notify groups
+  ansible.builtin.include_tasks: notify_groups.yml
+  when: homeassistant_enabled | bool
+
+- name: Configure Home Assistant automations
+  ansible.builtin.include_tasks: automations.yml
+  when: homeassistant_enabled | bool
+
 - name: Verify Home Assistant
   ansible.builtin.include_tasks: verify.yml
   when:

@@ -1,4 +1,15 @@
 ---
+# Defined before the restart, so a reload never lands while it is starting
+- name: Reload homeassistant automations
+  ansible.builtin.uri:
+    url: "{{ homeassistant_api_url }}/api/services/automation/reload"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ homeassistant_api_token }}"
+    body_format: json
+    body: {}
+  no_log: true
+
 - name: Restart homeassistant
   community.docker.docker_compose_v2:
     project_src: "{{ homeassistant_app_dir }}"

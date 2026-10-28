@@ -1,0 +1,25 @@
+---
+- name: Read Home Assistant configuration.yaml for notify
+  ansible.builtin.slurp:
+    src: "{{ homeassistant_config_dir }}/configuration.yaml"
+  register: homeassistant_notify_configuration_yaml
+
+- name: Ensure configuration.yaml has no unmanaged notify key
+  ansible.builtin.assert:
+    that:
+      - >-
+        homeassistant_notify_configuration_yaml.content | b64decode
+        | regex_replace('(?s)# BEGIN ANSIBLE MANAGED NOTIFY.*# END ANSIBLE MANAGED NOTIFY', '')
+        is not search('(?m)^notify:')
+    fail_msg: >-
+      configuration.yaml already defines 'notify:'. Move it into
+      homeassistant_notify_groups and remove it.
+
+# Notify platforms are only set up at startup.
+- name: Configure Home Assistant notify groups in configuration.yaml
+  ansible.builtin.blockinfile:
+    path: "{{ homeassistant_config_dir }}/configuration.yaml"
+    marker: "# {mark} ANSIBLE MANAGED NOTIFY"
+    block: "{{ lookup('ansible.builtin.template', 'notify.yaml.j2') }}"
+    state: "{{ 'present' if homeassistant_notify_groups else 'absent' }}"
+  notify: Restart homeassistant

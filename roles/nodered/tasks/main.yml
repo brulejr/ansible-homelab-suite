@@ -12,3 +12,9 @@
   when:
     - nodered_enabled | bool
     - nodered_verify_enabled | bool
+
+- name: Deploy Node-RED flow tabs
+  ansible.builtin.include_tasks: flow_tabs.yml
+  when:
+    - nodered_enabled | bool
+    - nodered_flow_tab_files | length > 0

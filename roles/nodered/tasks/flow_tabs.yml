@@ -1,0 +1,34 @@
+---
+# Each file is one tab exported from the editor (Export → Current flow), with
+# fixed ids; a script on the host swaps those tabs into the live flows over
+# the admin API and leaves every other tab alone. They are deployed locked and
+# labelled with a ⚙, which marks them as Ansible's in the editor.
+- name: Deploy Node-RED flow tabs
+  ansible.builtin.command:
+    argv:
+      - python3
+      - -c
+      - "{{ lookup('ansible.builtin.file', 'deploy_flow_tabs.py') }}"
+    stdin: >-
+      {{ {'url': 'http://' ~ nodered_bind_ip ~ ':' ~ nodered_host_port,
+          'tabs': nodered_flow_tab_files | map('basename')
+                  | zip(query('ansible.builtin.file', *nodered_flow_tab_files) | map('from_json')) | list} | to_json }}
+  register: nodered_flow_tabs_result
+  changed_when: >-
+    nodered_flow_tabs_result.rc == 0
+    and ((nodered_flow_tabs_result.stdout | from_json).added
+         + (nodered_flow_tabs_result.stdout | from_json).changed) | length > 0
+  failed_when: false
+
+- name: Check Node-RED flow tabs
+  ansible.builtin.assert:
+    that:
+      - nodered_flow_tabs_result.rc == 0
+      - (nodered_flow_tabs_result.stdout | from_json).errors | length == 0
+    fail_msg: >-
+      {% if nodered_flow_tabs_result.rc != 0 %}Node-RED flow deploy failed:
+      {{ nodered_flow_tabs_result.stderr_lines | default(['no output'], true) | last }}
+      {% else %}{{ (nodered_flow_tabs_result.stdout | from_json).errors | join('; ') }}{% endif %}
+    success_msg: >-
+      {% if nodered_flow_tabs_result.rc == 0 %}{% set r = nodered_flow_tabs_result.stdout | from_json %}
+      Added: {{ r.added | join(', ') or 'none' }}. Changed: {{ r.changed | join(', ') or 'none' }}.{% endif %}

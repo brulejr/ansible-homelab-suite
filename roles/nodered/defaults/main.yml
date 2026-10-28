@@ -17,3 +17,11 @@ nodered_host_port: "{{ app_port_nodered }}"
 
 nodered_verify_enabled: true
 nodered_verify_timeout: 120
+
+# Tabs Ansible owns, each a file exported from the editor (Export → Current
+# flow, JSON). Each is deployed locked, its label prefixed with ⚙. A deploy
+# replaces the live tab with the file, so changes made to it in the editor
+# (after unlocking it) are lost; other tabs are never touched. Removing a file
+# from the list leaves its tab in place; delete it in the editor.
+#   - "{{ inventory_dir }}/files/nodered/door_watch.json"
+nodered_flow_tab_files: []

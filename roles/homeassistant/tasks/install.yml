@@ -11,8 +11,8 @@
   ansible.builtin.file:
     path: "{{ homeassistant_config_dir }}"
     state: directory
-    owner: root
-    group: root
+    owner: "{{ homeassistant_puid }}"
+    group: "{{ homeassistant_pgid }}"
     mode: "0755"
 
 - name: Render Home Assistant docker-compose.yml

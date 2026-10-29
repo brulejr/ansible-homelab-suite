@@ -1,0 +1,19 @@
+---
+services:
+  ring-mqtt:
+    image: "{{ ring_mqtt_image }}"
+    container_name: "{{ ring_mqtt_container_name }}"
+    restart: "{{ ring_mqtt_restart_policy }}"
+    environment:
+      TZ: "{{ ring_mqtt_timezone }}"
+    ports:
+      - "{{ ring_mqtt_bind_ip }}:{{ ring_mqtt_web_host_port }}:55123"
+      - "{{ ring_mqtt_bind_ip }}:{{ ring_mqtt_rtsp_host_port }}:8554"
+    volumes:
+      - "{{ ring_mqtt_data_dir }}:/data"
+    networks:
+      - {{ ring_mqtt_docker_network }}
+
+networks:
+  {{ ring_mqtt_docker_network }}:
+    external: true

@@ -1,0 +1,50 @@
+---
+# Ansible's automations live in their own folder, included under a second
+# automation key, so automations.yaml stays the UI's. Each file holds one
+# automation; copy (not template) keeps their Jinja for Home Assistant.
+- name: Ensure Home Assistant automations directory exists
+  ansible.builtin.file:
+    path: "{{ homeassistant_automations_dir }}"
+    state: directory
+    owner: "{{ homeassistant_puid }}"
+    group: "{{ homeassistant_pgid }}"
+    mode: "0755"
+
+- name: Deploy Home Assistant automations
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ homeassistant_automations_dir }}/{{ item | basename }}"
+    owner: "{{ homeassistant_puid }}"
+    group: "{{ homeassistant_pgid }}"
+    mode: "0644"
+  loop: "{{ homeassistant_automation_files }}"
+  loop_control:
+    label: "{{ item | basename }}"
+  notify: Reload homeassistant automations
+
+- name: Find Home Assistant automations no longer listed
+  ansible.builtin.find:
+    paths: "{{ homeassistant_automations_dir }}"
+    patterns: "*.yaml"
+  register: homeassistant_automations_found
+
+- name: Remove Home Assistant automations no longer listed
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: >-
+    {{ homeassistant_automations_found.files | map(attribute='path')
+       | reject('in', homeassistant_automation_files | map('basename')
+                      | map('regex_replace', '^', homeassistant_automations_dir ~ '/') | list)
+       | list }}
+  notify: Reload homeassistant automations
+
+# automation.reload re-reads configuration.yaml too, so the include needs no
+# restart either.
+- name: Include Ansible's automations in configuration.yaml
+  ansible.builtin.blockinfile:
+    path: "{{ homeassistant_config_dir }}/configuration.yaml"
+    marker: "# {mark} ANSIBLE MANAGED AUTOMATIONS"
+    block: "automation ansible: !include_dir_list {{ homeassistant_automations_dir | basename }}"
+    state: "{{ 'present' if homeassistant_automation_files else 'absent' }}"
+  notify: Reload homeassistant automations

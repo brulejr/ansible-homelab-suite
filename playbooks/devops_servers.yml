@@ -6,5 +6,6 @@
     - common
     - docker
     - watchtower
+    - docker2mqtt
     - nexus
     - plantuml

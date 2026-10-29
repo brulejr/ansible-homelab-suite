@@ -1,0 +1,120 @@
+---
+# Adapted from docker/prod/compose.prod.yaml in {{ iot_pipeline_git_repo }}.
+# Secrets are files mounted under /run/secrets; nothing secret is set here.
+services:
+  app:
+    build:
+      context: "{{ iot_pipeline_src_dir }}"
+      dockerfile: docker/Dockerfile
+    image: "{{ iot_pipeline_image_name }}:{{ iot_pipeline_version }}"
+    container_name: "{{ iot_pipeline_container_prefix }}"
+    restart: "{{ iot_pipeline_restart_policy }}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    labels:
+      # Built here, so there is no registry for Watchtower to update it from
+      com.centurylinklabs.watchtower.enable: "false"
+    environment:
+      PROFILE: prod
+      TZ: "{{ iot_pipeline_timezone }}"
+      # Each file in /run/secrets becomes a property named after it, which
+      # resolves the ${POSTGRES_APP_PASSWORD} placeholder in the application's
+      # application.yml.
+      SPRING_CONFIG_IMPORT: "configtree:/run/secrets/"
+      PIPELINE_INGEST_MQTT_URL: "{{ iot_pipeline_ingest_mqtt_url }}"
+      PIPELINE_INGEST_MQTT_CLIENT_ID: "{{ iot_pipeline_ingest_mqtt_client_id }}"
+      PIPELINE_PUBLISH_MQTT_URL: "{{ iot_pipeline_publish_mqtt_url }}"
+      PIPELINE_PUBLISH_MQTT_CLIENT_ID: "{{ iot_pipeline_publish_mqtt_client_id }}"
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: "{{ iot_pipeline_postgres_db }}"
+      POSTGRES_APP_USERNAME: "{{ iot_pipeline_postgres_app_username }}"
+{% for key, value in iot_pipeline_environment.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+    secrets:
+      - source: postgres_app_password
+        target: POSTGRES_APP_PASSWORD
+    ports:
+      - "{{ iot_pipeline_bind_ip }}:{{ iot_pipeline_host_port }}:5001"
+    networks:
+      - default
+      - {{ iot_pipeline_docker_network }}
+
+  postgres:
+    image: "{{ iot_pipeline_postgres_image }}"
+    container_name: "{{ iot_pipeline_container_prefix }}-postgres"
+    restart: "{{ iot_pipeline_restart_policy }}"
+    # The repository's initdb script reads the role passwords from its
+    # environment, so load them from the secrets before handing over to the
+    # image's entrypoint. Overriding the entrypoint drops the image's default
+    # command, hence the explicit one.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - 'export POSTGRES_APP_PASSWORD="$$(cat /run/secrets/postgres_app_password)" POSTGRES_GRAFANA_PASSWORD="$$(cat /run/secrets/postgres_grafana_password)"; exec docker-entrypoint.sh "$$@"'
+      - postgres
+    command: ["postgres"]
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_admin_password
+      POSTGRES_DB: "{{ iot_pipeline_postgres_db }}"
+      POSTGRES_APP_USERNAME: "{{ iot_pipeline_postgres_app_username }}"
+    secrets:
+      - postgres_admin_password
+      - postgres_app_password
+      - postgres_grafana_password
+    ports:
+      - "{{ iot_pipeline_postgres_bind_ip }}:{{ iot_pipeline_postgres_host_port }}:5432"
+    volumes:
+      - "{{ iot_pipeline_data_dir }}/postgres:/var/lib/postgresql/data"
+      # Creates the application's and Grafana's roles on the first start only
+      - "{{ iot_pipeline_src_dir }}/docker/postgres/initdb:/docker-entrypoint-initdb.d:ro"
+    healthcheck:
+      # Over TCP, which only answers once initdb has finished
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  grafana:
+    image: "{{ iot_pipeline_grafana_image }}"
+    container_name: "{{ iot_pipeline_container_prefix }}-grafana"
+    restart: "{{ iot_pipeline_restart_policy }}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # The provisioned datasource reads its password from
+    # ${POSTGRES_GRAFANA_PASSWORD}, so load it from the secret before handing
+    # over to the image's entrypoint.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - 'POSTGRES_GRAFANA_PASSWORD="$$(cat /run/secrets/postgres_grafana_password)" exec /run.sh "$$@"'
+      - grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: "{{ iot_pipeline_grafana_admin_user }}"
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_admin_password
+      POSTGRES_DB: "{{ iot_pipeline_postgres_db }}"
+    secrets:
+      - postgres_grafana_password
+      - grafana_admin_password
+    ports:
+      - "{{ iot_pipeline_bind_ip }}:{{ iot_pipeline_grafana_host_port }}:3000"
+    volumes:
+      - "{{ iot_pipeline_data_dir }}/grafana:/var/lib/grafana"
+      - "{{ iot_pipeline_src_dir }}/docker/grafana/provisioning:/etc/grafana/provisioning:ro"
+
+secrets:
+  postgres_admin_password:
+    file: "{{ iot_pipeline_secrets_dir }}/postgres_admin_password"
+  postgres_app_password:
+    file: "{{ iot_pipeline_secrets_dir }}/postgres_app_password"
+  postgres_grafana_password:
+    file: "{{ iot_pipeline_secrets_dir }}/postgres_grafana_password"
+  grafana_admin_password:
+    file: "{{ iot_pipeline_secrets_dir }}/grafana_admin_password"
+
+networks:
+  {{ iot_pipeline_docker_network }}:
+    external: true

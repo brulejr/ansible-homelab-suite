@@ -1,0 +1,6 @@
+---
+- name: Restart docker2mqtt
+  community.docker.docker_compose_v2:
+    project_src: "{{ docker2mqtt_app_dir }}"
+    project_name: "{{ docker2mqtt_stack_name }}"
+    state: restarted

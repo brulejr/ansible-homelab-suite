@@ -1,0 +1,23 @@
+---
+# The Brother integration has no YAML configuration, so entries are created
+# through the config flow API. Each run starts a flow per printer; one already
+# configured (matched by serial number) aborts, leaving its entry untouched.
+- name: Add missing Home Assistant Brother printers
+  ansible.builtin.include_tasks: brother_printer.yml
+  loop: "{{ homeassistant_brother_printers }}"
+  loop_control:
+    loop_var: homeassistant_brother_printer
+    label: "{{ homeassistant_brother_printer.name }} ({{ homeassistant_brother_printer.host }})"
+
+# Each printer's device is found by the configuration URL the integration gives
+# it, http://<host>/
+- name: Place Home Assistant Brother printers in their areas
+  ansible.builtin.include_tasks: device_areas.yml
+  vars:
+    homeassistant_device_areas_kind: printers
+    homeassistant_device_areas: >-
+      {{ homeassistant_brother_printers | map(attribute='name') | map('community.general.dict_kv', 'label')
+         | zip(homeassistant_brother_printers | map(attribute='area') | map('community.general.dict_kv', 'area'),
+               homeassistant_brother_printers | map(attribute='host') | map('regex_replace', '^(.*)$', 'http://\1/')
+               | map('community.general.dict_kv', 'configuration_url'))
+         | map('combine') | list }}

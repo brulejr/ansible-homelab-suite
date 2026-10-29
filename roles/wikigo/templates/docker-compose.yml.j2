@@ -1,0 +1,24 @@
+---
+services:
+  wikigo:
+    image: "{{ wikigo_image }}"
+    container_name: "{{ wikigo_container_name }}"
+    restart: "{{ wikigo_restart_policy }}"
+    ports:
+      - "{{ wikigo_bind_ip }}:{{ wikigo_host_port }}:{{ wikigo_container_port }}"
+    volumes:
+      - "{{ wikigo_data_dir }}:/wiki/data"
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ={{ wikigo_timezone }}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - {{ wikigo_docker_network }}
+
+networks:
+  {{ wikigo_docker_network }}:
+    external: true

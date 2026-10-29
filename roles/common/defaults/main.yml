@@ -15,6 +15,9 @@ pgid: "1000"
 homelab_name: "example.homelab"
 domain_name: "example.invalid"
 
+# Apt configurations
+apt_source_reconciliations: []
+
 # Docker directories
 docker_dir: /opt/homelab/apps
 data_dir: /opt/homelab/data
@@ -48,17 +51,25 @@ app_port_gitea: 8112
 app_port_guacamole: 8101
 app_port_homarr: 7575
 app_port_homeassistant: 8123
+app_port_iot_pipeline: 8114
+app_port_iot_pipeline_grafana: 8115
+app_port_iot_pipeline_postgres: 5432
 app_port_jekyll: 8111
 app_port_jellyfin: 8103
 app_port_jenkins: 8104
 app_port_keycloak: 8105
 app_port_nextcloud: 8106
 app_port_nexus: 8107
+app_port_nexus_docker: 10001
 app_port_nodered: 1880
+app_port_oiltank_monitor: 8116
 app_port_openwebrx: 8073
 app_port_openwebui: 8120
 app_port_plantuml: 8108
 app_port_portainer: 9000
+app_port_ring_mqtt: 55123
+app_port_ring_mqtt_rtsp: 8554
 app_port_vaultwarden: 8109
+app_port_wikigo: 8113
 app_port_wikijs: 8110
 app_port_zigbee2mqtt: 8200

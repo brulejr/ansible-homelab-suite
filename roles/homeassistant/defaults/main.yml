@@ -1,0 +1,150 @@
+---
+homeassistant_enabled: true
+
+homeassistant_stack_name: homeassistant
+homeassistant_container_name: homeassistant
+
+homeassistant_app_dir: "{{ docker_dir }}/homeassistant"
+homeassistant_data_dir: "{{ data_dir }}/homeassistant"
+homeassistant_config_dir: "{{ homeassistant_data_dir }}/config"
+
+homeassistant_image: "lscr.io/linuxserver/homeassistant:latest"
+homeassistant_restart_policy: unless-stopped
+homeassistant_container_port: 8123
+
+homeassistant_docker_network: "{{ docker_network }}"
+homeassistant_bind_ip: "{{ server_bind_ip }}"
+homeassistant_host_port: "{{ app_port_homeassistant }}"
+
+homeassistant_puid: "{{ puid }}"
+homeassistant_pgid: "{{ pgid }}"
+
+# Only needed if you use a HACS/integration that controls sibling containers
+homeassistant_mount_docker_socket: false
+
+homeassistant_verify_enabled: true
+homeassistant_verify_timeout: 120
+
+# Frontend modules (custom cards) downloaded from GitHub releases into
+# /config/www/<name>/<version>/ and registered as Lovelace resources.
+# Setting any switches Lovelace to resource_mode: yaml, so resources added in
+# the UI (or by HACS) are ignored; declare them here instead.
+#   - name: room-summary-card
+#     repo: homeassistant-extras/room-summary-card
+#     version: "2.4.0"
+#     entrypoint: room-summary-card.js
+#     source: release   # release: every .js release asset (default)
+#                       # repo: just the entrypoint file from the tag
+#     patches:          # optional literal fixes to the entrypoint; the deploy
+#       - name: why     # fails if one neither matches nor is already applied
+#         search: "..."
+#         replace: "..."
+homeassistant_frontend_modules: []
+
+# YAML-mode dashboards rendered into /config/dashboards/<url_path>.yaml.
+# UI edits to these dashboards are overwritten on deploy.
+#   - url_path: dashboard-rooms   # must contain a hyphen
+#     title: Rooms
+#     icon: mdi:floor-plan
+#     show_in_sidebar: true
+#     require_admin: false
+#     config: { views: [...] }    # complete Lovelace dashboard config
+homeassistant_dashboards: []
+
+homeassistant_www_dir: "{{ homeassistant_config_dir }}/www"
+homeassistant_dashboards_dir: "{{ homeassistant_config_dir }}/dashboards"
+
+# Home Assistant API access (long-lived access token), used for setup that
+# has no YAML equivalent. Tasks that need it are skipped while it is empty.
+homeassistant_api_url: "http://{{ homeassistant_bind_ip }}:{{ homeassistant_host_port }}"
+homeassistant_api_token: ""
+
+# Ping (ICMP) integration entries to ensure exist, matched by host. Each
+# creates binary_sensor.<host with dots as underscores>. Entries are never
+# removed, so dropping a host here leaves its entry in place.
+#   - name: devops01
+#     host: 10.10.40.44
+homeassistant_ping_hosts: []
+
+# Brother printers (Brother integration, over SNMP) to ensure exist, matched by
+# the printer's serial number, and the area each one's device belongs in. The
+# area is reapplied on every deploy, so the inventory is the source of truth for
+# it. Entries are never removed.
+#   - name: HL-L3220CDW       # label for the deploy output only
+#     host: 10.10.120.70
+#     type: laser             # laser (default) or ink
+#     area: master_bedroom    # area id, as in the room cards' "area:"
+#     snmp_community: public  # optional; also snmp_port (161)
+homeassistant_brother_printers: []
+
+# Rokus (Roku integration) to ensure exist, matched by serial number, and the
+# area each one's device belongs in, reapplied on every deploy. The serial
+# number is read from the Roku itself, which must be reachable from this host
+# on port 8060. Entries are never removed.
+#   - name: Roku Ultra          # label for the deploy output only
+#     host: 10.10.120.75
+#     area: living_room
+homeassistant_roku_devices: []
+
+# ONVIF cameras (ONVIF integration, local only) to ensure exist, matched by the
+# camera's MAC address, and the area each one's device belongs in, reapplied on
+# every deploy. A camera already added has its name, host, port and credentials
+# refreshed from here on every deploy. Entries are never removed.
+#   - name: Oil Tank          # device name; camera entities are named after it
+#     host: 10.10.30.249
+#     port: 2020              # ONVIF service port (80 by default; Tapo uses 2020)
+#     username: camera-user   # the camera's own account, not a cloud login
+#     password: "{{ vault_camera_password }}"
+#     area: utility_room
+homeassistant_onvif_cameras: []
+
+# Generic Cameras (Generic Camera integration) for RTSP streams, such as
+# ring-mqtt's, to ensure exist, matched by entity id. The integration names an
+# entry after the stream's host, so each new entity is renamed to entity_id,
+# and its name and area are reapplied on every deploy. The stream is opened
+# once while the entry is created, so it must be reachable then. A camera
+# already added keeps its stream URL and credentials; delete it in Home
+# Assistant to change them. Entries are never removed.
+#   - name: Front Door Stream
+#     entity_id: camera.front_door_stream
+#     stream_source: rtsp://ring-mqtt:8554/<device id>_live
+#     username: ring              # optional, with password
+#     password: "{{ vault_stream_password }}"
+#     area: foyer                 # optional; set on the entity
+homeassistant_generic_cameras: []
+
+# MQTT devices to place in areas, matched by the identifier their bridge
+# publishes (for ring-mqtt, the Ring device id in its topics). The area is
+# reapplied on every deploy.
+#   - name: Front Door        # label for the deploy output only
+#     identifier: 649a639d769b
+#     area: foyer
+homeassistant_mqtt_devices: []
+
+# Fixed entity ids, for entities matched by integration and unique id. Home
+# Assistant suffixes an id (_2) that another entity already holds; such an id
+# is assigned on the first deploy after that entity is gone.
+#   - platform: mqtt
+#     unique_id: 649a63e7dd20_light
+#     entity_id: light.front_light
+homeassistant_entity_ids: []
+
+# Notify groups (the YAML group notify platform), each a notify.<name> service
+# that sends to every listed service. Unlike the UI's notify group helper, it
+# passes the message's data, such as iOS critical-alert options, through to
+# each phone. Changes take effect on the restart they trigger.
+#   - name: door_alerts
+#     services:
+#       - mobile_app_jons_iphone_16
+homeassistant_notify_groups: []
+
+# Automation files, one automation per file, deployed into
+# /config/automations_ansible/ and loaded beside the UI's automations.yaml.
+# Each needs an id (for its traces) that no UI automation uses. Files dropped
+# from the list are removed, and automations are reloaded through the API
+# (homeassistant_api_token) without a restart. These cannot be edited in the
+# UI; change the file and redeploy.
+#   - "{{ inventory_dir }}/files/homeassistant/door_left_open.yaml"
+homeassistant_automation_files: []
+
+homeassistant_automations_dir: "{{ homeassistant_config_dir }}/automations_ansible"

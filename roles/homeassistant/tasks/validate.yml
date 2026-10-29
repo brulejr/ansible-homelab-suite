@@ -1,0 +1,23 @@
+---
+- name: Validate Home Assistant required variables
+  ansible.builtin.assert:
+    that:
+      - homeassistant_stack_name | length > 0
+      - homeassistant_container_name | length > 0
+      - homeassistant_app_dir | length > 0
+      - homeassistant_data_dir | length > 0
+      - homeassistant_image | length > 0
+      - homeassistant_docker_network | length > 0
+      - homeassistant_host_port is defined
+    fail_msg: "Home Assistant role configuration is invalid."
+
+- name: Validate Home Assistant automation files
+  ansible.builtin.assert:
+    that:
+      - homeassistant_api_token | length > 0
+      - homeassistant_automation_files | map('basename') | unique | length == homeassistant_automation_files | length
+      - homeassistant_automation_files | select('match', '.*\.yaml$') | length == homeassistant_automation_files | length
+    fail_msg: >-
+      homeassistant_automation_files needs homeassistant_api_token (to reload
+      automations) and distinct .yaml file names.
+  when: homeassistant_automation_files | length > 0

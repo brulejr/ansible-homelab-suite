@@ -1,0 +1,23 @@
+---
+# The ONVIF integration has no YAML configuration, so entries are created
+# through the config flow API. Each run starts a flow per camera; one already
+# configured (matched by MAC address) aborts, after refreshing its entry's
+# name, host, port and credentials from the inventory.
+- name: Start the list of ONVIF cameras to place
+  ansible.builtin.set_fact:
+    homeassistant_onvif_camera_areas: []
+
+- name: Add missing Home Assistant ONVIF cameras
+  ansible.builtin.include_tasks: onvif_camera.yml
+  loop: "{{ homeassistant_onvif_cameras }}"
+  loop_control:
+    loop_var: homeassistant_onvif_camera
+    label: "{{ homeassistant_onvif_camera.name }} ({{ homeassistant_onvif_camera.host }})"
+
+# Each camera's device is found by the configuration URL the integration gives
+# it, http://<host>:<port>, recorded by onvif_camera.yml
+- name: Place Home Assistant ONVIF cameras in their areas
+  ansible.builtin.include_tasks: device_areas.yml
+  vars:
+    homeassistant_device_areas_kind: cameras
+    homeassistant_device_areas: "{{ homeassistant_onvif_camera_areas }}"

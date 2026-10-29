@@ -12,6 +12,25 @@
       domain_name/homelab_name must be set in the inventory (group_vars/host_vars).
       Current domain_name={{ domain_name }}, homelab_name={{ homelab_name }}.
 
+- name: Find stray/conflicting apt source files
+  ansible.builtin.find:
+    paths: /etc/apt/sources.list.d
+    patterns: "{{ item.patterns }}"
+    excludes: "{{ item.keep }}"
+  register: _stray_apt_sources
+  loop: "{{ apt_source_reconciliations }}"
+  loop_control:
+    label: "{{ item.keep }}"
+
+- name: Remove stray/conflicting apt source files
+  ansible.builtin.file:
+    path: "{{ file_item.path }}"
+    state: absent
+  loop: "{{ _stray_apt_sources.results | map(attribute='files') | flatten }}"
+  loop_control:
+    loop_var: file_item
+    label: "{{ file_item.path }}"
+
 - name: Update apt packages
   ansible.builtin.apt:
     update_cache: true

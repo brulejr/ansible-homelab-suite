@@ -1,0 +1,115 @@
+---
+- name: Ensure oiltank-monitor app directory exists
+  ansible.builtin.file:
+    path: "{{ oiltank_monitor_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Secret files are world-readable so the container's user can read them, which
+# the directory's mode keeps from other users on the host.
+- name: Ensure oiltank-monitor secrets directory exists
+  ansible.builtin.file:
+    path: "{{ oiltank_monitor_secrets_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Check out oiltank-monitor source
+  ansible.builtin.git:
+    repo: "{{ oiltank_monitor_git_repo }}"
+    dest: "{{ oiltank_monitor_src_dir }}"
+    version: "{{ oiltank_monitor_git_version }}"
+    force: true
+  register: oiltank_monitor_git_result
+
+- name: Set oiltank-monitor image version
+  ansible.builtin.set_fact:
+    oiltank_monitor_version: "{{ oiltank_monitor_git_result.after[:12] }}"
+
+- name: Look up oiltank-monitor image for this commit
+  community.docker.docker_image_info:
+    name: "{{ oiltank_monitor_image_name }}:{{ oiltank_monitor_version }}"
+  register: oiltank_monitor_image_info
+
+- name: Decide whether to build the oiltank-monitor image
+  ansible.builtin.set_fact:
+    oiltank_monitor_needs_build: "{{ (oiltank_monitor_force_rebuild | bool) or (oiltank_monitor_image_info.images | length == 0) }}"
+
+# The upstream Dockerfile packages a jar Gradle has already built
+- name: Build oiltank-monitor jar
+  ansible.builtin.command:
+    argv: >-
+      {{
+        ['docker', 'run', '--rm',
+         '-v', oiltank_monitor_src_dir ~ ':/workspace',
+         '-v', oiltank_monitor_gradle_cache_volume ~ ':/root/.gradle',
+         '-w', '/workspace',
+         oiltank_monitor_builder_image,
+         './gradlew', '--no-daemon', '--console=plain']
+        + oiltank_monitor_gradle_tasks
+      }}
+  changed_when: true
+  when: oiltank_monitor_needs_build | bool
+
+- name: Write oiltank-monitor secrets
+  ansible.builtin.copy:
+    dest: "{{ oiltank_monitor_secrets_dir }}/{{ item.name }}"
+    content: "{{ item.content }}"
+    owner: root
+    group: root
+    mode: "0444"
+  loop:
+    - name: camera_rtsp_url
+      content: "{{ oiltank_monitor_camera_rtsp_url | trim }}"
+    - name: mqtt_password
+      content: "{{ oiltank_monitor_mqtt_password | trim }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true
+  # A changed secret alters no compose configuration, so nothing is recreated
+  notify: Restart oiltank-monitor
+
+- name: Render oiltank-monitor docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ oiltank_monitor_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start oiltank-monitor stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ oiltank_monitor_app_dir }}"
+    project_name: "{{ oiltank_monitor_stack_name }}"
+    state: present
+    build: "{{ 'always' if oiltank_monitor_needs_build | bool else 'never' }}"
+    pull: policy
+    remove_orphans: true
+
+# Each commit leaves an image behind; keep only the one now running
+- name: List oiltank-monitor images
+  ansible.builtin.command:
+    argv:
+      - docker
+      - image
+      - ls
+      - --filter
+      - "reference={{ oiltank_monitor_image_name }}"
+      - --format
+      - "{% raw %}{{.Repository}}:{{.Tag}}{% endraw %}"
+  register: oiltank_monitor_image_list
+  changed_when: false
+
+- name: Remove superseded oiltank-monitor images
+  community.docker.docker_image_remove:
+    name: "{{ item }}"
+  loop: >-
+    {{
+      oiltank_monitor_image_list.stdout_lines
+      | reject('equalto', oiltank_monitor_image_name ~ ':' ~ oiltank_monitor_version)
+      | reject('search', ':<none>$')
+      | list
+    }}

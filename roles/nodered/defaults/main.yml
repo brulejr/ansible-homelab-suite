@@ -1,0 +1,33 @@
+---
+nodered_enabled: true
+
+nodered_stack_name: nodered
+nodered_container_name: nodered
+
+nodered_app_dir: "{{ docker_dir }}/nodered"
+nodered_data_dir: "{{ data_dir }}/nodered"
+
+nodered_image: "nodered/node-red:latest"
+nodered_restart_policy: unless-stopped
+nodered_container_port: 1880
+
+nodered_docker_network: "{{ docker_network }}"
+nodered_bind_ip: "{{ server_bind_ip }}"
+nodered_host_port: "{{ app_port_nodered }}"
+
+nodered_verify_enabled: true
+nodered_verify_timeout: 120
+
+# Tabs Ansible owns, each a file exported from the editor (Export → Current
+# flow, JSON). Each is deployed locked, its label prefixed with ⚙. A deploy
+# replaces the live tab with the file, so changes made to it in the editor
+# (after unlocking it) are lost; other tabs are never touched. Removing a file
+# from the list leaves its tab in place; delete it in the editor.
+#   - "{{ inventory_dir }}/files/nodered/door_watch.json"
+nodered_flow_tab_files: []
+
+# The editor and admin API login, one user with full access. Empty leaves
+# Node-RED open to anyone who can reach it. The password is bcrypt-hashed into
+# settings.js; the flow tab deploy logs in with it.
+nodered_admin_user: admin
+nodered_admin_password: ""

@@ -1,0 +1,52 @@
+---
+- name: "Start Brother config flow for {{ homeassistant_brother_printer.name }}"
+  ansible.builtin.uri:
+    url: "{{ homeassistant_api_url }}/api/config/config_entries/flow"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ homeassistant_api_token }}"
+    body_format: json
+    body:
+      handler: brother
+    return_content: true
+  register: homeassistant_brother_flow
+  no_log: true
+
+# The integration reads the printer over SNMP here, so the printer must be on
+# and reachable from the Home Assistant host
+- name: "Create Brother entry for {{ homeassistant_brother_printer.name }}"
+  ansible.builtin.uri:
+    url: "{{ homeassistant_api_url }}/api/config/config_entries/flow/{{ homeassistant_brother_flow.json.flow_id }}"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ homeassistant_api_token }}"
+    body_format: json
+    # One expression, so the port stays an integer, which the form insists on.
+    # advanced_settings is required, though collapsed in the UI.
+    body: >-
+      {{ {'host': homeassistant_brother_printer.host,
+          'type': homeassistant_brother_printer.type | default('laser'),
+          'advanced_settings': {
+            'port': homeassistant_brother_printer.snmp_port | default(161) | int,
+            'community': homeassistant_brother_printer.snmp_community | default('public')}} }}
+    return_content: true
+    # An input the form rejects comes back as 400, with the reason in the body
+    status_code: [200, 400]
+  register: homeassistant_brother_result
+  changed_when: homeassistant_brother_result.json.type | default('') == 'create_entry'
+  # Judged by the next task, since no_log would hide the reason
+  failed_when: false
+  no_log: true
+
+# A refused printer comes back as an abort reason (cannot_connect,
+# unsupported_model) or as the form again with errors (wrong_host)
+- name: "Check Brother entry for {{ homeassistant_brother_printer.name }}"
+  ansible.builtin.fail:
+    msg: >-
+      Home Assistant did not add {{ homeassistant_brother_printer.name }}
+      ({{ homeassistant_brother_printer.host }}):
+      {{ homeassistant_brother_result.json.reason
+         | default(homeassistant_brother_result.json.errors | default(homeassistant_brother_result.json, true) | to_json) }}
+  when:
+    - homeassistant_brother_result.json.type | default('') != 'create_entry'
+    - homeassistant_brother_result.json.reason | default('') != 'already_configured'

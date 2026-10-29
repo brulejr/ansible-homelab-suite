@@ -1,0 +1,50 @@
+---
+- name: Create Nexus group
+  ansible.builtin.group:
+    name: "{{ nexus_group }}"
+    gid: "{{ nexus_gid }}"
+    state: present
+
+- name: Create Nexus user
+  ansible.builtin.user:
+    name: "{{ nexus_user }}"
+    comment: Sonatype Nexus
+    uid: "{{ nexus_uid }}"
+    group: "{{ nexus_group }}"
+    create_home: false
+    system: true
+    state: present
+
+- name: Ensure Nexus app directory exists
+  ansible.builtin.file:
+    path: "{{ nexus_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure Nexus data directory exists
+  ansible.builtin.file:
+    path: "{{ nexus_data_dir }}"
+    state: directory
+    owner: "{{ nexus_user }}"
+    group: "{{ nexus_group }}"
+    mode: "0755"
+    access_time: preserve
+    modification_time: preserve
+
+- name: Render Nexus docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ nexus_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart nexus
+
+- name: Start Nexus stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ nexus_app_dir }}"
+    project_name: "{{ nexus_stack_name }}"
+    state: present
+    pull: always

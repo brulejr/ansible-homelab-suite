@@ -1,0 +1,17 @@
+---
+services:
+  nodered:
+    image: "{{ nodered_image }}"
+    container_name: "{{ nodered_container_name }}"
+    restart: "{{ nodered_restart_policy }}"
+    ports:
+      - "{{ nodered_bind_ip }}:{{ nodered_host_port }}:{{ nodered_container_port }}"
+    volumes:
+      - "{{ nodered_data_dir }}:/data"
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - {{ nodered_docker_network }}
+
+networks:
+  {{ nodered_docker_network }}:
+    external: true

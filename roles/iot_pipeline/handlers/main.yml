@@ -1,0 +1,6 @@
+---
+- name: Restart iot-pipeline
+  community.docker.docker_compose_v2:
+    project_src: "{{ iot_pipeline_app_dir }}"
+    project_name: "{{ iot_pipeline_stack_name }}"
+    state: restarted

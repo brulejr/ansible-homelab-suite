@@ -1,0 +1,14 @@
+---
+- name: Validate docker2mqtt configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: docker2mqtt_enabled | bool
+
+- name: Install and configure docker2mqtt
+  ansible.builtin.include_tasks: install.yml
+  when: docker2mqtt_enabled | bool
+
+- name: Verify docker2mqtt
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - docker2mqtt_enabled | bool
+    - docker2mqtt_verify_enabled | bool

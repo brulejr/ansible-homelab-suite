@@ -1,20 +1,30 @@
+---
 services:
-
   nexus:
-    image: sonatype/nexus3
-    container_name: nexus
-    restart: unless-stopped
+    image: "{{ nexus_image }}"
+    container_name: "{{ nexus_container_name }}"
+    restart: "{{ nexus_restart_policy }}"
     ports:
-      - "{{ server_bind_ip }}:{{ app_port_nexus }}:8081"
-      - "{{ server_bind_ip }}:10001:10001"
+      - "{{ nexus_bind_ip }}:{{ nexus_host_port }}:{{ nexus_container_port }}"
+{% if nexus_docker_repo_enabled | bool %}
+      - "{{ nexus_bind_ip }}:{{ nexus_docker_repo_host_port }}:{{ nexus_docker_repo_container_port }}"
+{% endif %}
     volumes:
       - "{{ nexus_data_dir }}:/nexus-data"
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
+{% for volume in nexus_extra_volumes %}
+      - "{{ volume }}"
+{% endfor %}
+{% if nexus_extra_environment | length > 0 %}
+    environment:
+{% for env_var in nexus_extra_environment %}
+      - "{{ env_var }}"
+{% endfor %}
+{% endif %}
     networks:
-      - {{ docker_network }}      
-
+      - {{ nexus_docker_network }}
 
 networks:
-  {{ docker_network }}:
+  {{ nexus_docker_network }}:
     external: true

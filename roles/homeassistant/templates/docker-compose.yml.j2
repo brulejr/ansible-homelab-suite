@@ -1,0 +1,23 @@
+---
+services:
+  homeassistant:
+    image: "{{ homeassistant_image }}"
+    container_name: "{{ homeassistant_container_name }}"
+    restart: "{{ homeassistant_restart_policy }}"
+    ports:
+      - "{{ homeassistant_bind_ip }}:{{ homeassistant_host_port }}:{{ homeassistant_container_port }}"
+    volumes:
+      - "{{ homeassistant_config_dir }}:/config"
+      - /etc/localtime:/etc/localtime:ro
+{% if homeassistant_mount_docker_socket | bool %}
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+{% endif %}
+    environment:
+      - PUID={{ homeassistant_puid }}
+      - PGID={{ homeassistant_pgid }}
+    networks:
+      - {{ homeassistant_docker_network }}
+
+networks:
+  {{ homeassistant_docker_network }}:
+    external: true

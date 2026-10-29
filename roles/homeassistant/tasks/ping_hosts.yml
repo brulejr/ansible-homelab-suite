@@ -1,0 +1,25 @@
+---
+# Ping has no YAML configuration, so entries are created through the config
+# flow API. The token is sent in headers, hence no_log.
+- name: List Home Assistant Ping entries
+  ansible.builtin.uri:
+    url: "{{ homeassistant_api_url }}/api/config/config_entries/entry?domain=ping"
+    headers:
+      Authorization: "Bearer {{ homeassistant_api_token }}"
+    return_content: true
+  register: homeassistant_ping_entries
+  # HA may still be starting if verification is disabled
+  retries: "{{ (homeassistant_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
+  delay: 5
+  until: homeassistant_ping_entries.status == 200
+  no_log: true
+
+- name: Add missing Home Assistant Ping entries
+  ansible.builtin.include_tasks: ping_host.yml
+  loop: >-
+    {{ homeassistant_ping_hosts
+       | rejectattr('host', 'in', homeassistant_ping_entries.json | map(attribute='title') | list)
+       | list }}
+  loop_control:
+    loop_var: homeassistant_ping_host
+    label: "{{ homeassistant_ping_host.name }} ({{ homeassistant_ping_host.host }})"

@@ -1,0 +1,91 @@
+---
+wikigo_enabled: true
+
+wikigo_stack_name: wikigo
+wikigo_container_name: wikigo
+
+wikigo_app_dir: "{{ docker_dir }}/wikigo"
+wikigo_data_dir: "{{ data_dir }}/wikigo"
+
+# Pinned to a minor release line. Wiki-Go rewrites config.yaml on startup when
+# its template gains new settings, so an unpinned image can introduce drift
+# between the rendered config and what the app expects.
+wikigo_image: "leomoonstudios/wiki-go:1.9"
+wikigo_restart_policy: unless-stopped
+wikigo_container_port: 8080
+
+# The upstream image runs as a fixed appuser (uid/gid 1000)
+wikigo_uid: 1000
+wikigo_gid: 1000
+
+wikigo_docker_network: "{{ docker_network }}"
+wikigo_bind_ip: "{{ server_bind_ip }}"
+wikigo_host_port: "{{ app_port_wikigo }}"
+
+# ---------------------------------------------------------------------------
+# config.yaml
+#
+# The role renders the full config.yaml from these variables. Changes made in
+# the Wiki-Go admin UI (users, settings, access rules) are overwritten on the
+# next deploy, so the inventory is the source of truth.
+# ---------------------------------------------------------------------------
+
+# TLS is terminated by Traefik; secure cookies still work because the browser
+# sees HTTPS. Only enable this if the wiki is used over plain HTTP.
+wikigo_allow_insecure_cookies: false
+
+# Proxies whose X-Forwarded-For / X-Real-IP headers are trusted (IPs or CIDRs).
+# When wikigo_trust_docker_network is true, the IPv4 subnet(s) of
+# wikigo_docker_network are added automatically so Traefik's forwarded client
+# IPs are honored (login bans are then applied per client, not per proxy).
+wikigo_trusted_proxies: []
+wikigo_trust_docker_network: true
+
+wikigo_title: "📚 Wiki-Go"
+wikigo_owner: "wikigo.{{ domain_name }}"
+wikigo_notice: "Copyright :::year::: © All rights reserved."
+wikigo_timezone: "{{ timezone }}"
+wikigo_private: false
+wikigo_disable_comments: false
+wikigo_disable_file_upload_checking: false
+wikigo_enable_link_embedding: false
+wikigo_hide_attachments: false
+wikigo_disable_content_max_width: false
+wikigo_always_open_children_in_sidebar: false
+wikigo_max_versions: 10
+# Maximum file upload size in MB
+wikigo_max_upload_size: 10
+wikigo_language: "en"
+# debug, info, warn, error
+wikigo_log_level: "info"
+
+# bcrypt cost factor used when Wiki-Go hashes passwords
+wikigo_password_strength: 14
+wikigo_login_ban_enabled: true
+wikigo_login_ban_max_failures: 5
+wikigo_login_ban_window_seconds: 180
+wikigo_login_ban_initial_ban_seconds: 60
+wikigo_login_ban_max_ban_seconds: 86400
+
+# Users (at least one admin is required). Passwords are bcrypt hashes; keep
+# them in the vault. Generate one with:
+#   htpasswd -nbBC 14 "" 'secret' | tr -d ':\n'
+#
+# wikigo_users:
+#   - username: admin
+#     password: "{{ vault_wikigo_admin_password_hash }}"
+#     role: admin            # admin | editor | viewer
+#     groups: []             # optional
+wikigo_users: []
+
+# Path-based access rules
+#
+# wikigo_access_rules:
+#   - pattern: "/internal/**"
+#     access: private        # public | private | restricted
+#     groups: []             # required for restricted
+#     description: "Visible to logged-in users"
+wikigo_access_rules: []
+
+wikigo_verify_enabled: true
+wikigo_verify_timeout: 120

@@ -1,0 +1,14 @@
+---
+- name: Validate ring-mqtt configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: ring_mqtt_enabled | bool
+
+- name: Install and configure ring-mqtt
+  ansible.builtin.include_tasks: install.yml
+  when: ring_mqtt_enabled | bool
+
+- name: Verify ring-mqtt
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - ring_mqtt_enabled | bool
+    - ring_mqtt_verify_enabled | bool

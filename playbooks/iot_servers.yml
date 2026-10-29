@@ -1,0 +1,20 @@
+---
+- name: Setup the iot automation servers
+  hosts: iot_servers
+  become: true
+  roles:
+    - common
+    - docker
+    - watchtower
+    - docker2mqtt
+    - traefik
+    - traefik_apps
+    - esphome
+    - homeassistant
+    - mqtt
+    - iot_pipeline
+    - oiltank_monitor
+    - nodered
+    - ring_mqtt
+    - wikigo
+    - zigbee2mqtt

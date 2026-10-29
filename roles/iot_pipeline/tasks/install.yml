@@ -1,0 +1,156 @@
+---
+- name: Ensure iot-pipeline app directory exists
+  ansible.builtin.file:
+    path: "{{ iot_pipeline_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Secret files are world-readable so each container user can read its own,
+# which the directory's mode keeps from other users on the host.
+- name: Ensure iot-pipeline private directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  loop:
+    - "{{ iot_pipeline_secrets_dir }}"
+    - "{{ iot_pipeline_ssh_dir }}"
+
+- name: Ensure iot-pipeline data directory exists
+  ansible.builtin.file:
+    path: "{{ iot_pipeline_data_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure iot-pipeline service data directories exist
+  ansible.builtin.file:
+    path: "{{ iot_pipeline_data_dir }}/{{ item.name }}"
+    state: directory
+    owner: "{{ item.uid }}"
+    group: "{{ item.gid }}"
+    mode: "0750"
+  loop:
+    - { name: postgres, uid: "{{ iot_pipeline_postgres_uid }}", gid: "{{ iot_pipeline_postgres_uid }}" }
+    - { name: grafana, uid: "{{ iot_pipeline_grafana_uid }}", gid: 0 }
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Install iot-pipeline Git deploy key
+  ansible.builtin.copy:
+    dest: "{{ iot_pipeline_git_key_file }}"
+    content: "{{ iot_pipeline_git_ssh_private_key | trim }}\n"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  when: iot_pipeline_git_ssh_private_key | length > 0
+
+- name: Check out iot-pipeline source
+  ansible.builtin.git:
+    repo: "{{ iot_pipeline_git_repo }}"
+    dest: "{{ iot_pipeline_src_dir }}"
+    version: "{{ iot_pipeline_git_version }}"
+    key_file: "{{ iot_pipeline_git_key_file }}"
+    accept_newhostkey: true
+    ssh_opts: "-o UserKnownHostsFile={{ iot_pipeline_git_known_hosts_file }}"
+    force: true
+  register: iot_pipeline_git_result
+
+- name: Set iot-pipeline image version
+  ansible.builtin.set_fact:
+    iot_pipeline_version: "{{ iot_pipeline_git_result.after[:12] }}"
+
+- name: Look up iot-pipeline image for this commit
+  community.docker.docker_image_info:
+    name: "{{ iot_pipeline_image_name }}:{{ iot_pipeline_version }}"
+  register: iot_pipeline_image_info
+
+- name: Decide whether to build the iot-pipeline image
+  ansible.builtin.set_fact:
+    iot_pipeline_needs_build: "{{ (iot_pipeline_force_rebuild | bool) or (iot_pipeline_image_info.images | length == 0) }}"
+
+# The upstream Dockerfile packages a jar Gradle has already built
+- name: Build iot-pipeline jar
+  ansible.builtin.command:
+    argv: >-
+      {{
+        ['docker', 'run', '--rm',
+         '-v', iot_pipeline_src_dir ~ ':/workspace',
+         '-v', iot_pipeline_gradle_cache_volume ~ ':/root/.gradle',
+         '-w', '/workspace',
+         iot_pipeline_builder_image,
+         './gradlew', '--no-daemon', '--console=plain']
+        + iot_pipeline_gradle_tasks
+      }}
+  changed_when: true
+  when: iot_pipeline_needs_build | bool
+
+- name: Write iot-pipeline secrets
+  ansible.builtin.copy:
+    dest: "{{ iot_pipeline_secrets_dir }}/{{ item.name }}"
+    content: "{{ item.content }}"
+    owner: root
+    group: root
+    mode: "0444"
+  loop:
+    - name: postgres_admin_password
+      content: "{{ iot_pipeline_postgres_admin_password | trim }}"
+    - name: postgres_app_password
+      content: "{{ iot_pipeline_postgres_app_password | trim }}"
+    - name: postgres_grafana_password
+      content: "{{ iot_pipeline_postgres_grafana_password | trim }}"
+    - name: grafana_admin_password
+      content: "{{ iot_pipeline_grafana_admin_password | trim }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true
+  # A changed secret alters no compose configuration, so nothing is recreated
+  notify: Restart iot-pipeline
+
+- name: Render iot-pipeline docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ iot_pipeline_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start iot-pipeline stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ iot_pipeline_app_dir }}"
+    project_name: "{{ iot_pipeline_stack_name }}"
+    state: present
+    build: "{{ 'always' if iot_pipeline_needs_build | bool else 'never' }}"
+    pull: policy
+    remove_orphans: true
+
+# Each commit leaves an image behind; keep only the one now running
+- name: List iot-pipeline images
+  ansible.builtin.command:
+    argv:
+      - docker
+      - image
+      - ls
+      - --filter
+      - "reference={{ iot_pipeline_image_name }}"
+      - --format
+      - "{% raw %}{{.Repository}}:{{.Tag}}{% endraw %}"
+  register: iot_pipeline_image_list
+  changed_when: false
+
+- name: Remove superseded iot-pipeline images
+  community.docker.docker_image_remove:
+    name: "{{ item }}"
+  loop: >-
+    {{
+      iot_pipeline_image_list.stdout_lines
+      | reject('equalto', iot_pipeline_image_name ~ ':' ~ iot_pipeline_version)
+      | reject('search', ':<none>$')
+      | list
+    }}

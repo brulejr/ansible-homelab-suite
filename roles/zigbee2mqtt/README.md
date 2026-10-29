@@ -1,5 +1,18 @@
 Runs on container port 9442
 
+# Tools
+
+`merge_z2m_db.py` is installed into the app directory. It merges two zigbee2mqtt
+`database.db` files, e.g. when moving to a new host whose instance has already
+re-interviewed a few devices. Devices are matched by `ieeeAddr` and groups by
+`groupID`; entries in the newer database win, and ids are renumbered.
+
+Stop zigbee2mqtt on both instances before copying databases.
+
+```bash
+./merge_z2m_db.py old-database.db new-database.db merged-database.db
+```
+
 # Resources
 
 Reference

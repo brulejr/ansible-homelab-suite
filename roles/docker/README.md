@@ -11,7 +11,14 @@ Any pre-requisites that may not be covered by Ansible itself or the role should 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+- `docker_wait_for_network` (default `true`): installs a systemd drop-in
+  (`/etc/systemd/system/docker.service.d/10-wait-for-network.conf`) that delays
+  Docker startup until the host has a default IPv4 route. On hosts where
+  `network-online.target` is reached before DHCP completes, Docker otherwise
+  starts too early: containers publishing ports on a specific host IP lose their
+  port bindings, and containers on bridge networks come up without routes.
+- `docker_wait_for_network_timeout` (default `60`): seconds to wait before
+  starting Docker anyway.
 
 Dependencies
 ------------

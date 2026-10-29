@@ -1,35 +1,24 @@
 ---
-# tasks file for nodered
+- name: Validate Node-RED configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: nodered_enabled | bool
 
-- name: Create nodered base directory
-  ansible.builtin.file:
-    path: "{{ nodered_dir }}"
-    state: directory
-    mode: '0755'
-    owner: sysadm
-    group: sysadm
-    access_time: preserve
-    modification_time: preserve
+- name: Install and configure Node-RED
+  ansible.builtin.include_tasks: install.yml
+  when: nodered_enabled | bool
 
-- name: copy nodered files
-  template:
-    src: templates/{{ item }}
-    dest: "{{ nodered_dir }}"
-  loop:
-    - docker-compose.yml
+- name: Configure the Node-RED admin login
+  ansible.builtin.include_tasks: admin_auth.yml
+  when: nodered_enabled | bool
 
-- name: Create nodered data directory
-  ansible.builtin.file:
-    path: "{{ nodered_data_dir }}"
-    state: directory
-    mode: '0755'
-    owner: sysadm
-    group: sysadm
-    access_time: preserve
-    modification_time: preserve
+- name: Verify Node-RED
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - nodered_enabled | bool
+    - nodered_verify_enabled | bool
 
-- name: Run nodered docker compose
-  community.docker.docker_compose_v2:
-    project_src: "{{ nodered_dir }}"
-    files:
-      - docker-compose.yml
+- name: Deploy Node-RED flow tabs
+  ansible.builtin.include_tasks: flow_tabs.yml
+  when:
+    - nodered_enabled | bool
+    - nodered_flow_tab_files | length > 0

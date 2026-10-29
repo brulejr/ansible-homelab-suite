@@ -1,0 +1,6 @@
+---
+- name: Restart ring-mqtt
+  community.docker.docker_compose_v2:
+    project_src: "{{ ring_mqtt_app_dir }}"
+    project_name: "{{ ring_mqtt_stack_name }}"
+    state: restarted

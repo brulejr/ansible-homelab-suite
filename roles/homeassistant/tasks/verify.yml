@@ -1,0 +1,14 @@
+---
+- name: Wait for Home Assistant HTTP endpoint
+  ansible.builtin.uri:
+    url: "http://{{ homeassistant_bind_ip }}:{{ homeassistant_host_port }}"
+    method: GET
+    status_code:
+      - 200
+      - 302
+      - 401
+    validate_certs: false
+  register: homeassistant_verify_result
+  retries: "{{ (homeassistant_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
+  delay: 5
+  until: homeassistant_verify_result.status in [200, 302, 401]

@@ -1,0 +1,14 @@
+---
+- name: Validate oiltank-monitor configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: oiltank_monitor_enabled | bool
+
+- name: Install and configure oiltank-monitor
+  ansible.builtin.include_tasks: install.yml
+  when: oiltank_monitor_enabled | bool
+
+- name: Verify oiltank-monitor
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - oiltank_monitor_enabled | bool
+    - oiltank_monitor_verify_enabled | bool

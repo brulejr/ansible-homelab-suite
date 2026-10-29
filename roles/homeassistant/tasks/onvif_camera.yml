@@ -1,0 +1,75 @@
+---
+- name: "Record ONVIF camera configuration URL for {{ homeassistant_onvif_camera.name }}"
+  ansible.builtin.set_fact:
+    homeassistant_onvif_camera_areas: >-
+      {{ homeassistant_onvif_camera_areas
+         + [{'label': homeassistant_onvif_camera.name,
+             'area': homeassistant_onvif_camera.area,
+             'configuration_url': 'http://' ~ homeassistant_onvif_camera.host
+                                  ~ ':' ~ homeassistant_onvif_camera.port | default(80)}] }}
+
+- name: "Start ONVIF config flow for {{ homeassistant_onvif_camera.name }}"
+  ansible.builtin.uri:
+    url: "{{ homeassistant_api_url }}/api/config/config_entries/flow"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ homeassistant_api_token }}"
+    body_format: json
+    body:
+      handler: onvif
+    return_content: true
+  register: homeassistant_onvif_flow
+  no_log: true
+
+# The first form asks whether to search the network; answering no goes
+# straight to the manual form
+- name: "Choose manual ONVIF setup for {{ homeassistant_onvif_camera.name }}"
+  ansible.builtin.uri:
+    url: "{{ homeassistant_api_url }}/api/config/config_entries/flow/{{ homeassistant_onvif_flow.json.flow_id }}"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ homeassistant_api_token }}"
+    body_format: json
+    body:
+      auto: false
+    return_content: true
+  register: homeassistant_onvif_manual
+  no_log: true
+
+# The integration logs in to the camera and reads its profiles here, so the
+# camera must be on and reachable from the Home Assistant host
+- name: "Create ONVIF entry for {{ homeassistant_onvif_camera.name }}"
+  ansible.builtin.uri:
+    url: "{{ homeassistant_api_url }}/api/config/config_entries/flow/{{ homeassistant_onvif_flow.json.flow_id }}"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ homeassistant_api_token }}"
+    body_format: json
+    # One expression, so the port stays an integer, which the form insists on
+    body: >-
+      {{ {'name': homeassistant_onvif_camera.name,
+          'host': homeassistant_onvif_camera.host,
+          'port': homeassistant_onvif_camera.port | default(80) | int,
+          'username': homeassistant_onvif_camera.username | default(''),
+          'password': homeassistant_onvif_camera.password | default('')} }}
+    return_content: true
+    # An input the form rejects comes back as 400, with the reason in the body
+    status_code: [200, 400]
+  register: homeassistant_onvif_result
+  changed_when: homeassistant_onvif_result.json.type | default('') == 'create_entry'
+  # Judged by the next task, since no_log would hide the reason
+  failed_when: false
+  no_log: true
+
+# A refused camera comes back as an abort reason or as the form again with
+# errors (no_onvif_service for the wrong port, auth_failed for bad credentials)
+- name: "Check ONVIF entry for {{ homeassistant_onvif_camera.name }}"
+  ansible.builtin.fail:
+    msg: >-
+      Home Assistant did not add {{ homeassistant_onvif_camera.name }}
+      ({{ homeassistant_onvif_camera.host }}):
+      {{ homeassistant_onvif_result.json.reason
+         | default(homeassistant_onvif_result.json.errors | default(homeassistant_onvif_result.json, true) | to_json) }}
+  when:
+    - homeassistant_onvif_result.json.type | default('') != 'create_entry'
+    - homeassistant_onvif_result.json.reason | default('') != 'already_configured'

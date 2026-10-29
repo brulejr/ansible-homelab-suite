@@ -1,0 +1,64 @@
+---
+- name: Validate iot-pipeline required variables
+  ansible.builtin.assert:
+    that:
+      - iot_pipeline_stack_name | length > 0
+      - iot_pipeline_container_prefix | length > 0
+      - iot_pipeline_app_dir | length > 0
+      - iot_pipeline_src_dir | length > 0
+      - iot_pipeline_secrets_dir | length > 0
+      - iot_pipeline_data_dir | length > 0
+      - iot_pipeline_docker_network | length > 0
+      - iot_pipeline_bind_ip | length > 0
+      - iot_pipeline_host_port | int > 0
+      - iot_pipeline_grafana_host_port | int > 0
+      - iot_pipeline_postgres_host_port | int > 0
+      - iot_pipeline_gradle_tasks | length > 0
+      - iot_pipeline_ingest_mqtt_url is match('^(tcp|ssl|ws|wss)://')
+      - iot_pipeline_publish_mqtt_url is match('^(tcp|ssl|ws|wss)://')
+    fail_msg: "iot-pipeline role configuration is invalid."
+
+- name: Validate iot-pipeline Git source
+  ansible.builtin.assert:
+    that:
+      - iot_pipeline_git_repo is match('^(ssh://|[A-Za-z0-9._-]+@)')
+      - iot_pipeline_git_version | length > 0
+      - iot_pipeline_git_key_file | length > 0
+    fail_msg: "iot_pipeline_git_repo must be an SSH URL (git@github.com:owner/repo.git)."
+
+# A key whose line breaks were lost on the way into the vault fails in ssh with
+# only "error in libcrypto"
+- name: Validate iot-pipeline Git deploy key format
+  ansible.builtin.assert:
+    that:
+      - iot_pipeline_git_ssh_private_key | trim is match('-----BEGIN [A-Z ]*PRIVATE KEY-----\n')
+      - iot_pipeline_git_ssh_private_key | trim is search('\n-----END [A-Z ]*PRIVATE KEY-----$')
+    fail_msg: >-
+      iot_pipeline_git_ssh_private_key must be the whole private key file, including
+      its BEGIN and END lines and its line breaks. In the vault, use a block scalar:
+      'vault_iot_pipeline_git_ssh_private_key: |' followed by the key file indented
+      two spaces.
+  when: iot_pipeline_git_ssh_private_key | length > 0
+
+- name: Validate iot-pipeline secrets
+  ansible.builtin.assert:
+    that:
+      - iot_pipeline_postgres_admin_password | length > 0
+      - iot_pipeline_postgres_app_password | length > 0
+      - iot_pipeline_postgres_grafana_password | length > 0
+      - iot_pipeline_grafana_admin_password | length > 0
+    fail_msg: >-
+      iot_pipeline_postgres_admin_password, iot_pipeline_postgres_app_password,
+      iot_pipeline_postgres_grafana_password and iot_pipeline_grafana_admin_password
+      must be set, preferably from the vault.
+
+# Both become SQL identifiers; keep them to names PostgreSQL never needs quoted
+- name: Validate iot-pipeline PostgreSQL names
+  ansible.builtin.assert:
+    that:
+      - iot_pipeline_postgres_db is match('^[a-z_][a-z0-9_]{0,62}$')
+      - iot_pipeline_postgres_app_username is match('^[a-z_][a-z0-9_]{0,62}$')
+      - iot_pipeline_postgres_app_username not in ['postgres', 'grafana_reader']
+    fail_msg: >-
+      iot_pipeline_postgres_db and iot_pipeline_postgres_app_username must be lower-case
+      letters, digits and underscores, and the username cannot be postgres or grafana_reader.

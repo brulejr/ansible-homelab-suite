@@ -1,0 +1,47 @@
+---
+# Adapted from docker/prod/compose.prod.yaml in {{ oiltank_monitor_git_repo }}.
+# Secrets are files mounted under /run/secrets; nothing secret is set here.
+services:
+  app:
+    build:
+      context: "{{ oiltank_monitor_src_dir }}"
+      dockerfile: docker/Dockerfile
+    image: "{{ oiltank_monitor_image_name }}:{{ oiltank_monitor_version }}"
+    container_name: "{{ oiltank_monitor_container_name }}"
+    restart: "{{ oiltank_monitor_restart_policy }}"
+    labels:
+      # Built here, so there is no registry for Watchtower to update it from
+      com.centurylinklabs.watchtower.enable: "false"
+    environment:
+      PROFILE: prod
+      TZ: "{{ oiltank_monitor_timezone }}"
+      # Each file in /run/secrets becomes a property named after it, which
+      # resolves the ${OILTANK_CAMERA_RTSP_URL} and ${MQTT_PASSWORD}
+      # placeholders in the application's application.yml.
+      SPRING_CONFIG_IMPORT: "configtree:/run/secrets/"
+      OILTANK_PUBLISH_MQTT_URL: "{{ oiltank_monitor_mqtt_url }}"
+      OILTANK_PUBLISH_MQTT_CLIENT_ID: "{{ oiltank_monitor_mqtt_client_id }}"
+      OILTANK_PUBLISH_MQTT_USERNAME: "{{ oiltank_monitor_mqtt_username }}"
+{% for key, value in oiltank_monitor_environment.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+    secrets:
+      - source: camera_rtsp_url
+        target: OILTANK_CAMERA_RTSP_URL
+      - source: mqtt_password
+        target: MQTT_PASSWORD
+    ports:
+      - "{{ oiltank_monitor_bind_ip }}:{{ oiltank_monitor_host_port }}:5001"
+    networks:
+      - default
+      - {{ oiltank_monitor_docker_network }}
+
+secrets:
+  camera_rtsp_url:
+    file: "{{ oiltank_monitor_secrets_dir }}/camera_rtsp_url"
+  mqtt_password:
+    file: "{{ oiltank_monitor_secrets_dir }}/mqtt_password"
+
+networks:
+  {{ oiltank_monitor_docker_network }}:
+    external: true

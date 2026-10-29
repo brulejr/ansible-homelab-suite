@@ -1,0 +1,15 @@
+---
+- name: Wait for Wiki-Go HTTP endpoint
+  ansible.builtin.uri:
+    url: "http://{{ wikigo_bind_ip }}:{{ wikigo_host_port }}"
+    method: GET
+    status_code:
+      - 200
+      - 302
+      - 303
+      - 401
+    validate_certs: false
+  register: wikigo_verify_result
+  retries: "{{ (wikigo_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
+  delay: 5
+  until: wikigo_verify_result.status in [200, 302, 303, 401]

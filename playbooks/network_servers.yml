@@ -6,4 +6,5 @@
     - common
     - docker
     - watchtower
+    - docker2mqtt
     - guacamole

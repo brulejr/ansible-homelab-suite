@@ -1,0 +1,57 @@
+---
+- name: Assert Nexus stack name is defined
+  ansible.builtin.assert:
+    that:
+      - nexus_stack_name | length > 0
+    fail_msg: "nexus_stack_name must be defined"
+
+- name: Assert Nexus container name is defined
+  ansible.builtin.assert:
+    that:
+      - nexus_container_name | length > 0
+    fail_msg: "nexus_container_name must be defined"
+
+- name: Assert Nexus app directory is defined
+  ansible.builtin.assert:
+    that:
+      - nexus_app_dir | length > 0
+    fail_msg: "nexus_app_dir must be defined"
+
+- name: Assert Nexus data directory is defined
+  ansible.builtin.assert:
+    that:
+      - nexus_data_dir | length > 0
+    fail_msg: "nexus_data_dir must be defined"
+
+- name: Assert Nexus bind IP is defined
+  ansible.builtin.assert:
+    that:
+      - nexus_bind_ip | length > 0
+    fail_msg: "nexus_bind_ip must be defined"
+
+- name: Assert Nexus host port is valid
+  ansible.builtin.assert:
+    that:
+      - nexus_host_port | int > 0
+      - nexus_host_port | int < 65536
+    fail_msg: "nexus_host_port must be a valid TCP port"
+
+- name: Assert Nexus Docker repository host port is valid when enabled
+  ansible.builtin.assert:
+    that:
+      - nexus_docker_repo_host_port | int > 0
+      - nexus_docker_repo_host_port | int < 65536
+    fail_msg: "nexus_docker_repo_host_port must be a valid TCP port"
+  when: nexus_docker_repo_enabled | bool
+
+- name: Assert Nexus UID is valid
+  ansible.builtin.assert:
+    that:
+      - nexus_uid | int > 0
+    fail_msg: "nexus_uid must be a positive integer"
+
+- name: Assert Nexus GID is valid
+  ansible.builtin.assert:
+    that:
+      - nexus_gid | int > 0
+    fail_msg: "nexus_gid must be a positive integer"

@@ -1,0 +1,12 @@
+---
+- name: Check docker2mqtt container state
+  community.docker.docker_container_info:
+    name: "{{ docker2mqtt_container_name }}"
+  register: docker2mqtt_container_info
+
+- name: Assert docker2mqtt container is running
+  ansible.builtin.assert:
+    that:
+      - docker2mqtt_container_info.exists
+      - docker2mqtt_container_info.container.State.Running
+    fail_msg: "docker2mqtt container is not running"

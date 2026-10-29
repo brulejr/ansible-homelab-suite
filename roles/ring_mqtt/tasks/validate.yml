@@ -1,0 +1,31 @@
+---
+- name: Validate ring-mqtt required variables
+  ansible.builtin.assert:
+    that:
+      - ring_mqtt_stack_name | length > 0
+      - ring_mqtt_container_name | length > 0
+      - ring_mqtt_app_dir | length > 0
+      - ring_mqtt_data_dir | length > 0
+      - ring_mqtt_image | length > 0
+      - ring_mqtt_docker_network | length > 0
+      - ring_mqtt_bind_ip | length > 0
+      - ring_mqtt_web_host_port | int > 0
+      - ring_mqtt_rtsp_host_port | int > 0
+      - ring_mqtt_mqtt_host | length > 0
+      - ring_mqtt_mqtt_port | int > 0
+      - ring_mqtt_ring_topic | length > 0
+    fail_msg: "ring-mqtt role configuration is invalid."
+
+- name: Validate ring-mqtt broker credentials
+  ansible.builtin.assert:
+    that:
+      - (ring_mqtt_mqtt_user | length > 0) == (ring_mqtt_mqtt_password | length > 0)
+    fail_msg: "Set both ring_mqtt_mqtt_user and ring_mqtt_mqtt_password, or neither."
+  no_log: true
+
+- name: Validate ring-mqtt live stream credentials
+  ansible.builtin.assert:
+    that:
+      - (ring_mqtt_livestream_user | length > 0) == (ring_mqtt_livestream_password | length > 0)
+    fail_msg: "Set both ring_mqtt_livestream_user and ring_mqtt_livestream_password, or neither."
+  no_log: true

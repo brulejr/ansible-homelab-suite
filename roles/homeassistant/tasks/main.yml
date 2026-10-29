@@ -1,35 +1,75 @@
 ---
-# tasks file for homeassistant
+- name: Validate Home Assistant configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: homeassistant_enabled | bool
 
-- name: Create homeassistant base directory
-  ansible.builtin.file:
-    path: "{{ homeassistant_dir }}"
-    state: directory
-    mode: '0755'
-    owner: sysadm
-    group: sysadm
-    access_time: preserve
-    modification_time: preserve
+- name: Install and configure Home Assistant
+  ansible.builtin.include_tasks: install.yml
+  when: homeassistant_enabled | bool
 
-- name: copy homeassistant files
-  template:
-    src: templates/{{ item }}
-    dest: "{{ homeassistant_dir }}"
-  loop:
-    - docker-compose.yml
+- name: Configure Home Assistant frontend
+  ansible.builtin.include_tasks: frontend.yml
+  when: homeassistant_enabled | bool
 
-- name: Create homeassistant config directory
-  ansible.builtin.file:
-    path: "{{ homeassistant_config_dir }}"
-    state: directory
-    mode: '0755'
-    owner: sysadm
-    group: sysadm
-    access_time: preserve
-    modification_time: preserve
+- name: Configure Home Assistant notify groups
+  ansible.builtin.include_tasks: notify_groups.yml
+  when: homeassistant_enabled | bool
 
-- name: Run homeassistant docker compose
-  community.docker.docker_compose_v2:
-    project_src: "{{ homeassistant_dir }}"
-    files:
-      - docker-compose.yml
+- name: Configure Home Assistant automations
+  ansible.builtin.include_tasks: automations.yml
+  when: homeassistant_enabled | bool
+
+- name: Verify Home Assistant
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_verify_enabled | bool
+
+- name: Configure Home Assistant Ping hosts
+  ansible.builtin.include_tasks: ping_hosts.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_api_token | length > 0
+    - homeassistant_ping_hosts | length > 0
+
+- name: Configure Home Assistant Brother printers
+  ansible.builtin.include_tasks: brother_printers.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_api_token | length > 0
+    - homeassistant_brother_printers | length > 0
+
+- name: Configure Home Assistant Rokus
+  ansible.builtin.include_tasks: roku_devices.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_api_token | length > 0
+    - homeassistant_roku_devices | length > 0
+
+- name: Configure Home Assistant ONVIF cameras
+  ansible.builtin.include_tasks: onvif_cameras.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_api_token | length > 0
+    - homeassistant_onvif_cameras | length > 0
+
+- name: Configure Home Assistant Generic Cameras
+  ansible.builtin.include_tasks: generic_cameras.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_api_token | length > 0
+    - homeassistant_generic_cameras | length > 0
+
+- name: Configure Home Assistant MQTT device areas
+  ansible.builtin.include_tasks: mqtt_devices.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_api_token | length > 0
+    - homeassistant_mqtt_devices | length > 0
+
+- name: Configure Home Assistant entity ids
+  ansible.builtin.include_tasks: entity_ids.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_api_token | length > 0
+    - homeassistant_entity_ids | length > 0

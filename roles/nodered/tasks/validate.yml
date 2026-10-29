@@ -1,0 +1,12 @@
+---
+- name: Validate Node-RED required variables
+  ansible.builtin.assert:
+    that:
+      - nodered_stack_name | length > 0
+      - nodered_container_name | length > 0
+      - nodered_app_dir | length > 0
+      - nodered_data_dir | length > 0
+      - nodered_image | length > 0
+      - nodered_docker_network | length > 0
+      - nodered_host_port is defined
+    fail_msg: "Node-RED role configuration is invalid."

@@ -6,6 +6,7 @@
     - common
     - docker
     - watchtower
+    - docker2mqtt
     - gitea
     - plantuml
     - mqtt

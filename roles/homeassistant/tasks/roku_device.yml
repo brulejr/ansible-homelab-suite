@@ -1,0 +1,61 @@
+---
+# Roku's External Control Protocol, unauthenticated on the local network. Also
+# confirms the Roku answers before Home Assistant is asked to add it.
+- name: "Read Roku device info for {{ homeassistant_roku_device.name }}"
+  ansible.builtin.uri:
+    url: "http://{{ homeassistant_roku_device.host }}:8060/query/device-info"
+    return_content: true
+    timeout: 10
+  register: homeassistant_roku_info
+
+- name: "Record Roku serial number for {{ homeassistant_roku_device.name }}"
+  ansible.builtin.set_fact:
+    homeassistant_roku_device_areas: >-
+      {{ homeassistant_roku_device_areas
+         + [{'label': homeassistant_roku_device.name,
+             'area': homeassistant_roku_device.area,
+             'identifier': ['roku', homeassistant_roku_info.content
+                                    | regex_search('<serial-number>([^<]+)</serial-number>', '\1') | first]}] }}
+
+- name: "Start Roku config flow for {{ homeassistant_roku_device.name }}"
+  ansible.builtin.uri:
+    url: "{{ homeassistant_api_url }}/api/config/config_entries/flow"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ homeassistant_api_token }}"
+    body_format: json
+    body:
+      handler: roku
+    return_content: true
+  register: homeassistant_roku_flow
+  no_log: true
+
+- name: "Create Roku entry for {{ homeassistant_roku_device.name }}"
+  ansible.builtin.uri:
+    url: "{{ homeassistant_api_url }}/api/config/config_entries/flow/{{ homeassistant_roku_flow.json.flow_id }}"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ homeassistant_api_token }}"
+    body_format: json
+    body:
+      host: "{{ homeassistant_roku_device.host }}"
+    return_content: true
+    # An input the form rejects comes back as 400, with the reason in the body
+    status_code: [200, 400]
+  register: homeassistant_roku_result
+  changed_when: homeassistant_roku_result.json.type | default('') == 'create_entry'
+  # Judged by the next task, since no_log would hide the reason
+  failed_when: false
+  no_log: true
+
+# A refused Roku comes back as an abort reason or as the form again with errors
+- name: "Check Roku entry for {{ homeassistant_roku_device.name }}"
+  ansible.builtin.fail:
+    msg: >-
+      Home Assistant did not add {{ homeassistant_roku_device.name }}
+      ({{ homeassistant_roku_device.host }}):
+      {{ homeassistant_roku_result.json.reason
+         | default(homeassistant_roku_result.json.errors | default(homeassistant_roku_result.json, true) | to_json) }}
+  when:
+    - homeassistant_roku_result.json.type | default('') != 'create_entry'
+    - homeassistant_roku_result.json.reason | default('') != 'already_configured'

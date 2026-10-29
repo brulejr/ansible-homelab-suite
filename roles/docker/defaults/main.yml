@@ -1,0 +1,15 @@
+---
+# Delay Docker startup until the host has a default IPv4 route. Without this,
+# Docker can start before DHCP completes, leaving containers that publish on a
+# specific host IP without their ports and bridge containers without routes.
+docker_wait_for_network: true
+docker_wait_for_network_timeout: 60
+
+# Merged into /etc/docker/daemon.json; keys already in the file (for example
+# an NVIDIA runtime) are kept. The json-file limits stop container logs from
+# filling the disk. They apply to containers as they are (re)created.
+docker_daemon_config:
+  log-driver: json-file
+  log-opts:
+    max-size: "10m"
+    max-file: "3"

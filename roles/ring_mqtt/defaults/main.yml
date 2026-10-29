@@ -1,0 +1,63 @@
+---
+ring_mqtt_enabled: true
+
+ring_mqtt_stack_name: ring-mqtt
+ring_mqtt_container_name: ring-mqtt
+
+# Paths
+#
+# The data directory holds config.json, rendered by this role, and
+# ring-state.json, written by ring-mqtt: it carries the Ring refresh token,
+# which Ring rotates, so the role never touches it.
+ring_mqtt_app_dir: "{{ docker_dir }}/ring-mqtt"
+ring_mqtt_data_dir: "{{ data_dir }}/ring-mqtt"
+
+# Image/runtime
+ring_mqtt_image: "tsightler/ring-mqtt:5.9.3"
+ring_mqtt_restart_policy: unless-stopped
+ring_mqtt_timezone: "{{ timezone }}"
+
+# Networking
+#
+# ring-mqtt joins the shared Docker network to reach the MQTT broker by
+# container name.
+ring_mqtt_docker_network: "{{ docker_network }}"
+ring_mqtt_bind_ip: "{{ server_bind_ip }}"
+
+# Web UI for the first Ring login; it listens only while there is no working
+# refresh token
+ring_mqtt_web_host_port: "{{ app_port_ring_mqtt }}"
+# go2rtc's RTSP server for camera live streams
+ring_mqtt_rtsp_host_port: "{{ app_port_ring_mqtt_rtsp }}"
+
+# ---------------------------------------------------------------------------
+# MQTT
+# ---------------------------------------------------------------------------
+# The broker Home Assistant and Node-RED listen on
+ring_mqtt_mqtt_host: mqtt
+ring_mqtt_mqtt_port: 1883
+ring_mqtt_mqtt_user: ""
+ring_mqtt_mqtt_password: ""
+
+# Device topics are <ring_topic>/<location id>/<category>/<device id>/...
+ring_mqtt_ring_topic: ring
+# Home Assistant's birth topic; ring-mqtt resends discovery when HA restarts
+ring_mqtt_hass_topic: homeassistant/status
+
+# ---------------------------------------------------------------------------
+# Ring
+# ---------------------------------------------------------------------------
+ring_mqtt_enable_cameras: true
+# Location modes, for locations without a Ring Alarm
+ring_mqtt_enable_modes: false
+ring_mqtt_enable_panic: false
+ring_mqtt_disarm_code: ""
+# Ring location ids to limit to; empty publishes every location
+ring_mqtt_location_ids: []
+
+# RTSP credentials for the live streams; leave both empty for open streams
+ring_mqtt_livestream_user: ""
+ring_mqtt_livestream_password: ""
+
+# Verification
+ring_mqtt_verify_enabled: true

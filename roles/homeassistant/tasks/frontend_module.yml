@@ -1,0 +1,97 @@
+---
+- name: "Check frontend module {{ homeassistant_frontend_module.name }}"
+  ansible.builtin.stat:
+    path: >-
+      {{ homeassistant_www_dir }}/{{ homeassistant_frontend_module.name }}/{{
+      homeassistant_frontend_module.version }}/{{ homeassistant_frontend_module.entrypoint }}
+  register: homeassistant_frontend_module_entrypoint
+
+# Releases can ship lazy-loaded chunks next to the entrypoint, so every .js
+# asset is downloaded into a per-version directory (which also busts caches).
+- name: "Download frontend module {{ homeassistant_frontend_module.name }}"
+  when: not homeassistant_frontend_module_entrypoint.stat.exists
+  block:
+    - name: "Look up release {{ homeassistant_frontend_module.version }}"
+      ansible.builtin.uri:
+        url: >-
+          https://api.github.com/repos/{{ homeassistant_frontend_module.repo
+          }}/releases/tags/{{ homeassistant_frontend_module.version }}
+        return_content: true
+      register: homeassistant_frontend_module_release
+      when: homeassistant_frontend_module.source | default('release') == 'release'
+
+    - name: "Ensure module directories exist"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ homeassistant_puid }}"
+        group: "{{ homeassistant_pgid }}"
+        mode: "0755"
+      loop:
+        - "{{ homeassistant_www_dir }}/{{ homeassistant_frontend_module.name }}"
+        - "{{ homeassistant_www_dir }}/{{ homeassistant_frontend_module.name }}/{{ homeassistant_frontend_module.version }}"
+
+    - name: "Download release assets"
+      ansible.builtin.get_url:
+        url: "{{ item.browser_download_url }}"
+        dest: "{{ homeassistant_www_dir }}/{{ homeassistant_frontend_module.name }}/{{ homeassistant_frontend_module.version }}/{{ item.name }}"
+        owner: "{{ homeassistant_puid }}"
+        group: "{{ homeassistant_pgid }}"
+        mode: "0644"
+      loop: >-
+        {{ homeassistant_frontend_module_release.json.assets
+           | selectattr('name', 'match', '.*\.js$') | list }}
+      loop_control:
+        label: "{{ item.name }}"
+      when: homeassistant_frontend_module.source | default('release') == 'release'
+
+    # Some cards commit their built bundle to the repo instead of attaching it
+    # to the release; fetch it from the tag.
+    - name: "Download repository file"
+      ansible.builtin.get_url:
+        url: >-
+          https://raw.githubusercontent.com/{{ homeassistant_frontend_module.repo }}/{{
+          homeassistant_frontend_module.version }}/{{ homeassistant_frontend_module.entrypoint }}
+        dest: "{{ homeassistant_www_dir }}/{{ homeassistant_frontend_module.name }}/{{ homeassistant_frontend_module.version }}/{{ homeassistant_frontend_module.entrypoint }}"
+        owner: "{{ homeassistant_puid }}"
+        group: "{{ homeassistant_pgid }}"
+        mode: "0644"
+      when: homeassistant_frontend_module.source | default('release') == 'repo'
+
+# Local fixes to the upstream entrypoint, re-applied on every deploy. A patch
+# whose search text is gone and whose replacement is absent means upstream
+# changed the code, so fail rather than ship an unpatched (or broken) file.
+- name: "Read {{ homeassistant_frontend_module.name }} entrypoint for patching"
+  ansible.builtin.slurp:
+    src: >-
+      {{ homeassistant_www_dir }}/{{ homeassistant_frontend_module.name }}/{{
+      homeassistant_frontend_module.version }}/{{ homeassistant_frontend_module.entrypoint }}
+  register: homeassistant_frontend_module_source
+  when: homeassistant_frontend_module.patches | default([]) | length > 0
+
+- name: "Check {{ homeassistant_frontend_module.name }} patches still apply"
+  ansible.builtin.assert:
+    that:
+      - >-
+        item.search in (homeassistant_frontend_module_source.content | b64decode)
+        or item.replace in (homeassistant_frontend_module_source.content | b64decode)
+    fail_msg: >-
+      Patch '{{ item.name }}' no longer matches {{ homeassistant_frontend_module.name }}
+      {{ homeassistant_frontend_module.version }}; update or drop it.
+    quiet: true
+  loop: "{{ homeassistant_frontend_module.patches | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: "Patch {{ homeassistant_frontend_module.name }}"
+  ansible.builtin.replace:
+    path: >-
+      {{ homeassistant_www_dir }}/{{ homeassistant_frontend_module.name }}/{{
+      homeassistant_frontend_module.version }}/{{ homeassistant_frontend_module.entrypoint }}
+    regexp: "{{ item.search | regex_escape }}"
+    # Folded scalar so the backslash escaping reaches Jinja unchanged
+    replace: >-
+      {{ item.replace | replace('\\', '\\\\') }}
+  loop: "{{ homeassistant_frontend_module.patches | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"

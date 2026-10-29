@@ -1,0 +1,72 @@
+---
+# Node-RED writes settings.js on its first start; the admin login goes into a
+# managed block in it, so the rest of the file stays Node-RED's defaults.
+- name: Wait for Node-RED settings.js
+  ansible.builtin.wait_for:
+    path: "{{ nodered_data_dir }}/settings.js"
+    timeout: "{{ nodered_verify_timeout }}"
+
+- name: Read Node-RED settings.js
+  ansible.builtin.slurp:
+    src: "{{ nodered_data_dir }}/settings.js"
+  register: nodered_settings_js
+
+- name: Ensure settings.js has no unmanaged adminAuth
+  ansible.builtin.assert:
+    that:
+      - >-
+        nodered_settings_js.content | b64decode
+        | regex_replace('(?s)// BEGIN ANSIBLE MANAGED ADMIN AUTH.*// END ANSIBLE MANAGED ADMIN AUTH', '')
+        is not search('(?m)^\s*adminAuth\s*:')
+    fail_msg: >-
+      settings.js already sets adminAuth. Comment it out; the login comes from
+      nodered_admin_user and nodered_admin_password.
+
+- name: Hash the Node-RED admin password
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - -i
+      - "{{ nodered_container_name }}"
+      - node
+      - -e
+      - "{{ lookup('ansible.builtin.file', 'admin_password_hash.js') }}"
+    stdin: >-
+      {{ {'password': nodered_admin_password,
+          'hash': nodered_settings_js.content | b64decode
+                  | regex_findall('(?s)// BEGIN ANSIBLE MANAGED ADMIN AUTH.*?password: \"([^\"]+)\"')
+                  | first | default('')} | to_json }}
+  register: nodered_admin_password_hash
+  changed_when: false
+  no_log: true
+  when: nodered_admin_password | length > 0
+
+- name: Configure the Node-RED admin login in settings.js
+  ansible.builtin.blockinfile:
+    path: "{{ nodered_data_dir }}/settings.js"
+    marker: "    // {mark} ANSIBLE MANAGED ADMIN AUTH"
+    insertafter: '^module\.exports = \{'
+    block: |2
+          adminAuth: {
+              type: "credentials",
+              users: [{
+                  username: "{{ nodered_admin_user }}",
+                  password: "{{ nodered_admin_password_hash.stdout | default('') }}",
+                  permissions: "*"
+              }]
+          },
+    state: "{{ 'present' if nodered_admin_password | length > 0 else 'absent' }}"
+    owner: "{{ puid }}"
+    group: "{{ pgid }}"
+    mode: "0600"
+  register: nodered_admin_auth_block
+
+# settings.js is only read at startup; restart now, so verify and the flow
+# deploy that follow already see the login
+- name: Restart Node-RED for the admin login
+  community.docker.docker_compose_v2:
+    project_src: "{{ nodered_app_dir }}"
+    project_name: "{{ nodered_stack_name }}"
+    state: restarted
+  when: nodered_admin_auth_block is changed

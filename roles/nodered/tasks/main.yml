@@ -7,6 +7,10 @@
   ansible.builtin.include_tasks: install.yml
   when: nodered_enabled | bool
 
+- name: Configure the Node-RED admin login
+  ansible.builtin.include_tasks: admin_auth.yml
+  when: nodered_enabled | bool
+
 - name: Verify Node-RED
   ansible.builtin.include_tasks: verify.yml
   when:

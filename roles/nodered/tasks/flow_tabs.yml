@@ -11,6 +11,7 @@
       - "{{ lookup('ansible.builtin.file', 'deploy_flow_tabs.py') }}"
     stdin: >-
       {{ {'url': 'http://' ~ nodered_bind_ip ~ ':' ~ nodered_host_port,
+          'username': nodered_admin_user, 'password': nodered_admin_password,
           'tabs': nodered_flow_tab_files | map('basename')
                   | zip(query('ansible.builtin.file', *nodered_flow_tab_files) | map('from_json')) | list} | to_json }}
   register: nodered_flow_tabs_result
@@ -19,6 +20,7 @@
     and ((nodered_flow_tabs_result.stdout | from_json).added
          + (nodered_flow_tabs_result.stdout | from_json).changed) | length > 0
   failed_when: false
+  no_log: true
 
 - name: Check Node-RED flow tabs
   ansible.builtin.assert:

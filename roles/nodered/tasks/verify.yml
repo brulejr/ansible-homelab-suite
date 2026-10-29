@@ -12,3 +12,18 @@
   retries: "{{ (nodered_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
   delay: 5
   until: nodered_verify_result.status in [200, 302, 401]
+
+- name: Check the Node-RED admin login
+  ansible.builtin.uri:
+    url: "http://{{ nodered_bind_ip }}:{{ nodered_host_port }}/auth/token"
+    method: POST
+    body_format: json
+    body:
+      client_id: node-red-admin
+      grant_type: password
+      scope: "*"
+      username: "{{ nodered_admin_user }}"
+      password: "{{ nodered_admin_password }}"
+  register: nodered_admin_login
+  no_log: true
+  when: nodered_admin_password | length > 0

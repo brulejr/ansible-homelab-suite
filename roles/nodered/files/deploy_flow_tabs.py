@@ -2,7 +2,7 @@
 
 Run on the Node-RED host, with only the standard library. Reads JSON on stdin:
 
-    {"url": "http://10.10.40.75:1880",
+    {"url": "http://10.10.40.75:1880", "username": "admin", "password": "...",
      "tabs": [["door_watch.json",
                [{"id": "door_watch_tab", "type": "tab", ...},
                 {"id": "door_watch_learn", "z": "door_watch_tab", ...}]]]}
@@ -14,7 +14,8 @@ export are only checked to be live already, never deployed from here. Each
 tab is deployed locked, its label marked with MARK and its description headed
 with where it comes from, so it reads as Ansible's in the editor; a tab
 exported again with those marks loses them before the comparison. A tab whose
-live nodes already match is left alone, so nothing restarts. Otherwise its live nodes are replaced by the export,
+live nodes already match is left alone, so nothing restarts. With a username
+and password (Node-RED's adminAuth), it logs in for a token, revoked when done. Otherwise its live nodes are replaced by the export,
 including anything added to it in the editor, and all changes go out in one
 deploy that restarts only the changed tabs. Prints JSON naming the tabs it
 added or changed and the errors it met; on an error nothing is deployed.
@@ -44,7 +45,8 @@ def call(url, body=None, headers=None):
         url, data=None if body is None else json.dumps(body).encode(),
         headers={**API, **(headers or {})}, method="GET" if body is None else "POST")
     with urllib.request.urlopen(request, timeout=30) as reply:
-        return json.load(reply)
+        text = reply.read()
+        return json.loads(text) if text.strip() else None
 
 
 def matches(live, wanted):
@@ -56,7 +58,23 @@ def matches(live, wanted):
 
 
 def main(request):
-    current = call(f"{request['url']}/flows")
+    if not request.get("password"):
+        return deploy(request, {})
+    try:
+        token = call(f"{request['url']}/auth/token", {
+            "client_id": "node-red-admin", "grant_type": "password", "scope": "*",
+            "username": request["username"], "password": request["password"]})["access_token"]
+    except urllib.error.HTTPError as error:
+        return {"added": [], "changed": [], "errors": [f"login as {request['username']} failed: {error.code}"]}
+    auth = {"Authorization": f"Bearer {token}"}
+    try:
+        return deploy(request, auth)
+    finally:
+        call(f"{request['url']}/auth/revoke", {"token": token}, auth)
+
+
+def deploy(request, auth):
+    current = call(f"{request['url']}/flows", headers=auth)
     flows = current["flows"]
     result = {"added": [], "changed": [], "errors": []}
 
@@ -105,7 +123,7 @@ def main(request):
         return result
     try:
         call(f"{request['url']}/flows", {"rev": current["rev"], "flows": flows},
-             {"Node-RED-Deployment-Type": "flows"})
+             {**auth, "Node-RED-Deployment-Type": "flows"})
     except urllib.error.HTTPError as error:
         # 409: the flows were deployed from the editor since they were read
         result["errors"].append(f"deploy failed: {error.code} {error.read().decode()}")

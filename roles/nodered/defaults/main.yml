@@ -25,3 +25,9 @@ nodered_verify_timeout: 120
 # from the list leaves its tab in place; delete it in the editor.
 #   - "{{ inventory_dir }}/files/nodered/door_watch.json"
 nodered_flow_tab_files: []
+
+# The editor and admin API login, one user with full access. Empty leaves
+# Node-RED open to anyone who can reach it. The password is bcrypt-hashed into
+# settings.js; the flow tab deploy logs in with it.
+nodered_admin_user: admin
+nodered_admin_password: ""

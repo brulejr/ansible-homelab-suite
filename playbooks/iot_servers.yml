@@ -20,3 +20,6 @@
     - ring_mqtt
     - wikigo
     - zigbee2mqtt
+    - forgejo
+    # Last, after every app whose data it snapshots
+    - config_snapshot

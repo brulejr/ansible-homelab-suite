@@ -1,0 +1,106 @@
+---
+forgejo_enabled: true
+
+forgejo_stack_name: forgejo
+forgejo_container_name: forgejo
+
+forgejo_app_dir: "{{ docker_dir }}/forgejo"
+forgejo_data_dir: "{{ data_dir }}/forgejo"
+# Root-only files the deploy keeps: the secret key and internal token, read by
+# Forgejo, and the admin API token the role itself uses
+forgejo_secrets_dir: "{{ forgejo_app_dir }}/secrets"
+
+# Pinned to a major release line. The rootful image runs OpenSSH for git over
+# SSH and has the ssh client SSH push mirrors need.
+forgejo_image: "codeberg.org/forgejo/forgejo:17"
+forgejo_restart_policy: unless-stopped
+forgejo_uid: "{{ puid }}"
+forgejo_gid: "{{ pgid }}"
+
+forgejo_docker_network: "{{ docker_network }}"
+
+# Web UI and API. The role's own API calls go to this address, so it must be
+# reachable from the host itself (127.0.0.1 or server_bind_ip).
+forgejo_bind_ip: "{{ server_bind_ip }}"
+forgejo_host_port: "{{ app_port_forgejo }}"
+forgejo_container_port: 3000
+
+# Git over SSH, key-only (Forgejo's sshd has no password logins)
+forgejo_ssh_bind_ip: "{{ server_bind_ip }}"
+forgejo_ssh_host_port: "{{ app_port_forgejo_ssh }}"
+
+forgejo_app_name: "{{ homelab_name }} Forgejo"
+forgejo_fqdn: "git.{{ domain_name }}"
+forgejo_root_url: "https://{{ forgejo_fqdn }}/"
+# Host name in the SSH clone URLs
+forgejo_ssh_domain: "{{ forgejo_fqdn }}"
+forgejo_log_level: Info
+
+# Git over HTTP takes a password or token; turn it off to make SSH the only
+# way to clone and push
+forgejo_disable_http_git: false
+
+# Push mirror defaults (Go durations)
+forgejo_mirror_interval: 8h0m0s
+
+# ---------------------------------------------------------------------------
+# Single sign-on (reverse proxy authentication)
+#
+# Behind a forward-auth middleware such as Authelia's, Forgejo signs users in
+# from the Remote-User header. Only users in forgejo_users can sign in; the
+# header is trusted only from forgejo_reverse_proxy_trusted_proxies plus, with
+# forgejo_trust_docker_network, the IPv4 subnets of forgejo_docker_network.
+# ---------------------------------------------------------------------------
+forgejo_reverse_proxy_auth_enabled: false
+forgejo_reverse_proxy_user_header: Remote-User
+forgejo_reverse_proxy_email_header: Remote-Email
+forgejo_reverse_proxy_trusted_proxies: []
+forgejo_trust_docker_network: true
+
+# ---------------------------------------------------------------------------
+# Secrets (keep them in the vault). Generate each with the image itself:
+#   docker run --rm codeberg.org/forgejo/forgejo:17 forgejo generate secret SECRET_KEY
+#   docker run --rm codeberg.org/forgejo/forgejo:17 forgejo generate secret INTERNAL_TOKEN
+#
+# forgejo_secret_key encrypts secrets in the database, the push mirrors' SSH
+# keys among them: never change it once the database exists.
+# ---------------------------------------------------------------------------
+forgejo_secret_key: ""
+forgejo_internal_token: ""
+
+# ---------------------------------------------------------------------------
+# Provisioning, through the API
+#
+# The role creates forgejo_admin_user (random password, never used) and keeps
+# an API token for it in forgejo_secrets_dir. People get random passwords too:
+# they sign in through SSO and use git over SSH with their keys.
+#
+# forgejo_users:
+#   - username: someone          # the SSO user name (Remote-User)
+#     email: someone@example.invalid
+#     admin: true
+#     ssh_keys:                  # added if missing; others are left alone
+#       - "ssh-ed25519 AAAA... someone@laptop"
+#
+# Repositories belong to forgejo_org, whose Owners team gets every user in
+# forgejo_org_owners. A mirror is an SSH push mirror: Forgejo generates its
+# key, and the role prints the public key to add to the remote as a deploy key
+# with write access. Create the remote repository first; GitHub doesn't create
+# one on push.
+#
+# forgejo_org: homelab
+# forgejo_org_owners: [someone]
+# forgejo_repos:
+#   - name: config
+#     description: Configuration snapshots
+#     mirror: "git@github.com:someone/config.git"
+# ---------------------------------------------------------------------------
+forgejo_admin_user: ansible
+forgejo_admin_email: "ansible@{{ domain_name }}"
+forgejo_users: []
+forgejo_org: ""
+forgejo_org_owners: []
+forgejo_repos: []
+
+forgejo_verify_enabled: true
+forgejo_verify_timeout: 180

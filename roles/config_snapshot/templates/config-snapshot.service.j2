@@ -1,0 +1,11 @@
+# Managed by Ansible (config_snapshot)
+[Unit]
+Description=Commit app data snapshots to git
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 {{ config_snapshot_app_dir }}/snapshot.py {{ config_snapshot_app_dir }}/config.json
+Nice=10
+IOSchedulingClass=idle

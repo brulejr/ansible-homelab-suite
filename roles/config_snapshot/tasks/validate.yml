@@ -1,0 +1,42 @@
+---
+- name: Validate config snapshot variables
+  ansible.builtin.assert:
+    that:
+      - config_snapshot_git_host | length > 0
+      - config_snapshot_git_port | int > 0
+      - config_snapshot_git_owner is match('^[A-Za-z0-9._-]+$')
+      - config_snapshot_repos | length > 0
+      - config_snapshot_repos | map(attribute='name') | unique | list | length == config_snapshot_repos | length
+      - config_snapshot_age_recipients | reject('match', '^age1[0-9a-z]{58}$') | list | length == 0
+    fail_msg: >-
+      config_snapshot needs config_snapshot_git_owner, at least one repository
+      (unique names), and age public keys ("age1...") as recipients.
+
+- name: Validate config snapshot sources
+  ansible.builtin.assert:
+    that:
+      - item.1.src is defined
+      - item.1.src is match('^/')
+      - item.1.dest is defined
+      - item.1.dest | trim('/') | length > 0
+      - item.1.dest is not search('(^|/)\.\.?(/|$)')
+      - item.1.dest | trim('/') != '.git'
+      - (item.1.secrets | default([]) | length == 0) or (config_snapshot_age_recipients | length > 0)
+    fail_msg: >-
+      Invalid source in {{ item.0.name }}: needs an absolute src and a dest
+      directory; secrets need config_snapshot_age_recipients.
+  loop: "{{ config_snapshot_repos | subelements('sources') }}"
+  loop_control:
+    label: "{{ item.0.name }}/{{ item.1.dest | default('?') }}"
+
+- name: Validate config snapshot destinations are distinct
+  ansible.builtin.assert:
+    that:
+      - dests | unique | length == dests | length
+      - dests | select('in', ['README.md']) | list | length == 0
+    fail_msg: "Each source of {{ item.name }} needs its own dest directory."
+  vars:
+    dests: "{{ item.sources | map(attribute='dest') | map('trim', '/') | list }}"
+  loop: "{{ config_snapshot_repos }}"
+  loop_control:
+    label: "{{ item.name }}"

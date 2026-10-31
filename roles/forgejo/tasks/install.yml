@@ -1,0 +1,87 @@
+---
+- name: Ensure Forgejo directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ forgejo_app_dir }}", owner: root, group: root, mode: "0755" }
+    - { path: "{{ forgejo_secrets_dir }}", owner: root, group: "{{ forgejo_gid }}", mode: "0750" }
+    - { path: "{{ forgejo_data_dir }}", owner: "{{ forgejo_uid }}", group: "{{ forgejo_gid }}", mode: "0755" }
+  loop_control:
+    label: "{{ item.path }}"
+
+# Read by Forgejo through the *_URI settings; group-readable by its user
+- name: Write Forgejo secrets
+  ansible.builtin.copy:
+    content: "{{ item.value }}"
+    dest: "{{ forgejo_secrets_dir }}/{{ item.name }}"
+    owner: root
+    group: "{{ forgejo_gid }}"
+    mode: "0440"
+  loop:
+    - { name: secret_key, value: "{{ forgejo_secret_key }}" }
+    - { name: internal_token, value: "{{ forgejo_internal_token }}" }
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true
+  notify: Restart forgejo
+
+- name: Look up the Forgejo Docker network
+  community.docker.docker_network_info:
+    name: "{{ forgejo_docker_network }}"
+  register: forgejo_network_info
+  when:
+    - forgejo_reverse_proxy_auth_enabled | bool
+    - forgejo_trust_docker_network | bool
+
+- name: Determine the proxies Forgejo trusts for SSO
+  ansible.builtin.set_fact:
+    forgejo_effective_trusted_proxies: >-
+      {{
+        (forgejo_reverse_proxy_trusted_proxies
+         + ((forgejo_network_info.network.IPAM.Config | default([], true)
+             | map(attribute='Subnet') | reject('search', ':') | list)
+            if (forgejo_trust_docker_network | bool) and (forgejo_network_info.exists | default(false))
+            else []))
+        | unique
+      }}
+
+- name: Check Forgejo SSO has a trusted proxy
+  ansible.builtin.assert:
+    that:
+      - forgejo_effective_trusted_proxies | length > 0
+    fail_msg: >-
+      Reverse proxy authentication is on, but no proxy is trusted: set
+      forgejo_reverse_proxy_trusted_proxies.
+  when: forgejo_reverse_proxy_auth_enabled | bool
+
+- name: Render Forgejo docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ forgejo_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart forgejo
+
+- name: Start Forgejo stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ forgejo_app_dir }}"
+    project_name: "{{ forgejo_stack_name }}"
+    state: present
+    pull: always
+
+- name: Apply Forgejo configuration changes
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for Forgejo
+  ansible.builtin.uri:
+    url: "http://{{ forgejo_bind_ip }}:{{ forgejo_host_port }}/api/healthz"
+    status_code: 200
+  register: forgejo_health
+  retries: "{{ (forgejo_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
+  delay: 5
+  until: forgejo_health.status == 200

@@ -1,0 +1,55 @@
+---
+- name: Validate Forgejo required variables
+  ansible.builtin.assert:
+    that:
+      - forgejo_stack_name | length > 0
+      - forgejo_container_name | length > 0
+      - forgejo_image | length > 0
+      - forgejo_docker_network | length > 0
+      - forgejo_bind_ip | length > 0
+      - forgejo_host_port | int > 0
+      - forgejo_ssh_bind_ip | length > 0
+      - forgejo_ssh_host_port | int > 0
+      - forgejo_fqdn | length > 0
+      - forgejo_admin_user is match('^[A-Za-z0-9._-]+$')
+    fail_msg: "Forgejo role configuration is invalid."
+
+- name: Validate Forgejo secrets
+  ansible.builtin.assert:
+    that:
+      - forgejo_secret_key | length >= 32
+      - forgejo_internal_token | length >= 32
+    fail_msg: >-
+      forgejo_secret_key and forgejo_internal_token must be set (from the
+      vault). Generate each with: openssl rand -hex 32
+  no_log: true
+
+- name: Validate Forgejo users
+  ansible.builtin.assert:
+    that:
+      - item.username is defined
+      - item.username is match('^[A-Za-z0-9._-]+$')
+      - item.username != forgejo_admin_user
+      - item.email is defined
+      - item.email is match('^[^@ ]+@[^@ ]+$')
+      - item.ssh_keys | default([]) | select('match', '^(ssh-|ecdsa-|sk-)') | list | length
+        == item.ssh_keys | default([]) | length
+    fail_msg: "Invalid Forgejo user: {{ item.username | default('?') }}"
+  loop: "{{ forgejo_users }}"
+  loop_control:
+    label: "{{ item.username | default('?') }}"
+
+- name: Validate Forgejo organization and repositories
+  ansible.builtin.assert:
+    that:
+      - forgejo_repos | length == 0 or forgejo_org | length > 0
+      - forgejo_org | length == 0 or forgejo_org is match('^[A-Za-z0-9._-]+$')
+      - forgejo_org_owners | difference(forgejo_users | map(attribute='username')) | length == 0
+      - forgejo_repos | map(attribute='name') | unique | list | length == forgejo_repos | length
+      - forgejo_repos | rejectattr('name', 'match', '^[A-Za-z0-9._-]+$') | list | length == 0
+      - >-
+        forgejo_repos | selectattr('mirror', 'defined')
+        | rejectattr('mirror', 'match', '^(ssh://)?[^@ ]+@[^: ]+[:/].+$') | list | length == 0
+    fail_msg: >-
+      forgejo_repos need forgejo_org, unique names and SSH mirror addresses
+      (git@host:owner/repo.git); forgejo_org_owners must be in forgejo_users.

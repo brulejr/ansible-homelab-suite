@@ -138,6 +138,11 @@ from. Requests from the LAN to the published port are not trusted. If Grafana
 answers "not whitelisted", check the source address in its log and adjust the
 whitelist.
 
+Set `iot_pipeline_grafana_signout_redirect_url` to the portal's logout page
+(Authelia's is `https://<authelia_fqdn>/logout`), so that Grafana's Sign out
+ends the SSO session; otherwise the next request signs the user straight back
+in.
+
 Example
 -------
 

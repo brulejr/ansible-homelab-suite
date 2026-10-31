@@ -10,7 +10,7 @@ This repository intentionally contains **no environment-specific inventory**, **
 
 ### ✅ This repo **is**
 
-- A **public core library** of roles (Traefik, Keycloak, Portainer, apps, etc.)
+- A **public core library** of roles (Traefik, Authelia, LLDAP, Keycloak, Portainer, apps, etc.)
 - A generic `site.yml` that applies roles to host groups (`admin_servers`, `ha_servers`, etc.)
 - Public-safe defaults in `group_vars/all/all.yml`
 - Designed to be consumed from a private repo via **Git submodule**
@@ -60,7 +60,9 @@ ansible-homelab-suite/
    ├─ docker/
    ├─ watchtower/
    ├─ traefik/
-   ├─ sso_gateway/
+   ├─ traefik_apps/        # edge routes, SSO middleware
+   ├─ lldap/               # users and groups for SSO
+   ├─ authelia/            # SSO portal (forward auth, 2FA)
    ├─ keycloak/
    ├─ portainer/
    ├─ homarr/
@@ -223,23 +225,51 @@ server_bind_ip: 192.168.4.11
 
 > The core roles bind published container ports to `server_bind_ip` to avoid exposing apps on unintended interfaces.
 
-## Edge routing list (`inventories/homelab/group_vars/id_servers.yml`)
+## Edge routing list (`inventories/homelab/group_vars/<group>_servers.yml`)
 
-The Edge Gateway renders routes from `edge_apps`. Each entry defines:
+Each `*_servers` group lists the apps it publishes in `edge_apps`, and the
+`traefik_apps` role renders a route for each (see its README). Each entry
+defines:
 
-- the public hostname (`host`)
-- the upstream URL (`upstream_url`) on the SERVER VLAN
-- whether SSO is enabled (`sso: true|false`)
+- a `name`, unique within its `namespace`
+- the public host name (`fqdn`)
+- the upstream URL (`backend_url`), on the SERVER VLAN
+- optionally `sso`, to put the app behind single sign-on
 
 Example:
 
 ```yaml
 edge_apps:
-  - id: homarr
-    host: "homarr.{{ domain_name }}"
-    upstream_url: "http://{{ hostvars['admin01'].server_bind_ip }}:7575"
-    sso: true
+  - name: homarr
+    namespace: homelab
+    fqdn: "homarr.{{ domain_name }}"
+    backend_url: "http://{{ server_bind_ip }}:{{ app_port_homarr }}"
+    sso:
+      groups: [homelab_admins]
 ```
+
+## Single sign-on (Authelia + LLDAP)
+
+The `lldap` role runs the user directory, and the `authelia` role the sign-in
+portal, with two-factor authentication. Traefik asks Authelia about every
+request to an app with `sso`, through a forward-auth middleware:
+
+- `traefik_sso_forward_auth_url` (Authelia's
+  `http://<host>:9091/api/authz/forward-auth`) must be set for every host
+  whose Traefik renders an `sso` app; a play that would publish one without it
+  fails.
+- Authelia builds its access rules from the same `edge_apps`: `sso: true`
+  admits any signed-in user, `sso.groups` members of those LLDAP groups. Host
+  names without a rule are denied.
+- The portal itself is an edge app without `sso`, at `auth.<domain_name>`.
+- SSO protects host names, not ports. Publish apps with no login of their own
+  on loopback (`<role>_bind_ip: 127.0.0.1`), with a `backend_url` naming the
+  container on Traefik's Docker network, so that their port doesn't skip SSO.
+- Apps that can trust the `Remote-User` header sign users in without a second
+  login (Grafana, in `iot_pipeline`). The Traefik dashboard can use the
+  middleware instead of basic auth (`traefik_dashboard_sso_middleware`).
+
+See the `authelia`, `lldap` and `traefik_apps` READMEs for the details.
 
 ---
 
@@ -284,7 +314,7 @@ This prevents bypassing the gateway and central SSO policy.
 ## Initial bring-up (suggested order)
 
 1. Bring up networking (EDGE VLAN + routing) and DNS overrides
-2. Deploy idsrv01 stack (`traefik`, `keycloak`, `sso_gateway`, `portainer`)
+2. Deploy idsrv01 stack (`traefik`, `traefik_apps`, `keycloak`, `portainer`)
 3. Deploy backend servers (apps bind only to SERVER VLAN IPs)
 4. Add/verify `edge_apps` routes
 5. Tighten pfSense rules (deny direct access to app ports)
@@ -323,6 +353,8 @@ ansible-vault create inventories/homelab/vault/vault.yml
 Examples of secrets:
 
 - Cloudflare DNS token for Traefik (DNS-01 certs)
+- Authelia and LLDAP secrets (JWT, session and storage keys, the LDAP service
+  account and SMTP passwords)
 - Keycloak admin password
 - any app-specific credentials
 

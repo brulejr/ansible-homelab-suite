@@ -19,6 +19,10 @@ depend on, using LLDAP's bootstrap script:
 - `lldap_service_accounts`: accounts that applications bind as, with their
   password reset to the inventory value
 
+Second factors are not kept in LLDAP but in Authelia's database, by
+username: deleting and recreating a user doesn't reset them (see the
+`authelia` role).
+
 The script runs only when those lists change or a service account can no
 longer log in (for example after the database was recreated). It never
 deletes users, groups or memberships it does not know about; removing an

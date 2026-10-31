@@ -1,38 +1,22 @@
-Role Name
-=========
+Traefik
+=======
 
-A brief description of the role goes here.
+Deploys [Traefik](https://traefik.io/) as a Docker Compose stack: the reverse
+proxy on ports 80 and 443, with certificates from Let's Encrypt through
+Cloudflare's DNS challenge. It reads routes from Docker labels and from the
+files the `traefik_apps` role renders into `traefik_dynamic_dir`.
 
-Requirements
-------------
+Dashboard
+---------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+The dashboard is served only through Traefik's own router, at
+`traefik_dashboard_host` (default `traefik.<domain_name>`). No port is
+published for it.
 
-Role Variables
---------------
-
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
-
-Dependencies
-------------
-
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
-
-Example Playbook
-----------------
-
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
-
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
-
-License
--------
-
-BSD
-
-Author Information
-------------------
-
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+- **With basic auth** (the default): set `traefik_basic_auth_hash`, generated
+  with `htpasswd -nB user`, each `$` doubled for the compose label.
+- **With single sign-on**: set `traefik_dashboard_sso_middleware: "sso@file"`,
+  the forward-auth middleware `traefik_apps` defines. The basic auth
+  middleware is then left out. Add an access rule for the dashboard's host
+  name, for example in `authelia_access_control_extra_rules`; with Authelia's
+  default deny, there is none for it otherwise.

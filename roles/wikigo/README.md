@@ -20,7 +20,8 @@ with an `edge_apps` entry that sets `sso` and a `backend_url` of
 `http://wikigo:8080` (the container, over the Docker network). Binding to
 loopback matters: with `wikigo_private: false`, the published port would
 otherwise let anyone on the network read the wiki without signing in. Editing
-still needs a Wiki-Go login.
+still needs a Wiki-Go login, so give each editor a user in `wikigo_users`;
+Wiki-Go has no LDAP or OIDC support either (as of 1.9).
 
 Configuration
 -------------

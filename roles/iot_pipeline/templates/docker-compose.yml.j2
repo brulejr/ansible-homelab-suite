@@ -112,7 +112,7 @@ services:
       - postgres_grafana_password
       - grafana_admin_password
     ports:
-      - "{{ iot_pipeline_bind_ip }}:{{ iot_pipeline_grafana_host_port }}:3000"
+      - "{{ iot_pipeline_grafana_bind_ip }}:{{ iot_pipeline_grafana_host_port }}:3000"
     volumes:
       - "{{ iot_pipeline_data_dir }}/grafana:/var/lib/grafana"
       - "{{ iot_pipeline_src_dir }}/docker/grafana/provisioning:/etc/grafana/provisioning:ro"

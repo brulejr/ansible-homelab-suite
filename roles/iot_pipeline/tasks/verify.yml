@@ -31,7 +31,7 @@
 
 - name: Wait for iot-pipeline Grafana
   ansible.builtin.uri:
-    url: "http://{{ iot_pipeline_bind_ip }}:{{ iot_pipeline_grafana_host_port }}/api/health"
+    url: "http://{{ iot_pipeline_grafana_bind_ip }}:{{ iot_pipeline_grafana_host_port }}/api/health"
     method: GET
     status_code: 200
   register: iot_pipeline_grafana_health

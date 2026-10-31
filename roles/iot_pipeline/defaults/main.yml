@@ -64,6 +64,9 @@ iot_pipeline_bind_ip: "{{ server_bind_ip }}"
 # The REST API has no authentication, and demoting a device deletes it from
 # Home Assistant: keep it on a trusted network.
 iot_pipeline_host_port: "{{ app_port_iot_pipeline }}"
+# Grafana has its own login, so it can stay on the network when the
+# application is put on loopback behind SSO
+iot_pipeline_grafana_bind_ip: "{{ iot_pipeline_bind_ip }}"
 iot_pipeline_grafana_host_port: "{{ app_port_iot_pipeline_grafana }}"
 
 # Loopback only, for psql from the host

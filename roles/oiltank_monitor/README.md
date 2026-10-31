@@ -80,9 +80,12 @@ Exposure
 | --- | --- | --- |
 | Application REST API and actuator (`/mgmt`) | `server_bind_ip` | `app_port_oiltank_monitor` (8116) |
 
+The bind address is `oiltank_monitor_bind_ip`, by default `server_bind_ip`.
 The API has no authentication and serves camera snapshots of the basement, so
-the port is not routed through Traefik: reach it at
-`http://<server_bind_ip>:8116` from the trusted network.
+either keep it on a trusted network, at `http://<server_bind_ip>:8116`, or set
+`oiltank_monitor_bind_ip: 127.0.0.1` and reach it over an SSH tunnel
+(`ssh -L 8116:127.0.0.1:8116 <host>`). Home Assistant gets the level over
+MQTT, so it doesn't need the port.
 
 Verification
 ------------

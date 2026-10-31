@@ -10,6 +10,7 @@
       - iot_pipeline_data_dir | length > 0
       - iot_pipeline_docker_network | length > 0
       - iot_pipeline_bind_ip | length > 0
+      - iot_pipeline_grafana_bind_ip | length > 0
       - iot_pipeline_host_port | int > 0
       - iot_pipeline_grafana_host_port | int > 0
       - iot_pipeline_postgres_host_port | int > 0

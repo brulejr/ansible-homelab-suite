@@ -100,14 +100,30 @@ Exposure
 
 | Service | Bound to | Port |
 | --- | --- | --- |
-| Application REST API and console (`/ui`) | `server_bind_ip` | `app_port_iot_pipeline` (8114) |
-| Grafana | `server_bind_ip` | `app_port_iot_pipeline_grafana` (8115) |
+| Application REST API and console (`/ui`) | `iot_pipeline_bind_ip` | `app_port_iot_pipeline` (8114) |
+| Grafana | `iot_pipeline_grafana_bind_ip` | `app_port_iot_pipeline_grafana` (8115) |
 | PostgreSQL | `127.0.0.1` | `app_port_iot_pipeline_postgres` (5432) |
 
-Neither the REST API nor the operator console at `/ui` has authentication, and
-demoting a device deletes it from Home Assistant, so the port is not routed
-through Traefik: open the console at `http://<server_bind_ip>:8114/ui` from the
-trusted network. Reach PostgreSQL from the
+Both bind addresses default to `server_bind_ip`. Neither the REST API nor the
+operator console at `/ui` has authentication, and demoting a device deletes it
+from Home Assistant. Either keep the port on a trusted network and open the
+console at `http://<server_bind_ip>:8114/ui`, or put it behind single sign-on:
+publish it on loopback only and route Traefik to the container, with
+`streaming` so the live monitor's stream isn't buffered:
+
+    iot_pipeline_bind_ip: 127.0.0.1
+    iot_pipeline_grafana_bind_ip: "{{ server_bind_ip }}"   # Grafana keeps its port
+
+    edge_apps:
+      - name: iotpipeline
+        fqdn: iotpipeline.example.invalid
+        backend_url: "http://iot-pipeline:5001"
+        streaming: true
+        sso:
+          groups: [homelab_admins]
+
+Use an SSH tunnel (`ssh -L 8114:127.0.0.1:8114 <host>`) for the API from
+elsewhere. Reach PostgreSQL from the
 host with `psql -h 127.0.0.1`, or from elsewhere over an SSH tunnel.
 
 Data

@@ -25,7 +25,9 @@ ring_mqtt_docker_network: "{{ docker_network }}"
 ring_mqtt_bind_ip: "{{ server_bind_ip }}"
 
 # Web UI for the first Ring login; it listens only while there is no working
-# refresh token
+# refresh token. It has no login of its own, so put it on 127.0.0.1 when
+# Traefik reaches it over the Docker network, behind SSO.
+ring_mqtt_web_bind_ip: "{{ ring_mqtt_bind_ip }}"
 ring_mqtt_web_host_port: "{{ app_port_ring_mqtt }}"
 # go2rtc's RTSP server for camera live streams
 ring_mqtt_rtsp_host_port: "{{ app_port_ring_mqtt_rtsp }}"

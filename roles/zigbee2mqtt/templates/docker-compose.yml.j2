@@ -5,7 +5,7 @@ services:
     container_name: zigbee2mqtt
     restart: unless-stopped
     ports:
-      - "{{ server_bind_ip }}:{{ app_port_zigbee2mqtt }}:8080"
+      - "{{ zigbee2mqtt_bind_ip }}:{{ app_port_zigbee2mqtt }}:8080"
     volumes:
       - "{{ zigbee2mqtt_data_dir }}:/app/data"
     environment:

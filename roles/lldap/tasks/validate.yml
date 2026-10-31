@@ -1,0 +1,47 @@
+---
+- name: Validate LLDAP required variables
+  ansible.builtin.assert:
+    that:
+      - lldap_stack_name | length > 0
+      - lldap_container_name | length > 0
+      - lldap_image | length > 0
+      - lldap_docker_network | length > 0
+      - lldap_web_host_port is defined
+      - lldap_base_dn is match('^dc=[^,]+(,dc=[^,]+)*$')
+    fail_msg: "LLDAP role configuration is invalid."
+
+- name: Validate LLDAP secrets
+  ansible.builtin.assert:
+    that:
+      - lldap_jwt_secret | length >= 32
+      - lldap_key_seed | length >= 32
+      - lldap_admin_password | length >= 12
+    fail_msg: >-
+      lldap_jwt_secret and lldap_key_seed must be at least 32 characters and
+      lldap_admin_password at least 12. Keep them in the vault.
+  no_log: true
+
+- name: Validate LLDAP groups
+  ansible.builtin.assert:
+    that:
+      - item is match('^[A-Za-z0-9_-]+$')
+    fail_msg: "Invalid LLDAP group name: {{ item }}"
+  loop: "{{ lldap_groups }}"
+
+- name: Validate LLDAP service accounts
+  ansible.builtin.assert:
+    that:
+      - item.id is defined
+      - item.id is match('^[a-z0-9._-]+$')
+      - item.email is defined
+      - item.email is search('@')
+      - item.password is defined
+      - item.password | length >= 20
+      - (item.groups | default([])) | difference(lldap_groups + ['lldap_strict_readonly', 'lldap_password_manager']) | length == 0
+    fail_msg: >-
+      Invalid LLDAP service account '{{ item.id | default('?') }}': it needs an
+      id, an email, a password of at least 20 characters, and groups that are
+      built in or listed in lldap_groups.
+  loop: "{{ lldap_service_accounts }}"
+  loop_control:
+    label: "{{ item.id | default('?') }}"

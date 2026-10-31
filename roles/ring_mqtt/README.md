@@ -19,7 +19,8 @@ Ring has no API keys: ring-mqtt holds a refresh token from a normal login.
 After the first deploy there is none, so the container waits with its web UI
 open:
 
-1. Browse to `http://<server_bind_ip>:55123/`
+1. Browse to the web UI: `http://<ring_mqtt_web_bind_ip>:55123/`, or its
+   Traefik host name when it is routed (see Exposure)
 2. Sign in with the Ring account and enter the two-factor code
 3. ring-mqtt saves the token to `ring-state.json` and connects
 
@@ -64,11 +65,15 @@ Exposure
 
 | Service | Bound to | Port |
 | --- | --- | --- |
-| Login web UI (only while there is no working token) | `server_bind_ip` | `app_port_ring_mqtt` (55123) |
-| RTSP live streams | `server_bind_ip` | `app_port_ring_mqtt_rtsp` (8554) |
+| Login web UI (only while there is no working token) | `ring_mqtt_web_bind_ip` | `app_port_ring_mqtt` (55123) |
+| RTSP live streams | `ring_mqtt_bind_ip` | `app_port_ring_mqtt_rtsp` (8554) |
 
-The web UI has no authentication of its own and takes Ring credentials, so it
-is not routed through Traefik: reach it from the trusted network.
+Both bind addresses default to `server_bind_ip`. The web UI has no
+authentication of its own and takes Ring credentials, so either reach it only
+from the trusted network, or route it through Traefik behind SSO (an
+`edge_apps` entry with `sso`, and a `backend_url` of
+`http://ring-mqtt:55123`) and set `ring_mqtt_web_bind_ip: 127.0.0.1` so the
+port no longer bypasses it.
 
 Each camera's stream is `rtsp://[user:password@]<host>:8554/<device id>_live`.
 The `stream_Source` attribute of the device's `Info` sensor in Home Assistant

@@ -95,6 +95,18 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: "{{ iot_pipeline_grafana_admin_user }}"
       GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_admin_password
+{% if iot_pipeline_grafana_auth_proxy_enabled | bool %}
+      GF_AUTH_PROXY_ENABLED: "true"
+      GF_AUTH_PROXY_HEADER_NAME: "{{ iot_pipeline_grafana_auth_proxy_header }}"
+      GF_AUTH_PROXY_HEADER_PROPERTY: username
+      GF_AUTH_PROXY_HEADERS: "{{ iot_pipeline_grafana_auth_proxy_headers }}"
+      GF_AUTH_PROXY_AUTO_SIGN_UP: "true"
+      GF_AUTH_PROXY_WHITELIST: "{{ iot_pipeline_grafana_auth_proxy_whitelist }}"
+      GF_USERS_AUTO_ASSIGN_ORG_ROLE: "{{ iot_pipeline_grafana_auth_proxy_role }}"
+{% endif %}
+{% if iot_pipeline_grafana_signout_redirect_url | length > 0 %}
+      GF_AUTH_SIGNOUT_REDIRECT_URL: "{{ iot_pipeline_grafana_signout_redirect_url }}"
+{% endif %}
       POSTGRES_DB: "{{ iot_pipeline_postgres_db }}"
     secrets:
       - postgres_grafana_password

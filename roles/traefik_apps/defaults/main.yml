@@ -11,3 +11,20 @@ traefik_apps_namespaces: []
 # If true (default), old per-app route files are removed before rendering.
 # When traefik_apps_namespaces is non-empty, pruning is scoped only to those namespaces.
 traefik_edge_routes_prune: true
+
+# SSO (forward-auth)
+#
+# When traefik_sso_forward_auth_url is set, the common route file defines a
+# forwardAuth middleware named traefik_sso_middleware, and every edge app with
+# "sso" set is routed through it. Every Traefik that renders such an app needs
+# the URL, so set it for all hosts, e.g. Authelia's
+#   http://<authelia host>:<port>/api/authz/forward-auth
+# Rendering an app with "sso" while the URL is empty fails the play rather than
+# publishing the app unprotected.
+traefik_sso_forward_auth_url: ""
+traefik_sso_middleware: sso
+traefik_sso_auth_response_headers:
+  - Remote-User
+  - Remote-Groups
+  - Remote-Email
+  - Remote-Name

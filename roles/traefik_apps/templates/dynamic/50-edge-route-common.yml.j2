@@ -5,3 +5,14 @@ http:
       redirectScheme:
         scheme: https
         permanent: true
+{% if traefik_sso_forward_auth_url | length > 0 %}
+
+    {{ traefik_sso_middleware }}:
+      forwardAuth:
+        address: "{{ traefik_sso_forward_auth_url }}"
+        trustForwardHeader: true
+        authResponseHeaders:
+{% for header in traefik_sso_auth_response_headers %}
+          - "{{ header }}"
+{% endfor %}
+{% endif %}

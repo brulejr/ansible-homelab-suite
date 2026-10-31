@@ -4,7 +4,7 @@ services:
     image: esphome/esphome:latest
     restart: unless-stopped
     ports:
-      -  "{{ server_bind_ip }}:{{ app_port_esphome }}:6052"
+      - "{{ esphome_bind_ip }}:{{ app_port_esphome }}:6052"
     environment:
       - ESPHOME_DASHBOARD_USE_PING=true      
     volumes:

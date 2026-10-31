@@ -1,0 +1,28 @@
+---
+- name: Check LLDAP container state
+  community.docker.docker_container_info:
+    name: "{{ lldap_container_name }}"
+  register: lldap_container_info
+
+- name: Assert LLDAP container is running
+  ansible.builtin.assert:
+    that:
+      - lldap_container_info.exists
+      - lldap_container_info.container.State.Running
+    fail_msg: >-
+      Container {{ lldap_container_name }} is not running.
+      Status={{ lldap_container_info.container.State.Status | default('missing') }}
+
+- name: Verify LLDAP service accounts can log in
+  ansible.builtin.uri:
+    url: "http://{{ lldap_bind_ip }}:{{ lldap_web_host_port }}/auth/simple/login"
+    method: POST
+    body_format: json
+    body:
+      username: "{{ item.id }}"
+      password: "{{ item.password }}"
+    status_code: 200
+  loop: "{{ lldap_service_accounts }}"
+  loop_control:
+    label: "{{ item.id }}"
+  no_log: true

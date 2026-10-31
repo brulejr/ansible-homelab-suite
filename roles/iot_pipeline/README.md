@@ -123,6 +123,21 @@ seeded with curated models and promoted devices from the seed files bundled in
 the jar; export curation from the running system before redeploying onto an
 empty database (see the application README).
 
+Grafana single sign-on
+----------------------
+
+With `iot_pipeline_grafana_auth_proxy_enabled: true`, Grafana signs users in
+from the `Remote-User` header a forward-auth middleware (such as Authelia's)
+sets. They are created on their first visit as
+`iot_pipeline_grafana_auth_proxy_role` (Viewer). Promote them as the admin
+user, who still signs in with the login form.
+
+Grafana trusts the header only from `iot_pipeline_grafana_auth_proxy_whitelist`,
+by default Docker's address range, where Traefik's requests appear to come
+from. Requests from the LAN to the published port are not trusted. If Grafana
+answers "not whitelisted", check the source address in its log and adjust the
+whitelist.
+
 Example
 -------
 

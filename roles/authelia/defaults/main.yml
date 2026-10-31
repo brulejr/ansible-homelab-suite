@@ -1,0 +1,119 @@
+---
+authelia_enabled: true
+
+authelia_stack_name: authelia
+authelia_container_name: authelia
+
+authelia_app_dir: "{{ docker_dir }}/authelia"
+authelia_config_dir: "{{ data_dir }}/authelia"
+authelia_secrets_dir: "{{ authelia_app_dir }}/secrets"
+
+# Pinned to a minor release line; configuration keys change between minors
+authelia_image: "authelia/authelia:4.39"
+authelia_restart_policy: unless-stopped
+authelia_timezone: "{{ timezone }}"
+
+authelia_docker_network: "{{ docker_network }}"
+authelia_bind_ip: "{{ server_bind_ip }}"
+
+# Published for Traefik: the portal's edge route and the forward-auth
+# middleware of every Traefik that protects an app both use this port.
+authelia_host_port: "{{ app_port_authelia }}"
+authelia_container_port: 9091
+
+# The login portal. Its session cookie is set for authelia_session_domain, so
+# every protected app must be under that domain.
+authelia_fqdn: "auth.{{ domain_name }}"
+authelia_session_domain: "{{ domain_name }}"
+# Where the portal sends users who open it directly; empty shows the portal
+authelia_default_redirection_url: ""
+
+authelia_theme: auto
+# trace, debug, info, warn, error
+authelia_log_level: info
+authelia_totp_issuer: "{{ domain_name }}"
+authelia_webauthn_display_name: "{{ homelab_name }}"
+
+# Sessions live in memory: restarting Authelia signs everyone out.
+authelia_session_expiration: 12h
+authelia_session_inactivity: 2h
+authelia_session_remember_me: 1M
+
+# ---------------------------------------------------------------------------
+# LDAP (LLDAP)
+#
+# Authelia binds as a service account. In LLDAP, put it in
+# lldap_password_manager for the portal's password reset to work, or in
+# lldap_strict_readonly and set authelia_password_reset_enabled to false.
+# ---------------------------------------------------------------------------
+authelia_ldap_address: "ldap://lldap:3890"
+authelia_ldap_base_dn: "{{ domain_name.split('.') | map('regex_replace', '^', 'dc=') | join(',') }}"
+authelia_ldap_user_id: authelia
+authelia_ldap_user: "uid={{ authelia_ldap_user_id }},ou=people,{{ authelia_ldap_base_dn }}"
+authelia_password_reset_enabled: true
+
+# ---------------------------------------------------------------------------
+# Access control
+#
+# Rules are derived from the edge_apps of every *_servers group (or of
+# authelia_edge_route_groups when set). An app opts in with "sso", which also
+# makes traefik_apps put the forward-auth middleware in front of it:
+#
+#   edge_apps:
+#     - name: nodered
+#       fqdn: nodered.example.invalid
+#       backend_url: ...
+#       sso: true                      # any signed-in user, default policy
+#     - name: esphome
+#       fqdn: esphome.example.invalid
+#       backend_url: ...
+#       sso:
+#         groups: [homelab_admins]     # members of any listed LLDAP group
+#         policy: two_factor           # one_factor | two_factor
+#
+# Anything not matched by a rule falls to the default policy. Extra rules, in
+# Authelia's own format, are appended for hosts that are not edge apps, such as
+# a Traefik dashboard:
+#
+# authelia_access_control_extra_rules:
+#   - domain: [traefik.example.invalid]
+#     policy: two_factor
+#     subject: ["group:homelab_admins"]
+# ---------------------------------------------------------------------------
+authelia_access_control_default_policy: deny
+authelia_default_app_policy: two_factor
+authelia_edge_route_groups: []
+authelia_access_control_extra_rules: []
+
+# ---------------------------------------------------------------------------
+# Notifications (identity checks when registering a 2FA device, password
+# resets). Without SMTP they are appended to <authelia_config_dir>/notification.txt:
+#   sudo cat /opt/homelab/data/authelia/notification.txt
+# Set authelia_smtp_address (e.g. submission://smtp.example.invalid:587) to
+# send email instead.
+# ---------------------------------------------------------------------------
+authelia_smtp_address: ""
+authelia_smtp_username: ""
+authelia_smtp_password: ""
+authelia_smtp_sender: "Authelia <authelia@{{ domain_name }}>"
+
+# ---------------------------------------------------------------------------
+# Secrets (keep them in the vault)
+#
+# Each is written to a file under authelia_secrets_dir and read by Authelia
+# through its *_FILE variables. Generate them with:
+#   openssl rand -base64 48 | tr -d '/+='
+#
+# authelia_jwt_secret               signs password reset links
+# authelia_session_secret           encrypts session data
+# authelia_storage_encryption_key   encrypts the database (2FA secrets);
+#                                   changing it makes the database unreadable
+# authelia_ldap_password            the LDAP service account's password
+# ---------------------------------------------------------------------------
+authelia_jwt_secret: ""
+authelia_session_secret: ""
+authelia_storage_encryption_key: ""
+authelia_ldap_password: ""
+
+authelia_verify_enabled: true
+authelia_verify_timeout: 120

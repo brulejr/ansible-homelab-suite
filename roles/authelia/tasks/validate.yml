@@ -1,0 +1,53 @@
+---
+- name: Validate Authelia required variables
+  ansible.builtin.assert:
+    that:
+      - authelia_stack_name | length > 0
+      - authelia_container_name | length > 0
+      - authelia_image | length > 0
+      - authelia_docker_network | length > 0
+      - authelia_host_port is defined
+      - authelia_fqdn | length > 0
+      - authelia_fqdn == authelia_session_domain or authelia_fqdn.endswith('.' ~ authelia_session_domain)
+      - authelia_ldap_address is match('^ldaps?://')
+      - authelia_log_level in ['trace', 'debug', 'info', 'warn', 'error']
+      - authelia_access_control_default_policy in ['deny', 'one_factor', 'two_factor']
+      - authelia_default_app_policy in ['one_factor', 'two_factor']
+    fail_msg: "Authelia role configuration is invalid."
+
+- name: Validate Authelia secrets
+  ansible.builtin.assert:
+    that:
+      - authelia_jwt_secret | length >= 32
+      - authelia_session_secret | length >= 32
+      - authelia_storage_encryption_key | length >= 32
+      - authelia_ldap_password | length >= 20
+      - authelia_smtp_address | length == 0 or authelia_smtp_password | length > 0
+    fail_msg: >-
+      authelia_jwt_secret, authelia_session_secret and
+      authelia_storage_encryption_key must be at least 32 characters, and
+      authelia_ldap_password at least 20. Keep them in the vault.
+  no_log: true
+
+# Authelia refuses a deny default with no rules, and nothing could sign in
+- name: Validate Authelia access control
+  ansible.builtin.assert:
+    that:
+      - authelia_access_control_default_policy != 'deny' or authelia_access_control_rules | length > 0
+    fail_msg: >-
+      No edge app has "sso" set and authelia_access_control_extra_rules is
+      empty, so with a deny default policy Authelia would protect nothing.
+
+- name: Validate Authelia SSO edge apps
+  ansible.builtin.assert:
+    that:
+      - item.fqdn.endswith('.' ~ authelia_session_domain)
+      - item.sso is not mapping or (item.sso.policy | default(authelia_default_app_policy)) in ['one_factor', 'two_factor']
+      - item.sso is not mapping or (item.sso.groups | default([])) is not string
+    fail_msg: >-
+      Edge app '{{ item.name }}' has an invalid "sso": its fqdn must be under
+      {{ authelia_session_domain }}, its policy one_factor or two_factor, and
+      its groups a list.
+  loop: "{{ authelia_sso_apps }}"
+  loop_control:
+    label: "{{ item.name }}"

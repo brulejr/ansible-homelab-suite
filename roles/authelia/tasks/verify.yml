@@ -1,0 +1,27 @@
+---
+# Authelia exits at startup when it cannot reach LDAP or the configuration is
+# invalid; docker logs authelia says why.
+- name: Wait for Authelia health endpoint
+  ansible.builtin.uri:
+    url: "http://{{ authelia_bind_ip }}:{{ authelia_host_port }}/api/health"
+    method: GET
+    status_code: 200
+  register: authelia_health
+  retries: "{{ (authelia_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
+  delay: 5
+  until: authelia_health.status == 200
+
+# Without a session, forward-auth must redirect to the portal, not let through
+- name: Verify Authelia denies an unauthenticated request to a protected app
+  ansible.builtin.uri:
+    url: "http://{{ authelia_bind_ip }}:{{ authelia_host_port }}/api/authz/forward-auth"
+    method: GET
+    headers:
+      X-Forwarded-Method: GET
+      X-Forwarded-Proto: https
+      X-Forwarded-Host: "{{ authelia_sso_apps[0].fqdn }}"
+      X-Forwarded-Uri: /
+      X-Forwarded-For: 127.0.0.1
+    follow_redirects: none
+    status_code: [302, 303, 401]
+  when: authelia_sso_apps | length > 0

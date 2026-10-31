@@ -1,0 +1,31 @@
+---
+services:
+  authelia:
+    image: "{{ authelia_image }}"
+    container_name: "{{ authelia_container_name }}"
+    restart: "{{ authelia_restart_policy }}"
+    ports:
+      - "{{ authelia_bind_ip }}:{{ authelia_host_port }}:{{ authelia_container_port }}"
+    volumes:
+      - "{{ authelia_config_dir }}:/config"
+      - "{{ authelia_secrets_dir }}:/secrets:ro"
+    environment:
+      TZ: "{{ authelia_timezone }}"
+      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /secrets/jwt_secret
+      AUTHELIA_SESSION_SECRET_FILE: /secrets/session_secret
+      AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /secrets/storage_encryption_key
+      AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PASSWORD_FILE: /secrets/ldap_password
+{% if authelia_smtp_address | length > 0 %}
+      AUTHELIA_NOTIFIER_SMTP_PASSWORD_FILE: /secrets/smtp_password
+{% endif %}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - {{ authelia_docker_network }}
+
+networks:
+  {{ authelia_docker_network }}:
+    external: true

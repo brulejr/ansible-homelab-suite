@@ -137,6 +137,19 @@
   loop: "{{ traefik_edge_apps_selected }}"
   run_once: true
 
+# Fail closed: an app that asks for SSO must not be published without it
+- name: Validate SSO edge apps have a forward-auth endpoint
+  ansible.builtin.assert:
+    that:
+      - traefik_sso_forward_auth_url | length > 0
+    fail_msg: >-
+      Edge app '{{ item.name }}' sets "sso" but traefik_sso_forward_auth_url
+      is empty on {{ inventory_hostname }}.
+  loop: "{{ traefik_edge_apps_selected | selectattr('sso', 'defined') | selectattr('sso') | list }}"
+  loop_control:
+    label: "{{ item._ns }}:{{ item.name }}"
+  run_once: true
+
 # 7) Ensure edge app identity (namespace+name) is unique
 - name: Ensure edge app identity (namespace:name) is unique
   ansible.builtin.assert:

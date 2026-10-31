@@ -1,0 +1,79 @@
+---
+lldap_enabled: true
+
+lldap_stack_name: lldap
+lldap_container_name: lldap
+
+lldap_app_dir: "{{ docker_dir }}/lldap"
+lldap_data_dir: "{{ data_dir }}/lldap"
+lldap_secrets_dir: "{{ lldap_app_dir }}/secrets"
+lldap_bootstrap_dir: "{{ lldap_app_dir }}/bootstrap"
+
+lldap_image: "lldap/lldap:v0.6"
+lldap_restart_policy: unless-stopped
+lldap_timezone: "{{ timezone }}"
+
+# The image drops to this uid/gid, which owns the data directory
+lldap_uid: 1000
+lldap_gid: 1000
+
+lldap_docker_network: "{{ docker_network }}"
+lldap_bind_ip: "{{ server_bind_ip }}"
+
+# The web UI is published for Traefik. LDAP stays on the Docker network:
+# clients such as Authelia reach it as ldap://<lldap_container_name>:3890.
+lldap_web_host_port: "{{ app_port_lldap }}"
+lldap_web_container_port: 17170
+lldap_ldap_container_port: 3890
+
+# dc=example,dc=invalid for domain_name example.invalid
+lldap_base_dn: "{{ domain_name.split('.') | map('regex_replace', '^', 'dc=') | join(',') }}"
+lldap_http_url: "https://lldap.{{ domain_name }}"
+
+# ---------------------------------------------------------------------------
+# Secrets (keep them in the vault)
+#
+# Each is written to a file under lldap_secrets_dir and read by LLDAP through
+# its *_FILE variables. Generate them with:
+#   openssl rand -base64 36 | tr -d '/+='
+#
+# lldap_jwt_secret      signs web UI sessions
+# lldap_key_seed        derives the key that encrypts stored passwords;
+#                       changing it invalidates every password
+# lldap_admin_password  the built-in "admin" user. Applied when the database
+#                       is created only; the bootstrap logs in with it, so
+#                       change it in the vault too if you change it in the UI.
+# ---------------------------------------------------------------------------
+lldap_admin_username: admin
+lldap_jwt_secret: ""
+lldap_key_seed: ""
+lldap_admin_password: ""
+
+# ---------------------------------------------------------------------------
+# Bootstrap
+#
+# Groups and service accounts declared here are created with LLDAP's bootstrap
+# script. People are managed in the LLDAP web UI; the bootstrap never deletes
+# users, groups or memberships it does not know about.
+#
+# lldap_groups:
+#   - homelab_admins
+#   - homelab_users
+#
+# Service accounts are for applications that bind to LDAP. Their password is
+# reset to the inventory value whenever the bootstrap runs. Built-in groups:
+#   lldap_strict_readonly   read users and groups
+#   lldap_password_manager  also reset passwords of non-admin users
+#
+# lldap_service_accounts:
+#   - id: authelia
+#     email: authelia@example.invalid
+#     display_name: Authelia
+#     password: "{{ vault_authelia_ldap_password }}"
+#     groups: [lldap_password_manager]
+# ---------------------------------------------------------------------------
+lldap_groups: []
+lldap_service_accounts: []
+
+lldap_verify_enabled: true
+lldap_verify_timeout: 120

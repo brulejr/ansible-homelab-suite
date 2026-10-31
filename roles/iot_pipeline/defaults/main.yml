@@ -116,6 +116,28 @@ iot_pipeline_postgres_app_password: ""
 iot_pipeline_postgres_grafana_password: ""
 iot_pipeline_grafana_admin_password: ""
 
+# ---------------------------------------------------------------------------
+# Grafana single sign-on (auth proxy)
+#
+# Behind a forward-auth middleware such as Authelia's, Grafana can sign users
+# in from the username header the middleware sets, creating them on first
+# visit with iot_pipeline_grafana_auth_proxy_role. The login form stays for
+# the admin user and for requests that do not come through the proxy.
+#
+# Grafana trusts the header only from iot_pipeline_grafana_auth_proxy_whitelist.
+# Traefik reaches Grafana through its published port, so Grafana sees the
+# Docker gateway as the source; the default covers Docker's default address
+# pools and keeps out clients on the LAN, which reach the port directly. Any
+# container or process on the Docker host can still set the header.
+# ---------------------------------------------------------------------------
+iot_pipeline_grafana_auth_proxy_enabled: false
+iot_pipeline_grafana_auth_proxy_header: Remote-User
+iot_pipeline_grafana_auth_proxy_headers: "Email:Remote-Email Name:Remote-Name"
+iot_pipeline_grafana_auth_proxy_whitelist: "172.16.0.0/12"
+iot_pipeline_grafana_auth_proxy_role: Viewer
+# Where Grafana's sign-out sends the browser, e.g. https://auth.example.invalid/logout
+iot_pipeline_grafana_signout_redirect_url: ""
+
 # Verification
 iot_pipeline_verify_enabled: true
 iot_pipeline_verify_timeout: 180

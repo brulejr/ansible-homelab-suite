@@ -7,6 +7,21 @@ Markdown wiki, as a Docker Compose stack.
 TLS is expected to be terminated by Traefik: add an `edge_apps` entry pointing
 at `http://<server_bind_ip>:<app_port_wikigo>` in the inventory.
 
+Behind SSO
+----------
+
+Wiki-Go can't take its user from a forward-auth header, so behind Authelia
+readers would sign in twice. Instead, let the SSO access rule decide who reads:
+
+    wikigo_private: false
+    wikigo_bind_ip: 127.0.0.1
+
+with an `edge_apps` entry that sets `sso` and a `backend_url` of
+`http://wikigo:8080` (the container, over the Docker network). Binding to
+loopback matters: with `wikigo_private: false`, the published port would
+otherwise let anyone on the network read the wiki without signing in. Editing
+still needs a Wiki-Go login.
+
 Configuration
 -------------
 

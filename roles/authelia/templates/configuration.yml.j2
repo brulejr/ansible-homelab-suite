@@ -1,0 +1,67 @@
+# Managed by Ansible (authelia). Secrets are read from /secrets through the
+# AUTHELIA_*_FILE variables in docker-compose.yml.
+---
+theme: "{{ authelia_theme }}"
+
+server:
+  address: "tcp://:{{ authelia_container_port }}/"
+  endpoints:
+    authz:
+      forward-auth:
+        implementation: ForwardAuth
+
+log:
+  level: "{{ authelia_log_level }}"
+
+totp:
+  issuer: "{{ authelia_totp_issuer }}"
+
+webauthn:
+  display_name: "{{ authelia_webauthn_display_name }}"
+
+authentication_backend:
+  password_reset:
+    disable: {{ (not (authelia_password_reset_enabled | bool)) | lower }}
+  ldap:
+    implementation: lldap
+    address: "{{ authelia_ldap_address }}"
+    base_dn: "{{ authelia_ldap_base_dn }}"
+    user: "{{ authelia_ldap_user }}"
+
+access_control:
+  default_policy: "{{ authelia_access_control_default_policy }}"
+{% if authelia_access_control_rules | length > 0 %}
+  rules:
+    {{ authelia_access_control_rules | to_nice_yaml(indent=2) | indent(4) }}
+{% endif %}
+
+session:
+  expiration: "{{ authelia_session_expiration }}"
+  inactivity: "{{ authelia_session_inactivity }}"
+  remember_me: "{{ authelia_session_remember_me }}"
+  cookies:
+    - domain: "{{ authelia_session_domain }}"
+      authelia_url: "https://{{ authelia_fqdn }}"
+{% if authelia_default_redirection_url | length > 0 %}
+      default_redirection_url: "{{ authelia_default_redirection_url }}"
+{% endif %}
+
+regulation:
+  max_retries: 3
+  find_time: 2m
+  ban_time: 5m
+
+storage:
+  local:
+    path: /config/db.sqlite3
+
+notifier:
+{% if authelia_smtp_address | length > 0 %}
+  smtp:
+    address: "{{ authelia_smtp_address }}"
+    username: "{{ authelia_smtp_username }}"
+    sender: "{{ authelia_smtp_sender }}"
+{% else %}
+  filesystem:
+    filename: /config/notification.txt
+{% endif %}

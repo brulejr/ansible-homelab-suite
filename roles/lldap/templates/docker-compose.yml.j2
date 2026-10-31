@@ -1,0 +1,33 @@
+---
+services:
+  lldap:
+    image: "{{ lldap_image }}"
+    container_name: "{{ lldap_container_name }}"
+    restart: "{{ lldap_restart_policy }}"
+    ports:
+      - "{{ lldap_bind_ip }}:{{ lldap_web_host_port }}:{{ lldap_web_container_port }}"
+    volumes:
+      - "{{ lldap_data_dir }}:/data"
+      - "{{ lldap_secrets_dir }}:/secrets:ro"
+      - "{{ lldap_bootstrap_dir }}:/bootstrap:ro"
+    environment:
+      UID: "{{ lldap_uid }}"
+      GID: "{{ lldap_gid }}"
+      TZ: "{{ lldap_timezone }}"
+      LLDAP_LDAP_BASE_DN: "{{ lldap_base_dn }}"
+      LLDAP_LDAP_USER_DN: "{{ lldap_admin_username }}"
+      LLDAP_HTTP_URL: "{{ lldap_http_url }}"
+      LLDAP_JWT_SECRET_FILE: /secrets/jwt_secret
+      LLDAP_KEY_SEED_FILE: /secrets/key_seed
+      LLDAP_LDAP_USER_PASS_FILE: /secrets/admin_password
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - {{ lldap_docker_network }}
+
+networks:
+  {{ lldap_docker_network }}:
+    external: true

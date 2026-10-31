@@ -46,6 +46,7 @@ keycloak_realm: "{{ homelab_name }}"
 # ================
 # Port Assignments
 # ================
+app_port_authelia: 9091
 app_port_esphome: 6052
 app_port_gitea: 8112
 app_port_guacamole: 8101
@@ -58,6 +59,7 @@ app_port_jekyll: 8111
 app_port_jellyfin: 8103
 app_port_jenkins: 8104
 app_port_keycloak: 8105
+app_port_lldap: 17170
 app_port_nextcloud: 8106
 app_port_nexus: 8107
 app_port_nexus_docker: 10001

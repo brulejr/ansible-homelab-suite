@@ -9,6 +9,8 @@
     - docker2mqtt
     - traefik
     - traefik_apps
+    - lldap
+    - authelia
     - esphome
     - homeassistant
     - mqtt

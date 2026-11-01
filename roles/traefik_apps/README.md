@@ -25,7 +25,14 @@ Each app gets a router on the `https` entry point for its `fqdn`, a
 redirecting router on `http`, and a load-balancer service for `backend_url`.
 Route files are named `55-edge-route-<namespace>-<name>.yml` (no namespace
 prefix for `traefik_apps_default_namespace`), and files for apps no longer
-listed are removed.
+listed are removed. With `traefik_apps_namespaces` set, only files of those
+namespaces are; without it, every route file in the directory is.
+
+The apps come from the `edge_apps` of every group named `*_servers`, or only
+from `traefik_edge_route_groups` when it is set, e.g. to keep a host's
+Traefik to its own apps:
+
+    traefik_edge_route_groups: [iot_servers]
 
 Since ansible-core 2.19, another host's `edge_apps` are templated with that
 host's inventory variables only, never role defaults. Every variable a

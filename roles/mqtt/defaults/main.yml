@@ -14,10 +14,14 @@ mqtt_log_dir: "{{ mqtt_data_dir }}/log"
 mqtt_uid: 1883
 mqtt_gid: 1883
 
-# Users who may connect, each with full access to every topic. Keep the
-# passwords in the vault; they are hashed into the broker's password file.
+# Users who may connect. Keep the passwords in the vault; they are hashed into
+# the broker's password file. Each may read and write every topic, or only
+# read them with access: read (publishing is then refused).
 #   - name: homeassistant
 #     password: "{{ vault_mqtt_password_homeassistant }}"
+#   - name: developer
+#     password: "{{ vault_mqtt_password_developer }}"
+#     access: read
 mqtt_users: []
 
 # Whether clients may connect without a username. With no mqtt_users, the

@@ -9,14 +9,22 @@ Users
 -----
 
 With `mqtt_users`, clients log in with a username and password, and
-`mqtt_allow_anonymous: false` turns away everyone else. Every user may read
-and write every topic. With no users, the broker is open to anyone who
-reaches it, whatever `mqtt_allow_anonymous` says.
+`mqtt_allow_anonymous: false` turns away everyone else. With no users, the
+broker is open to anyone who reaches it, whatever `mqtt_allow_anonymous` says.
 
     mqtt_allow_anonymous: false
     mqtt_users:
       - name: homeassistant
         password: "{{ vault_mqtt_password_homeassistant }}"
+      - name: developer
+        password: "{{ vault_mqtt_password_developer }}"
+        access: read
+
+Each user may read and write every topic, or with `access: read` only
+subscribe. The role writes these rules into an ACL file, so a user's access
+is all it gets, and every user may also read the broker's `$SYS` topics. A
+read-only user's publishes are dropped: MQTT 5 clients get a "not authorized"
+reason code for QoS 1 and 2; older clients aren't told.
 
 Generate each password with:
 

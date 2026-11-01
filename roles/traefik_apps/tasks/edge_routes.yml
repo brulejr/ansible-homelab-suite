@@ -177,7 +177,9 @@
 
 # Determine which namespaces should be pruned:
 # - if filter configured => prune only those namespaces
-# - else => prune all namespaces present in inventory (expanded list)
+# - else => this Traefik owns every route file, so prune them all, including
+#   namespaces no longer rendered here (e.g. after traefik_edge_route_groups
+#   narrows the source groups)
 - name: Compute per-namespace prune list
   ansible.builtin.set_fact:
     _traefik_namespaces_to_prune: >-
@@ -216,7 +218,7 @@
               {%- set fns = ns -%}
             {%- endif -%}
           {%- endfor -%}
-          {%- if fns in ns_prune -%}
+          {%- if (traefik_apps_namespaces | default([]) | length == 0) or fns in ns_prune -%}
             {%- set _ = del.append(f.path) -%}
           {%- endif -%}
         {%- endif -%}

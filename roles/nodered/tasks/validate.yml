@@ -20,3 +20,10 @@
       - nodered_mqtt_broker_logins | map(attribute='id') | unique | list | length
         == nodered_mqtt_broker_logins | length
     fail_msg: "Each of nodered_mqtt_broker_logins needs a unique id, a user and a password."
+
+- name: Validate Node-RED palette modules
+  ansible.builtin.assert:
+    that:
+      - nodered_palette_modules | rejectattr('name', 'defined') | list | length == 0
+      - nodered_palette_modules | rejectattr('version', 'defined') | list | length == 0
+    fail_msg: "Each of nodered_palette_modules needs a name and a version."

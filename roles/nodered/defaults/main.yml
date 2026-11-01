@@ -26,6 +26,14 @@ nodered_verify_timeout: 120
 #   - "{{ inventory_dir }}/files/nodered/door_watch.json"
 nodered_flow_tab_files: []
 
+# Palette modules the tabs use, installed through the admin API before the
+# tabs are deployed if missing. A tab with a node type Node-RED doesn't have
+# stops every flow, so list the modules of every managed tab. An installed
+# module is left at its version, e.g. after an upgrade in the editor.
+#   - name: node-red-contrib-cron-plus
+#     version: "2.1.0"
+nodered_palette_modules: []
+
 # MQTT broker config nodes (by id, as in the editor's node info) whose login
 # Ansible sets. The rest of each node stays as built in the editor. Keep the
 # passwords in the vault.

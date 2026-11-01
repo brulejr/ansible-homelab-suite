@@ -60,3 +60,14 @@ flows over the admin API, logging in when there is a password, in one deploy
 that restarts only the changed tabs. Tabs built in the editor are left alone.
 Each managed tab is deployed locked and labelled with ⚙, and edits made to it
 in the editor are lost on the next deploy.
+
+A tab that uses nodes from a palette module needs the module in
+`nodered_palette_modules`: Node-RED starts no flows at all while a node type
+is missing, so a rebuilt Node-RED must get the module before the tab. Missing
+modules are installed first, at the version given; an installed one is left
+at whatever version it has.
+
+    nodered_palette_modules:
+      - name: node-red-contrib-cron-plus
+        version: "2.1.0"
+

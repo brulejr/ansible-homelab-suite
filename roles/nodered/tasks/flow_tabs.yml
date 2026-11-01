@@ -12,12 +12,14 @@
     stdin: >-
       {{ {'url': 'http://' ~ nodered_bind_ip ~ ':' ~ nodered_host_port,
           'username': nodered_admin_user, 'password': nodered_admin_password,
+          'modules': nodered_palette_modules,
           'tabs': nodered_flow_tab_files | map('basename')
                   | zip(query('ansible.builtin.file', *nodered_flow_tab_files) | map('from_json')) | list} | to_json }}
   register: nodered_flow_tabs_result
   changed_when: >-
     nodered_flow_tabs_result.rc == 0
-    and ((nodered_flow_tabs_result.stdout | from_json).added
+    and ((nodered_flow_tabs_result.stdout | from_json).installed
+         + (nodered_flow_tabs_result.stdout | from_json).added
          + (nodered_flow_tabs_result.stdout | from_json).changed) | length > 0
   failed_when: false
   no_log: true
@@ -33,4 +35,5 @@
       {% else %}{{ (nodered_flow_tabs_result.stdout | from_json).errors | join('; ') }}{% endif %}
     success_msg: >-
       {% if nodered_flow_tabs_result.rc == 0 %}{% set r = nodered_flow_tabs_result.stdout | from_json %}
-      Added: {{ r.added | join(', ') or 'none' }}. Changed: {{ r.changed | join(', ') or 'none' }}.{% endif %}
+      Installed: {{ r.installed | join(', ') or 'none' }}. Added: {{ r.added | join(', ') or 'none' }}.
+      Changed: {{ r.changed | join(', ') or 'none' }}.{% endif %}

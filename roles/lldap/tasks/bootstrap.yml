@@ -1,0 +1,133 @@
+---
+# LLDAP's bootstrap script reports every existing user as updated, so its
+# output cannot tell whether anything changed. It runs only when its config
+# files change or a service account cannot log in, which also covers a fresh
+# database.
+
+# The script fails on a config directory with no *.json in it, so a directory
+# exists only while it has entries.
+- name: Ensure LLDAP bootstrap config directories match the inventory
+  ansible.builtin.file:
+    path: "{{ lldap_bootstrap_dir }}/{{ item.dir }}"
+    state: "{{ 'directory' if item.entries | length > 0 else 'absent' }}"
+    owner: "{{ lldap_uid }}"
+    group: "{{ lldap_gid }}"
+    mode: "0700"
+  loop:
+    - { dir: group-configs, entries: "{{ lldap_groups }}" }
+    - { dir: user-configs, entries: "{{ lldap_service_accounts }}" }
+  loop_control:
+    label: "{{ item.dir }}"
+  register: lldap_bootstrap_dirs
+
+- name: Render LLDAP bootstrap group configs
+  ansible.builtin.copy:
+    content: "{{ {'name': item} | to_nice_json }}\n"
+    dest: "{{ lldap_bootstrap_dir }}/group-configs/{{ item }}.json"
+    owner: "{{ lldap_uid }}"
+    group: "{{ lldap_gid }}"
+    mode: "0600"
+  loop: "{{ lldap_groups }}"
+  register: lldap_bootstrap_groups
+
+- name: Render LLDAP bootstrap service account configs
+  ansible.builtin.copy:
+    content: >-
+      {{ {'id': item.id,
+          'email': item.email,
+          'displayName': item.display_name | default(item.id),
+          'password': item.password,
+          'groups': item.groups | default([])} | to_nice_json }}
+    dest: "{{ lldap_bootstrap_dir }}/user-configs/{{ item.id }}.json"
+    owner: "{{ lldap_uid }}"
+    group: "{{ lldap_gid }}"
+    mode: "0600"
+  loop: "{{ lldap_service_accounts }}"
+  loop_control:
+    label: "{{ item.id }}"
+  no_log: true
+  register: lldap_bootstrap_users
+
+- name: Find LLDAP bootstrap configs no longer in the inventory
+  ansible.builtin.find:
+    paths:
+      - "{{ lldap_bootstrap_dir }}/group-configs"
+      - "{{ lldap_bootstrap_dir }}/user-configs"
+    patterns: "*.json"
+  register: lldap_bootstrap_existing
+
+# Removing a config stops the bootstrap from recreating the entry; it does not
+# delete the group or account from LLDAP.
+- name: Remove LLDAP bootstrap configs no longer in the inventory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: >-
+    {{ lldap_bootstrap_existing.files | map(attribute='path')
+       | difference(lldap_groups | map('regex_replace', '^(.*)$', lldap_bootstrap_dir ~ '/group-configs/\1.json'))
+       | difference(lldap_service_accounts | map(attribute='id') | map('regex_replace', '^(.*)$', lldap_bootstrap_dir ~ '/user-configs/\1.json'))
+       | list }}
+
+- name: Wait for the LLDAP web endpoint
+  ansible.builtin.uri:
+    url: "http://{{ lldap_bind_ip }}:{{ lldap_web_host_port }}/"
+    method: GET
+    status_code: 200
+  register: lldap_health
+  retries: "{{ (lldap_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
+  delay: 5
+  until: lldap_health.status == 200
+
+- name: Check LLDAP service account logins
+  ansible.builtin.uri:
+    url: "http://{{ lldap_bind_ip }}:{{ lldap_web_host_port }}/auth/simple/login"
+    method: POST
+    body_format: json
+    body:
+      username: "{{ item.id }}"
+      password: "{{ item.password }}"
+    status_code: 200
+  loop: "{{ lldap_service_accounts }}"
+  loop_control:
+    label: "{{ item.id }}"
+  register: lldap_service_account_logins
+  failed_when: false
+  no_log: true
+
+- name: Run the LLDAP bootstrap script
+  community.docker.docker_container_exec:
+    container: "{{ lldap_container_name }}"
+    command: /app/bootstrap.sh
+    env:
+      LLDAP_URL: "http://localhost:{{ lldap_web_container_port }}"
+      LLDAP_ADMIN_USERNAME: "{{ lldap_admin_username }}"
+      LLDAP_ADMIN_PASSWORD_FILE: /secrets/admin_password
+      GROUP_CONFIGS_DIR: /bootstrap/group-configs
+      USER_CONFIGS_DIR: /bootstrap/user-configs
+      USER_SCHEMAS_DIR: /bootstrap/user-schemas
+      GROUP_SCHEMAS_DIR: /bootstrap/group-schemas
+  register: lldap_bootstrap_result
+  when: >-
+    (lldap_groups | length > 0 or lldap_service_accounts | length > 0)
+    and (lldap_bootstrap_dirs is changed
+         or lldap_bootstrap_groups is changed
+         or lldap_bootstrap_users is changed
+         or (lldap_service_account_logins.results | rejectattr('status', 'equalto', 200) | list | length > 0))
+  # Service account passwords appear in the output
+  no_log: true
+
+- name: Fail when the LLDAP bootstrap reported errors
+  ansible.builtin.fail:
+    msg: >-
+      The LLDAP bootstrap script failed (rc={{ lldap_bootstrap_result.rc }}).
+      Re-run with -e lldap_bootstrap_debug=true to see its output.
+  when:
+    - lldap_bootstrap_result is not skipped
+    - lldap_bootstrap_result.rc != 0
+
+- name: Show LLDAP bootstrap output
+  ansible.builtin.debug:
+    msg: "{{ lldap_bootstrap_result.stdout_lines }}"
+  when:
+    - lldap_bootstrap_result is not skipped
+    - lldap_bootstrap_debug | default(false) | bool

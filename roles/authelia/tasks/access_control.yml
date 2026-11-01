@@ -1,0 +1,39 @@
+---
+# Collects edge_apps the same way traefik_apps does: once per group, through
+# a representative host, since group_vars apply to all its hosts.
+- name: Determine Authelia SSO source groups
+  ansible.builtin.set_fact:
+    authelia_source_groups: >-
+      {{
+        authelia_edge_route_groups
+        if (authelia_edge_route_groups | length > 0)
+        else (groups | dict2items | map(attribute='key') | select('match', '.*_servers$') | list)
+      }}
+    authelia_edge_apps_all: []
+
+- name: Collect edge apps for Authelia
+  ansible.builtin.set_fact:
+    authelia_edge_apps_all: >-
+      {{ authelia_edge_apps_all + (hostvars[groups[item][0]].edge_apps | default([])) }}
+  loop: "{{ authelia_source_groups }}"
+  when:
+    - groups[item] is defined
+    - (groups[item] | length) > 0
+
+- name: Build Authelia access control rules from SSO edge apps
+  ansible.builtin.set_fact:
+    authelia_sso_apps: >-
+      {{ authelia_edge_apps_all | reject('equalto', None) | selectattr('sso', 'defined')
+         | selectattr('sso') | list }}
+    authelia_access_control_rules: >-
+      {%- set out = [] -%}
+      {%- for app in authelia_edge_apps_all | reject('equalto', None)
+            if app.sso is defined and app.sso -%}
+        {%- set sso = app.sso if app.sso is mapping else {} -%}
+        {%- set rule = {'domain': [app.fqdn], 'policy': sso.policy | default(authelia_default_app_policy)} -%}
+        {%- if sso.groups | default([]) | length > 0 -%}
+          {%- set rule = rule | combine({'subject': sso.groups | map('regex_replace', '^', 'group:') | list}) -%}
+        {%- endif -%}
+        {%- set _ = out.append(rule) -%}
+      {%- endfor -%}
+      {{ (out | unique | list) + authelia_access_control_extra_rules }}

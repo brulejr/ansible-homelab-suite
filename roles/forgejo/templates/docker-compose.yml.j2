@@ -1,0 +1,55 @@
+---
+services:
+  forgejo:
+    image: "{{ forgejo_image }}"
+    container_name: "{{ forgejo_container_name }}"
+    restart: "{{ forgejo_restart_policy }}"
+    environment:
+      USER_UID: "{{ forgejo_uid }}"
+      USER_GID: "{{ forgejo_gid }}"
+      FORGEJO____APP_NAME: "{{ forgejo_app_name }}"
+      FORGEJO__server__DOMAIN: "{{ forgejo_fqdn }}"
+      FORGEJO__server__ROOT_URL: "{{ forgejo_root_url }}"
+      FORGEJO__server__SSH_DOMAIN: "{{ forgejo_ssh_domain }}"
+      FORGEJO__server__SSH_PORT: "{{ forgejo_ssh_host_port }}"
+      FORGEJO__server__OFFLINE_MODE: "true"
+      FORGEJO__database__DB_TYPE: sqlite3
+      FORGEJO__security__INSTALL_LOCK: "true"
+      FORGEJO__security__SECRET_KEY_URI: "file:/secrets/secret_key"
+      FORGEJO__security__INTERNAL_TOKEN_URI: "file:/secrets/internal_token"
+      FORGEJO__service__DISABLE_REGISTRATION: "true"
+      FORGEJO__service__REQUIRE_SIGNIN_VIEW: "true"
+      FORGEJO__service__ENABLE_BASIC_AUTHENTICATION: "false"
+      FORGEJO__service__ENABLE_REVERSE_PROXY_AUTHENTICATION: "{{ forgejo_reverse_proxy_auth_enabled | bool | lower }}"
+      FORGEJO__service__ENABLE_REVERSE_PROXY_AUTO_REGISTRATION: "false"
+{% if forgejo_reverse_proxy_auth_enabled | bool %}
+      FORGEJO__security__REVERSE_PROXY_AUTHENTICATION_USER: "{{ forgejo_reverse_proxy_user_header }}"
+      FORGEJO__security__REVERSE_PROXY_AUTHENTICATION_EMAIL: "{{ forgejo_reverse_proxy_email_header }}"
+      FORGEJO__security__REVERSE_PROXY_TRUSTED_PROXIES: "{{ forgejo_effective_trusted_proxies | join(',') }}"
+{% endif %}
+      FORGEJO__openid__ENABLE_OPENID_SIGNIN: "false"
+      FORGEJO__openid__ENABLE_OPENID_SIGNUP: "false"
+      FORGEJO__repository__DEFAULT_PRIVATE: private
+      FORGEJO__repository__DEFAULT_BRANCH: main
+      FORGEJO__repository__DISABLE_HTTP_GIT: "{{ forgejo_disable_http_git | bool | lower }}"
+      FORGEJO__mirror__DEFAULT_INTERVAL: "{{ forgejo_mirror_interval }}"
+      FORGEJO__log__LEVEL: "{{ forgejo_log_level }}"
+    volumes:
+      - "{{ forgejo_data_dir }}:/data"
+      - "{{ forgejo_secrets_dir }}/secret_key:/secrets/secret_key:ro"
+      - "{{ forgejo_secrets_dir }}/internal_token:/secrets/internal_token:ro"
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "{{ forgejo_bind_ip }}:{{ forgejo_host_port }}:{{ forgejo_container_port }}"
+      - "{{ forgejo_ssh_bind_ip }}:{{ forgejo_ssh_host_port }}:22"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - {{ forgejo_docker_network }}
+
+networks:
+  {{ forgejo_docker_network }}:
+    external: true

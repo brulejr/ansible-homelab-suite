@@ -46,7 +46,7 @@ oiltank_monitor_docker_network: "{{ docker_network }}"
 oiltank_monitor_bind_ip: "{{ server_bind_ip }}"
 
 # The REST API has no authentication and serves camera snapshots: keep it on a
-# trusted network.
+# trusted network, or on 127.0.0.1 and reach it over an SSH tunnel.
 oiltank_monitor_host_port: "{{ app_port_oiltank_monitor }}"
 
 # ---------------------------------------------------------------------------

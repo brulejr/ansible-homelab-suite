@@ -1,0 +1,52 @@
+---
+config_snapshot_enabled: true
+
+# Script, configuration, SSH key and known_hosts (root only)
+config_snapshot_app_dir: "{{ docker_dir }}/config-snapshot"
+# Working copies, and the state that saves re-encrypting unchanged secrets
+config_snapshot_work_dir: "{{ data_dir }}/config-snapshot"
+
+# systemd timer (OnCalendar syntax)
+config_snapshot_schedule: "*-*-* 03:30:00"
+# Take a snapshot at the end of each deploy, which also checks the push works
+config_snapshot_run_on_deploy: true
+
+config_snapshot_author_name: "config-snapshot"
+config_snapshot_author_email: "config-snapshot@{{ inventory_hostname }}.{{ domain_name }}"
+
+# ---------------------------------------------------------------------------
+# Git server (the forgejo role)
+#
+# The snapshot pushes over SSH with its own key, registered as a deploy key
+# with write access on each repository through Forgejo's API, using the
+# forgejo role's admin token.
+# ---------------------------------------------------------------------------
+config_snapshot_git_host: "{{ server_bind_ip }}"
+config_snapshot_git_port: "{{ app_port_forgejo_ssh }}"
+config_snapshot_git_owner: ""
+config_snapshot_forgejo_api_url: "http://127.0.0.1:{{ app_port_forgejo }}/api/v1"
+config_snapshot_forgejo_token_file: "{{ docker_dir }}/forgejo/secrets/api_token"
+
+# ---------------------------------------------------------------------------
+# age recipients (public keys, "age1...") that secret files are encrypted to.
+# The host never holds an identity, so it can't decrypt them. Generate a key
+# pair where you keep secrets, and keep the identity (private key) safe:
+#   age-keygen -o snapshot-identity.txt     # prints the public key
+# ---------------------------------------------------------------------------
+config_snapshot_age_recipients: []
+
+# ---------------------------------------------------------------------------
+# Repositories (create them on the git server first) and what goes in them.
+# Each source is mirrored into "dest" of the repository. Patterns match the
+# path relative to src, or with no "/", a name at any depth; a matched
+# directory takes everything under it. "secrets" are committed as <name>.age.
+#
+# config_snapshot_repos:
+#   - name: config
+#     sources:
+#       - src: "{{ data_dir }}/homeassistant/config"
+#         dest: homeassistant
+#         exclude: ["home-assistant_v2.db*", "*.log*", backups]
+#         secrets: [secrets.yaml, .storage/auth]
+# ---------------------------------------------------------------------------
+config_snapshot_repos: []

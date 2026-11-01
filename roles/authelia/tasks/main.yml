@@ -1,0 +1,18 @@
+---
+- name: Build Authelia access control rules
+  ansible.builtin.include_tasks: access_control.yml
+  when: authelia_enabled | bool
+
+- name: Validate Authelia configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: authelia_enabled | bool
+
+- name: Install and configure Authelia
+  ansible.builtin.include_tasks: install.yml
+  when: authelia_enabled | bool
+
+- name: Verify Authelia
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - authelia_enabled | bool
+    - authelia_verify_enabled | bool

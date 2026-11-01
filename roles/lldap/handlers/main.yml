@@ -1,0 +1,6 @@
+---
+- name: Restart lldap
+  community.docker.docker_compose_v2:
+    project_src: "{{ lldap_app_dir }}"
+    project_name: "{{ lldap_stack_name }}"
+    state: restarted

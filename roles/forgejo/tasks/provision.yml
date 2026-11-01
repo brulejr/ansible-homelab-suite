@@ -1,0 +1,326 @@
+---
+# Everything here goes through the API as forgejo_admin_user, with a token kept
+# in forgejo_secrets_dir/api_token. The CLI creates that user and the token on
+# the first run, and a new token whenever the kept one stops working (for
+# example after the database was recreated).
+- name: Set the Forgejo API address
+  ansible.builtin.set_fact:
+    forgejo_api_url: "http://{{ forgejo_bind_ip }}:{{ forgejo_host_port }}/api/v1"
+
+- name: Read the Forgejo API token
+  ansible.builtin.slurp:
+    src: "{{ forgejo_secrets_dir }}/api_token"
+  register: forgejo_api_token_file
+  failed_when: false
+  no_log: true
+
+- name: Check the Forgejo API token
+  ansible.builtin.uri:
+    url: "{{ forgejo_api_url }}/user"
+    headers:
+      Authorization: "token {{ forgejo_api_token_file.content | b64decode | trim }}"
+    status_code: [200, 401, 403]
+  register: forgejo_token_check
+  when: forgejo_api_token_file.content is defined
+  no_log: true
+
+- name: Create the Forgejo admin user and API token
+  when: >-
+    forgejo_api_token_file.content is not defined
+    or forgejo_token_check.status != 200
+    or forgejo_token_check.json.login != forgejo_admin_user
+  block:
+    - name: List the Forgejo admin users
+      community.docker.docker_container_exec:
+        container: "{{ forgejo_container_name }}"
+        user: git
+        argv: [forgejo, admin, user, list, --admin]
+      register: forgejo_admin_list
+      changed_when: false
+
+    # The password is random and never shown: the user only signs in with the
+    # token below
+    - name: Create the Forgejo admin user
+      community.docker.docker_container_exec:
+        container: "{{ forgejo_container_name }}"
+        user: git
+        argv:
+          - forgejo
+          - admin
+          - user
+          - create
+          - "--username={{ forgejo_admin_user }}"
+          - "--email={{ forgejo_admin_email }}"
+          - --admin
+          - --random-password
+          - --must-change-password=false
+      no_log: true
+      when: forgejo_admin_list.stdout is not search('(?m)^\s*\d+\s+' ~ forgejo_admin_user ~ '\s')
+
+    - name: Generate a Forgejo API token
+      community.docker.docker_container_exec:
+        container: "{{ forgejo_container_name }}"
+        user: git
+        argv:
+          - forgejo
+          - admin
+          - user
+          - generate-access-token
+          - "--username={{ forgejo_admin_user }}"
+          - "--token-name=ansible-{{ now(utc=true).strftime('%Y%m%d%H%M%S') }}"
+          - --scopes=all
+          - --raw
+      register: forgejo_new_token
+      no_log: true
+
+    - name: Keep the Forgejo API token
+      ansible.builtin.copy:
+        content: "{{ forgejo_new_token.stdout | trim }}"
+        dest: "{{ forgejo_secrets_dir }}/api_token"
+        owner: root
+        group: root
+        mode: "0600"
+      no_log: true
+
+- name: Use the Forgejo API token
+  ansible.builtin.set_fact:
+    forgejo_api_headers:
+      Authorization: >-
+        token {{ (forgejo_new_token.stdout | trim) if (forgejo_new_token.stdout is defined)
+                 else (forgejo_api_token_file.content | b64decode | trim) }}
+  no_log: true
+
+# ---------------------------------------------------------------------------
+# Users
+# ---------------------------------------------------------------------------
+- name: Look up the Forgejo users
+  ansible.builtin.uri:
+    url: "{{ forgejo_api_url }}/users/{{ item.username }}"
+    headers: "{{ forgejo_api_headers }}"
+    status_code: [200, 404]
+  loop: "{{ forgejo_users }}"
+  loop_control:
+    label: "{{ item.username }}"
+  register: forgejo_user_lookup
+
+# People sign in through SSO and use SSH keys, so their passwords are random
+# and never kept
+- name: Create the Forgejo users
+  ansible.builtin.uri:
+    url: "{{ forgejo_api_url }}/admin/users"
+    method: POST
+    headers: "{{ forgejo_api_headers }}"
+    body_format: json
+    body:
+      username: "{{ item.item.username }}"
+      email: "{{ item.item.email }}"
+      full_name: "{{ item.item.full_name | default('') }}"
+      login_name: "{{ item.item.username }}"
+      source_id: 0
+      password: "{{ lookup('ansible.builtin.password', '/dev/null', length=40, chars=['ascii_letters', 'digits']) }}"
+      must_change_password: false
+      send_notify: false
+      visibility: private
+    status_code: 201
+  loop: "{{ forgejo_user_lookup.results | selectattr('status', 'equalto', 404) | list }}"
+  loop_control:
+    label: "{{ item.item.username }}"
+  no_log: true
+  changed_when: true
+
+- name: Read the Forgejo users
+  ansible.builtin.uri:
+    url: "{{ forgejo_api_url }}/users/{{ item.username }}"
+    headers: "{{ forgejo_api_headers }}"
+  loop: "{{ forgejo_users }}"
+  loop_control:
+    label: "{{ item.username }}"
+  register: forgejo_user_state
+
+- name: Set the Forgejo users' admin rights
+  ansible.builtin.uri:
+    url: "{{ forgejo_api_url }}/admin/users/{{ item.item.username }}"
+    method: PATCH
+    headers: "{{ forgejo_api_headers }}"
+    body_format: json
+    body:
+      login_name: "{{ item.item.username }}"
+      source_id: 0
+      admin: "{{ item.item.admin | default(false) | bool }}"
+  loop: "{{ forgejo_user_state.results }}"
+  loop_control:
+    label: "{{ item.item.username }}"
+  when: item.json.is_admin | bool != item.item.admin | default(false) | bool
+  changed_when: true
+
+- name: Read the Forgejo users' SSH keys
+  ansible.builtin.uri:
+    url: "{{ forgejo_api_url }}/users/{{ item.username }}/keys"
+    headers: "{{ forgejo_api_headers }}"
+  loop: "{{ forgejo_users | selectattr('ssh_keys', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.username }}"
+  register: forgejo_user_keys
+
+# Keys are compared by type and key material; a key's comment doesn't matter
+- name: Add the Forgejo users' SSH keys
+  ansible.builtin.uri:
+    url: "{{ forgejo_api_url }}/admin/users/{{ item.0.username }}/keys"
+    method: POST
+    headers: "{{ forgejo_api_headers }}"
+    body_format: json
+    body:
+      title: "{{ item.1.split()[2] | default(item.0.username ~ ' key') }}"
+      key: "{{ item.1 }}"
+      read_only: false
+    status_code: 201
+  loop: "{{ forgejo_users | subelements('ssh_keys', skip_missing=true) }}"
+  loop_control:
+    label: "{{ item.0.username }}: {{ item.1.split()[2] | default(item.1.split()[0]) }}"
+  when: >-
+    (item.1.split()[:2] | join(' ')) not in
+    (forgejo_user_keys.results | selectattr('item.username', 'equalto', item.0.username)
+     | map(attribute='json') | flatten | map(attribute='key')
+     | map('regex_replace', '^(\\S+\\s+\\S+).*$', '\\1') | list)
+  changed_when: true
+
+# ---------------------------------------------------------------------------
+# Organization and repositories
+# ---------------------------------------------------------------------------
+- name: Provision the Forgejo organization
+  when: forgejo_org | length > 0
+  block:
+    - name: Look up the Forgejo organization
+      ansible.builtin.uri:
+        url: "{{ forgejo_api_url }}/orgs/{{ forgejo_org }}"
+        headers: "{{ forgejo_api_headers }}"
+        status_code: [200, 404]
+      register: forgejo_org_lookup
+
+    - name: Create the Forgejo organization
+      ansible.builtin.uri:
+        url: "{{ forgejo_api_url }}/orgs"
+        method: POST
+        headers: "{{ forgejo_api_headers }}"
+        body_format: json
+        body:
+          username: "{{ forgejo_org }}"
+          visibility: private
+        status_code: 201
+      when: forgejo_org_lookup.status == 404
+      changed_when: true
+
+    - name: Find the organization's Owners team
+      ansible.builtin.uri:
+        url: "{{ forgejo_api_url }}/orgs/{{ forgejo_org }}/teams"
+        headers: "{{ forgejo_api_headers }}"
+      register: forgejo_org_teams
+
+    - name: Set the Owners team
+      ansible.builtin.set_fact:
+        forgejo_owners_team_id: >-
+          {{ (forgejo_org_teams.json | selectattr('name', 'equalto', 'Owners') | first).id }}
+
+    - name: Look up the Owners team's members
+      ansible.builtin.uri:
+        url: "{{ forgejo_api_url }}/teams/{{ forgejo_owners_team_id }}/members/{{ item }}"
+        headers: "{{ forgejo_api_headers }}"
+        status_code: [200, 404]
+      loop: "{{ forgejo_org_owners }}"
+      register: forgejo_owner_lookup
+
+    - name: Add the organization's owners
+      ansible.builtin.uri:
+        url: "{{ forgejo_api_url }}/teams/{{ forgejo_owners_team_id }}/members/{{ item.item }}"
+        method: PUT
+        headers: "{{ forgejo_api_headers }}"
+        status_code: 204
+      loop: "{{ forgejo_owner_lookup.results | selectattr('status', 'equalto', 404) | list }}"
+      loop_control:
+        label: "{{ item.item }}"
+      changed_when: true
+
+    - name: Look up the Forgejo repositories
+      ansible.builtin.uri:
+        url: "{{ forgejo_api_url }}/repos/{{ forgejo_org }}/{{ item.name }}"
+        headers: "{{ forgejo_api_headers }}"
+        status_code: [200, 404]
+      loop: "{{ forgejo_repos }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: forgejo_repo_lookup
+
+    - name: Create the Forgejo repositories
+      ansible.builtin.uri:
+        url: "{{ forgejo_api_url }}/orgs/{{ forgejo_org }}/repos"
+        method: POST
+        headers: "{{ forgejo_api_headers }}"
+        body_format: json
+        body:
+          name: "{{ item.item.name }}"
+          description: "{{ item.item.description | default('') }}"
+          private: true
+          default_branch: main
+          auto_init: false
+        status_code: 201
+      loop: "{{ forgejo_repo_lookup.results | selectattr('status', 'equalto', 404) | list }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+      changed_when: true
+
+    # ------------------------------------------------------------------------
+    # SSH push mirrors: Forgejo generates each one's key pair and keeps the
+    # private key encrypted with forgejo_secret_key
+    # ------------------------------------------------------------------------
+    - name: Read the push mirrors
+      ansible.builtin.uri:
+        url: "{{ forgejo_api_url }}/repos/{{ forgejo_org }}/{{ item.name }}/push_mirrors"
+        headers: "{{ forgejo_api_headers }}"
+      loop: "{{ forgejo_repos | selectattr('mirror', 'defined') | list }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: forgejo_mirror_lookup
+
+    - name: Create the SSH push mirrors
+      ansible.builtin.uri:
+        url: "{{ forgejo_api_url }}/repos/{{ forgejo_org }}/{{ item.item.name }}/push_mirrors"
+        method: POST
+        headers: "{{ forgejo_api_headers }}"
+        body_format: json
+        body:
+          remote_address: "{{ item.item.mirror }}"
+          use_ssh: true
+          interval: "{{ item.item.mirror_interval | default(forgejo_mirror_interval) }}"
+          sync_on_commit: true
+        status_code: [200, 201]
+      loop: "{{ forgejo_mirror_lookup.results }}"
+      loop_control:
+        label: "{{ item.item.name }} -> {{ item.item.mirror }}"
+      when: item.item.mirror not in (item.json | map(attribute='remote_address') | list)
+      changed_when: true
+
+    - name: Read the push mirrors again
+      ansible.builtin.uri:
+        url: "{{ forgejo_api_url }}/repos/{{ forgejo_org }}/{{ item.name }}/push_mirrors"
+        headers: "{{ forgejo_api_headers }}"
+      loop: "{{ forgejo_repos | selectattr('mirror', 'defined') | list }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: forgejo_mirror_state
+
+    # Shown on every run: the deploy key is added by hand, once
+    - name: Show each push mirror's deploy key
+      ansible.builtin.debug:
+        msg:
+          - "Mirror {{ forgejo_org }}/{{ item.item.name }} -> {{ item.item.mirror }}"
+          - >-
+            Add this public key to the remote repository as a deploy key with
+            write access{% if item.item.mirror is search('github\\.com[:/]') %}
+            (https://github.com/{{ item.item.mirror | regex_replace('^.*github\\.com[:/]', '') | regex_replace('\\.git$', '') }}/settings/keys){% endif %}:
+          - "{{ mirror.public_key | default('(none shown)') }}"
+          - "Last sync: {{ mirror.last_update | default('never') }}; last error: {{ mirror.last_error | default('', true) or 'none' }}"
+      vars:
+        mirror: "{{ item.json | selectattr('remote_address', 'equalto', item.item.mirror) | first | default({}) }}"
+      loop: "{{ forgejo_mirror_state.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"

@@ -5,3 +5,7 @@ esphome_app_dir: "{{ docker_dir }}/esphome"
 esphome_data_dir: "{{ data_dir }}/esphome"
 
 esphome_config_dir: "{{ esphome_app_dir }}/config"
+
+# Address the dashboard is published on. The dashboard has no login, so put
+# it on 127.0.0.1 when Traefik reaches it over the Docker network instead.
+esphome_bind_ip: "{{ server_bind_ip }}"

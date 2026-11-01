@@ -10,6 +10,7 @@
       - iot_pipeline_data_dir | length > 0
       - iot_pipeline_docker_network | length > 0
       - iot_pipeline_bind_ip | length > 0
+      - iot_pipeline_grafana_bind_ip | length > 0
       - iot_pipeline_host_port | int > 0
       - iot_pipeline_grafana_host_port | int > 0
       - iot_pipeline_postgres_host_port | int > 0
@@ -62,3 +63,14 @@
     fail_msg: >-
       iot_pipeline_postgres_db and iot_pipeline_postgres_app_username must be lower-case
       letters, digits and underscores, and the username cannot be postgres or grafana_reader.
+
+- name: Validate iot-pipeline Grafana auth proxy settings
+  ansible.builtin.assert:
+    that:
+      - iot_pipeline_grafana_auth_proxy_role in ['Viewer', 'Editor', 'Admin']
+      - iot_pipeline_grafana_auth_proxy_whitelist | length > 0
+    fail_msg: >-
+      iot_pipeline_grafana_auth_proxy_role must be Viewer, Editor or Admin, and
+      iot_pipeline_grafana_auth_proxy_whitelist must not be empty (Grafana
+      would then trust the header from anyone who can reach its port).
+  when: iot_pipeline_grafana_auth_proxy_enabled | bool

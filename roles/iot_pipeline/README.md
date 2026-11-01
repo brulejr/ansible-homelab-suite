@@ -100,14 +100,30 @@ Exposure
 
 | Service | Bound to | Port |
 | --- | --- | --- |
-| Application REST API and console (`/ui`) | `server_bind_ip` | `app_port_iot_pipeline` (8114) |
-| Grafana | `server_bind_ip` | `app_port_iot_pipeline_grafana` (8115) |
+| Application REST API and console (`/ui`) | `iot_pipeline_bind_ip` | `app_port_iot_pipeline` (8114) |
+| Grafana | `iot_pipeline_grafana_bind_ip` | `app_port_iot_pipeline_grafana` (8115) |
 | PostgreSQL | `127.0.0.1` | `app_port_iot_pipeline_postgres` (5432) |
 
-Neither the REST API nor the operator console at `/ui` has authentication, and
-demoting a device deletes it from Home Assistant, so the port is not routed
-through Traefik: open the console at `http://<server_bind_ip>:8114/ui` from the
-trusted network. Reach PostgreSQL from the
+Both bind addresses default to `server_bind_ip`. Neither the REST API nor the
+operator console at `/ui` has authentication, and demoting a device deletes it
+from Home Assistant. Either keep the port on a trusted network and open the
+console at `http://<server_bind_ip>:8114/ui`, or put it behind single sign-on:
+publish it on loopback only and route Traefik to the container, with
+`streaming` so the live monitor's stream isn't buffered:
+
+    iot_pipeline_bind_ip: 127.0.0.1
+    iot_pipeline_grafana_bind_ip: "{{ server_bind_ip }}"   # Grafana keeps its port
+
+    edge_apps:
+      - name: iotpipeline
+        fqdn: iotpipeline.example.invalid
+        backend_url: "http://iot-pipeline:5001"
+        streaming: true
+        sso:
+          groups: [homelab_admins]
+
+Use an SSH tunnel (`ssh -L 8114:127.0.0.1:8114 <host>`) for the API from
+elsewhere. Reach PostgreSQL from the
 host with `psql -h 127.0.0.1`, or from elsewhere over an SSH tunnel.
 
 Data
@@ -122,6 +138,26 @@ deleted by the application as it writes. On first start, an empty database is
 seeded with curated models and promoted devices from the seed files bundled in
 the jar; export curation from the running system before redeploying onto an
 empty database (see the application README).
+
+Grafana single sign-on
+----------------------
+
+With `iot_pipeline_grafana_auth_proxy_enabled: true`, Grafana signs users in
+from the `Remote-User` header a forward-auth middleware (such as Authelia's)
+sets. They are created on their first visit as
+`iot_pipeline_grafana_auth_proxy_role` (Viewer). Promote them as the admin
+user, who still signs in with the login form.
+
+Grafana trusts the header only from `iot_pipeline_grafana_auth_proxy_whitelist`,
+by default Docker's address range, where Traefik's requests appear to come
+from. Requests from the LAN to the published port are not trusted. If Grafana
+answers "not whitelisted", check the source address in its log and adjust the
+whitelist.
+
+Set `iot_pipeline_grafana_signout_redirect_url` to the portal's logout page
+(Authelia's is `https://<authelia_fqdn>/logout`), so that Grafana's Sign out
+ends the SSO session; otherwise the next request signs the user straight back
+in.
 
 Example
 -------

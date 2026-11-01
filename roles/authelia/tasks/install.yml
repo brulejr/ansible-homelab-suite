@@ -1,0 +1,71 @@
+---
+- name: Ensure Authelia app directory exists
+  ansible.builtin.file:
+    path: "{{ authelia_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# The container runs as root; its database holds 2FA secrets
+- name: Ensure Authelia config and secrets directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  loop:
+    - "{{ authelia_config_dir }}"
+    - "{{ authelia_secrets_dir }}"
+
+- name: Write Authelia secrets
+  ansible.builtin.copy:
+    content: "{{ item.content | trim }}"
+    dest: "{{ authelia_secrets_dir }}/{{ item.name }}"
+    owner: root
+    group: root
+    mode: "0600"
+  loop:
+    - name: jwt_secret
+      content: "{{ authelia_jwt_secret }}"
+    - name: session_secret
+      content: "{{ authelia_session_secret }}"
+    - name: storage_encryption_key
+      content: "{{ authelia_storage_encryption_key }}"
+    - name: ldap_password
+      content: "{{ authelia_ldap_password }}"
+    - name: smtp_password
+      content: "{{ authelia_smtp_password }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true
+  notify: Restart authelia
+
+- name: Render Authelia configuration.yml
+  ansible.builtin.template:
+    src: configuration.yml.j2
+    dest: "{{ authelia_config_dir }}/configuration.yml"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Restart authelia
+
+- name: Render Authelia docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ authelia_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart authelia
+
+- name: Start Authelia stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ authelia_app_dir }}"
+    project_name: "{{ authelia_stack_name }}"
+    state: present
+    pull: always
+
+- name: Apply Authelia changes now
+  ansible.builtin.meta: flush_handlers

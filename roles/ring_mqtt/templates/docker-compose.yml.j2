@@ -7,7 +7,7 @@ services:
     environment:
       TZ: "{{ ring_mqtt_timezone }}"
     ports:
-      - "{{ ring_mqtt_bind_ip }}:{{ ring_mqtt_web_host_port }}:55123"
+      - "{{ ring_mqtt_web_bind_ip }}:{{ ring_mqtt_web_host_port }}:55123"
       - "{{ ring_mqtt_bind_ip }}:{{ ring_mqtt_rtsp_host_port }}:8554"
     volumes:
       - "{{ ring_mqtt_data_dir }}:/data"

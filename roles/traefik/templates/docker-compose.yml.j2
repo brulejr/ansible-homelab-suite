@@ -36,14 +36,16 @@ services:
 
       traefik.http.routers.traefik.entrypoints: "http"
       traefik.http.routers.traefik.rule: "Host(`{{ traefik_dashboard_host | default('traefik.' ~ domain_name) }}`)"
+{% if traefik_dashboard_sso_middleware | length == 0 %}
       traefik.http.middlewares.traefik-auth.basicauth.users: "{{ traefik_basic_auth_hash }}"
+{% endif %}
       traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme: "https"
       traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto: "https"
       traefik.http.routers.traefik.middlewares: "traefik-https-redirect"
 
       traefik.http.routers.traefik-secure.entrypoints: "https"
       traefik.http.routers.traefik-secure.rule: "Host(`{{ traefik_dashboard_host | default('traefik.' ~ domain_name) }}`)"
-      traefik.http.routers.traefik-secure.middlewares: "traefik-auth"
+      traefik.http.routers.traefik-secure.middlewares: "{{ traefik_dashboard_sso_middleware or 'traefik-auth' }}"
       traefik.http.routers.traefik-secure.tls: "true"
       traefik.http.routers.traefik-secure.tls.certresolver: "cloudflare"
 

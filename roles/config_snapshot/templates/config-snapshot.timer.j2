@@ -1,0 +1,11 @@
+# Managed by Ansible (config_snapshot)
+[Unit]
+Description=Commit app data snapshots to git every night
+
+[Timer]
+OnCalendar={{ config_snapshot_schedule }}
+Persistent=true
+RandomizedDelaySec=10m
+
+[Install]
+WantedBy=timers.target

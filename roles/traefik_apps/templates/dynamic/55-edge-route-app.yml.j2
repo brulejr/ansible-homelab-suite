@@ -9,7 +9,8 @@
 {% set redirect_http = edge_app.redirect_http | default(true) %}
 {% set backend_url = edge_app.backend_url %}
 {% set streaming = edge_app.streaming | default(false) | bool %}
-{% set middlewares = edge_app.middlewares | default([]) %}
+{% set sso = edge_app.sso | default(false) %}
+{% set middlewares = ([traefik_sso_middleware] if sso else []) + (edge_app.middlewares | default([])) %}
 
 http:
   routers:

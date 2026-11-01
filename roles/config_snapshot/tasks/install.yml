@@ -1,0 +1,161 @@
+---
+- name: Install git and age
+  ansible.builtin.apt:
+    name: [git, age]
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Ensure config snapshot directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  loop:
+    - "{{ config_snapshot_app_dir }}"
+    - "{{ config_snapshot_work_dir }}"
+    - "{{ config_snapshot_work_dir }}/repos"
+    - "{{ config_snapshot_work_dir }}/state"
+
+# ---------------------------------------------------------------------------
+# SSH: the job's own key, a deploy key with write access on each repository
+# ---------------------------------------------------------------------------
+- name: Generate the config snapshot SSH key
+  ansible.builtin.command:
+    argv:
+      - ssh-keygen
+      - -t
+      - ed25519
+      - -N
+      - ""
+      - -C
+      - "config-snapshot@{{ inventory_hostname }}"
+      - -f
+      - "{{ config_snapshot_app_dir }}/id_ed25519"
+    creates: "{{ config_snapshot_app_dir }}/id_ed25519"
+
+- name: Read the config snapshot public key
+  ansible.builtin.slurp:
+    src: "{{ config_snapshot_app_dir }}/id_ed25519.pub"
+  register: config_snapshot_pubkey_file
+
+- name: Read the Forgejo API token
+  ansible.builtin.slurp:
+    src: "{{ config_snapshot_forgejo_token_file }}"
+  register: config_snapshot_token_file
+  no_log: true
+
+- name: Set the config snapshot key and API headers
+  ansible.builtin.set_fact:
+    config_snapshot_pubkey: "{{ config_snapshot_pubkey_file.content | b64decode | trim }}"
+    config_snapshot_api_headers:
+      Authorization: "token {{ config_snapshot_token_file.content | b64decode | trim }}"
+  no_log: true
+
+- name: Read the repositories' deploy keys
+  ansible.builtin.uri:
+    url: "{{ config_snapshot_forgejo_api_url }}/repos/{{ config_snapshot_git_owner }}/{{ item.name }}/keys"
+    headers: "{{ config_snapshot_api_headers }}"
+  loop: "{{ config_snapshot_repos }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: config_snapshot_deploy_keys
+
+- name: Add the config snapshot deploy key
+  ansible.builtin.uri:
+    url: "{{ config_snapshot_forgejo_api_url }}/repos/{{ config_snapshot_git_owner }}/{{ item.item.name }}/keys"
+    method: POST
+    headers: "{{ config_snapshot_api_headers }}"
+    body_format: json
+    body:
+      title: "config-snapshot@{{ inventory_hostname }}"
+      key: "{{ config_snapshot_pubkey }}"
+      read_only: false
+    status_code: 201
+  loop: "{{ config_snapshot_deploy_keys.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when: >-
+    (config_snapshot_pubkey.split()[:2] | join(' ')) not in
+    (item.json | map(attribute='key') | map('regex_replace', '^(\\S+\\s+\\S+).*$', '\\1') | list)
+  changed_when: true
+
+- name: Scan the git server's SSH host keys
+  ansible.builtin.command:
+    argv: [ssh-keyscan, -p, "{{ config_snapshot_git_port }}", "{{ config_snapshot_git_host }}"]
+  register: config_snapshot_keyscan
+  changed_when: false
+  retries: 12
+  delay: 5
+  until: config_snapshot_keyscan.stdout_lines | length > 0
+
+- name: Write the git server's known_hosts
+  ansible.builtin.copy:
+    content: "{{ config_snapshot_keyscan.stdout_lines | sort | join('\n') }}\n"
+    dest: "{{ config_snapshot_app_dir }}/known_hosts"
+    owner: root
+    group: root
+    mode: "0644"
+
+# ---------------------------------------------------------------------------
+# The job
+# ---------------------------------------------------------------------------
+- name: Install the config snapshot script
+  ansible.builtin.copy:
+    src: snapshot.py
+    dest: "{{ config_snapshot_app_dir }}/snapshot.py"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render the config snapshot configuration
+  ansible.builtin.copy:
+    content: "{{ config_snapshot_config | to_nice_json }}\n"
+    dest: "{{ config_snapshot_app_dir }}/config.json"
+    owner: root
+    group: root
+    mode: "0600"
+  vars:
+    config_snapshot_config:
+      remote_base: "ssh://git@{{ config_snapshot_git_host }}:{{ config_snapshot_git_port }}/{{ config_snapshot_git_owner }}"
+      ssh_key: "{{ config_snapshot_app_dir }}/id_ed25519"
+      known_hosts: "{{ config_snapshot_app_dir }}/known_hosts"
+      work_dir: "{{ config_snapshot_work_dir }}/repos"
+      state_dir: "{{ config_snapshot_work_dir }}/state"
+      recipients: "{{ config_snapshot_age_recipients }}"
+      author_name: "{{ config_snapshot_author_name }}"
+      author_email: "{{ config_snapshot_author_email }}"
+      repos: "{{ config_snapshot_repos }}"
+
+- name: Install the config snapshot systemd units
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - config-snapshot.service
+    - config-snapshot.timer
+  register: config_snapshot_units
+
+- name: Enable the config snapshot timer
+  ansible.builtin.systemd_service:
+    name: config-snapshot.timer
+    enabled: true
+    state: started
+    daemon_reload: "{{ config_snapshot_units is changed }}"
+
+- name: Take a snapshot
+  ansible.builtin.command:
+    argv: [/usr/bin/python3, "{{ config_snapshot_app_dir }}/snapshot.py", "{{ config_snapshot_app_dir }}/config.json"]
+  register: config_snapshot_run
+  changed_when: config_snapshot_run.stdout is search('committed')
+  when: config_snapshot_run_on_deploy | bool
+
+- name: Show the snapshot result
+  ansible.builtin.debug:
+    msg: "{{ config_snapshot_run.stdout_lines }}"
+  when: config_snapshot_run_on_deploy | bool

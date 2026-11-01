@@ -1,0 +1,18 @@
+---
+- name: Validate Forgejo configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: forgejo_enabled | bool
+
+- name: Install and configure Forgejo
+  ansible.builtin.include_tasks: install.yml
+  when: forgejo_enabled | bool
+
+- name: Provision Forgejo users, organization and repositories
+  ansible.builtin.include_tasks: provision.yml
+  when: forgejo_enabled | bool
+
+- name: Verify Forgejo
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - forgejo_enabled | bool
+    - forgejo_verify_enabled | bool

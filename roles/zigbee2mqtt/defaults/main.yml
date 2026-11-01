@@ -4,5 +4,10 @@ zigbee2mqtt_stack_name: "zigbee2mqtt"
 zigbee2mqtt_app_dir: "{{ docker_dir }}/zigbee2mqtt"
 zigbee2mqtt_data_dir: "{{ data_dir }}/zigbee2mqtt"
 
+# Address the frontend is published on. The frontend has no login unless
+# configuration.yaml sets one, so put it on 127.0.0.1 when Traefik reaches it
+# over the Docker network instead.
+zigbee2mqtt_bind_ip: "{{ server_bind_ip }}"
+
 # Complete zigbee2mqtt configuration.yaml content, supplied by the inventory
 zigbee2mqtt_configuration: {}

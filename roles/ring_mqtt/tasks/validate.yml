@@ -9,6 +9,7 @@
       - ring_mqtt_image | length > 0
       - ring_mqtt_docker_network | length > 0
       - ring_mqtt_bind_ip | length > 0
+      - ring_mqtt_web_bind_ip | length > 0
       - ring_mqtt_web_host_port | int > 0
       - ring_mqtt_rtsp_host_port | int > 0
       - ring_mqtt_mqtt_host | length > 0

@@ -1,0 +1,8 @@
+---
+- name: Validate config snapshot configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: config_snapshot_enabled | bool
+
+- name: Install the config snapshot job
+  ansible.builtin.include_tasks: install.yml
+  when: config_snapshot_enabled | bool

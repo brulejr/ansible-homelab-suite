@@ -1,0 +1,58 @@
+---
+- name: Ensure LLDAP app directory exists
+  ansible.builtin.file:
+    path: "{{ lldap_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure LLDAP data, secrets and bootstrap directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ lldap_uid }}"
+    group: "{{ lldap_gid }}"
+    mode: "0700"
+  loop:
+    - "{{ lldap_data_dir }}"
+    - "{{ lldap_secrets_dir }}"
+    - "{{ lldap_bootstrap_dir }}"
+
+- name: Write LLDAP secrets
+  ansible.builtin.copy:
+    content: "{{ item.content | trim }}"
+    dest: "{{ lldap_secrets_dir }}/{{ item.name }}"
+    owner: "{{ lldap_uid }}"
+    group: "{{ lldap_gid }}"
+    mode: "0600"
+  loop:
+    - name: jwt_secret
+      content: "{{ lldap_jwt_secret }}"
+    - name: key_seed
+      content: "{{ lldap_key_seed }}"
+    - name: admin_password
+      content: "{{ lldap_admin_password }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true
+  notify: Restart lldap
+
+- name: Render LLDAP docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ lldap_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart lldap
+
+- name: Start LLDAP stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ lldap_app_dir }}"
+    project_name: "{{ lldap_stack_name }}"
+    state: present
+    pull: always
+
+- name: Apply LLDAP changes now
+  ansible.builtin.meta: flush_handlers

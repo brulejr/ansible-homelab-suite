@@ -1,0 +1,18 @@
+---
+- name: Validate LLDAP configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: lldap_enabled | bool
+
+- name: Install and configure LLDAP
+  ansible.builtin.include_tasks: install.yml
+  when: lldap_enabled | bool
+
+- name: Bootstrap LLDAP groups and service accounts
+  ansible.builtin.include_tasks: bootstrap.yml
+  when: lldap_enabled | bool
+
+- name: Verify LLDAP
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - lldap_enabled | bool
+    - lldap_verify_enabled | bool

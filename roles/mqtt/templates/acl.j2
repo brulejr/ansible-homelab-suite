@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+# Each user's topics; with an ACL file, Mosquitto refuses anything not listed.
+# "#" does not cover $SYS, the broker's own status topics, so each user may
+# read those separately.
+{% for user in mqtt_users %}
+
+user {{ user.name }}
+topic {{ user.access | default('readwrite') }} #
+topic read $SYS/#
+{% endfor %}

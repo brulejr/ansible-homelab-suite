@@ -75,10 +75,13 @@
       - mqtt_users | rejectattr('name', 'match', '^[A-Za-z0-9._-]+$') | list | length == 0
       - mqtt_users | map(attribute='password') | map('string') | select('match', '^\\S{16,}$') | list | length
         == mqtt_users | length
+      - mqtt_users | selectattr('access', 'defined') | rejectattr('access', 'in', ['read', 'readwrite'])
+        | list | length == 0
     fail_msg: >-
       Each of mqtt_users needs a unique name (letters, digits, . _ -) and a
       password of at least 16 characters without spaces, preferably from the
-      vault. Generate one with: openssl rand -hex 24
+      vault. Generate one with: openssl rand -hex 24. Its access, if set, is
+      read or readwrite.
 
 - name: copy config files
   template:
@@ -113,6 +116,15 @@
         mode: "0600"
       register: mqtt_users_plain
       no_log: true
+
+    - name: Write mqtt ACL
+      ansible.builtin.template:
+        src: acl.j2
+        dest: "{{ mqtt_config_dir }}/acl"
+        owner: "{{ mqtt_uid }}"
+        group: "{{ mqtt_gid }}"
+        mode: "0600"
+      notify: Restart mqtt
 
     - name: Check mqtt password file
       ansible.builtin.stat:

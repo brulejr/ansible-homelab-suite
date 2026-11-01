@@ -26,6 +26,12 @@ services:
       PIPELINE_INGEST_MQTT_CLIENT_ID: "{{ iot_pipeline_ingest_mqtt_client_id }}"
       PIPELINE_PUBLISH_MQTT_URL: "{{ iot_pipeline_publish_mqtt_url }}"
       PIPELINE_PUBLISH_MQTT_CLIENT_ID: "{{ iot_pipeline_publish_mqtt_client_id }}"
+{% if iot_pipeline_ingest_mqtt_username | length > 0 %}
+      PIPELINE_INGEST_MQTT_USERNAME: "{{ iot_pipeline_ingest_mqtt_username }}"
+{% endif %}
+{% if iot_pipeline_publish_mqtt_username | length > 0 %}
+      PIPELINE_PUBLISH_MQTT_USERNAME: "{{ iot_pipeline_publish_mqtt_username }}"
+{% endif %}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
       POSTGRES_DB: "{{ iot_pipeline_postgres_db }}"
@@ -36,6 +42,15 @@ services:
     secrets:
       - source: postgres_app_password
         target: POSTGRES_APP_PASSWORD
+      # Named after the properties they set (see SPRING_CONFIG_IMPORT)
+{% if iot_pipeline_ingest_mqtt_username | length > 0 %}
+      - source: ingest_mqtt_password
+        target: pipeline.ingest.mqtt.password
+{% endif %}
+{% if iot_pipeline_publish_mqtt_username | length > 0 %}
+      - source: publish_mqtt_password
+        target: pipeline.publish.mqtt.password
+{% endif %}
     ports:
       - "{{ iot_pipeline_bind_ip }}:{{ iot_pipeline_host_port }}:5001"
     networks:
@@ -126,6 +141,10 @@ secrets:
     file: "{{ iot_pipeline_secrets_dir }}/postgres_grafana_password"
   grafana_admin_password:
     file: "{{ iot_pipeline_secrets_dir }}/grafana_admin_password"
+  ingest_mqtt_password:
+    file: "{{ iot_pipeline_secrets_dir }}/ingest_mqtt_password"
+  publish_mqtt_password:
+    file: "{{ iot_pipeline_secrets_dir }}/publish_mqtt_password"
 
 networks:
   {{ iot_pipeline_docker_network }}:

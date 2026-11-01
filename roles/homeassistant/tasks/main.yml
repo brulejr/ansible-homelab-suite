@@ -25,6 +25,13 @@
     - homeassistant_enabled | bool
     - homeassistant_verify_enabled | bool
 
+- name: Set Home Assistant MQTT login
+  ansible.builtin.include_tasks: mqtt_login.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_api_token | length > 0
+    - homeassistant_mqtt_username | length > 0
+
 - name: Configure Home Assistant Ping hosts
   ansible.builtin.include_tasks: ping_hosts.yml
   when:

@@ -31,14 +31,40 @@
       - zigbee2mqtt_configuration | length > 0
     fail_msg: "zigbee2mqtt_configuration must be defined in the inventory"
 
+- name: "Ensure the MQTT login is set in full or not at all"
+  ansible.builtin.assert:
+    that:
+      - (zigbee2mqtt_mqtt_user | length > 0) == (zigbee2mqtt_mqtt_password | length > 0)
+    fail_msg: "Set both zigbee2mqtt_mqtt_user and zigbee2mqtt_mqtt_password, or neither."
+
+- name: "Read the current configuration.yaml"
+  ansible.builtin.slurp:
+    src: "{{ zigbee2mqtt_data_dir }}/configuration.yaml"
+  register: zigbee2mqtt_current_configuration
+  failed_when: false
+  no_log: true
+
 - name: "Render configuration.yaml"
   ansible.builtin.copy:
-    content: "{{ zigbee2mqtt_configuration | to_nice_yaml(indent=2, sort_keys=False, width=1000) }}"
+    content: "{{ zigbee2mqtt_effective_configuration | to_nice_yaml(indent=2, sort_keys=False, width=1000) }}"
     dest: "{{ zigbee2mqtt_data_dir }}/configuration.yaml"
     mode: "0644"
+  no_log: "{{ zigbee2mqtt_mqtt_password | length > 0 }}"
 
 - name: "Start stack"
   community.docker.docker_compose_v2:
     project_src: "{{ zigbee2mqtt_app_dir }}"
     project_name: "{{ zigbee2mqtt_stack_name }}"
     state: present
+
+# Zigbee2MQTT reads configuration.yaml only on start. It is restarted only for
+# a changed broker connection, since it rewrites the file itself as it runs.
+- name: "Restart zigbee2mqtt for a changed broker connection"
+  community.docker.docker_compose_v2:
+    project_src: "{{ zigbee2mqtt_app_dir }}"
+    project_name: "{{ zigbee2mqtt_stack_name }}"
+    state: restarted
+  when: >-
+    'content' in zigbee2mqtt_current_configuration
+    and ((zigbee2mqtt_current_configuration.content | b64decode | from_yaml).mqtt | default({}))
+        != zigbee2mqtt_effective_configuration.mqtt | default({})

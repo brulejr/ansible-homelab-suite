@@ -1,8 +1,25 @@
 mqtt_enabled: true
 
 mqtt_stack_name: "mqtt"
+mqtt_container_name: "mqtt"
+mqtt_image: "eclipse-mosquitto:latest"
 mqtt_app_dir: "{{ docker_dir }}/mqtt"
 mqtt_data_dir: "{{ data_dir }}/mqtt"
 
 mqtt_config_dir: "{{ mqtt_app_dir }}/config"
+mqtt_secrets_dir: "{{ mqtt_app_dir }}/secrets"
 mqtt_log_dir: "{{ mqtt_data_dir }}/log"
+
+# The uid and gid Mosquitto runs as in the image
+mqtt_uid: 1883
+mqtt_gid: 1883
+
+# Users who may connect, each with full access to every topic. Keep the
+# passwords in the vault; they are hashed into the broker's password file.
+#   - name: homeassistant
+#     password: "{{ vault_mqtt_password_homeassistant }}"
+mqtt_users: []
+
+# Whether clients may connect without a username. With no mqtt_users, the
+# broker stays open whatever this says.
+mqtt_allow_anonymous: true

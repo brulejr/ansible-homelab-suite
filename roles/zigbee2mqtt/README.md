@@ -24,6 +24,19 @@ edge_apps:
 
 Home Assistant uses MQTT, not the frontend, so it is not affected.
 
+# Broker login
+
+`zigbee2mqtt_mqtt_user` and `zigbee2mqtt_mqtt_password` are merged into the
+`mqtt` section of `configuration.yaml`, so a shared `zigbee2mqtt_configuration`
+can serve hosts with and without a login. Zigbee2MQTT reads the file only on
+start, and rewrites it as it runs, so the role restarts it only when the
+`mqtt` section changes.
+
+```yaml
+zigbee2mqtt_mqtt_user: zigbee2mqtt
+zigbee2mqtt_mqtt_password: "{{ vault_mqtt_password_zigbee2mqtt }}"
+```
+
 # Tools
 
 `merge_z2m_db.py` is installed into the app directory. It merges two zigbee2mqtt

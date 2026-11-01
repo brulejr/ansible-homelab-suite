@@ -107,6 +107,10 @@
       content: "{{ iot_pipeline_postgres_grafana_password | trim }}"
     - name: grafana_admin_password
       content: "{{ iot_pipeline_grafana_admin_password | trim }}"
+    - name: ingest_mqtt_password
+      content: "{{ iot_pipeline_ingest_mqtt_password | trim }}"
+    - name: publish_mqtt_password
+      content: "{{ iot_pipeline_publish_mqtt_password | trim }}"
   loop_control:
     label: "{{ item.name }}"
   no_log: true

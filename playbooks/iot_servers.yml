@@ -6,6 +6,8 @@
     - common
     - docker
     - watchtower
+    # Before its clients, which log in with the users it creates
+    - mqtt
     - docker2mqtt
     - traefik
     - traefik_apps
@@ -13,7 +15,6 @@
     - authelia
     - esphome
     - homeassistant
-    - mqtt
     - iot_pipeline
     - oiltank_monitor
     - nodered

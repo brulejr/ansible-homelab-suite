@@ -81,12 +81,17 @@ appears in `docker-compose.yml` or in a container's configured environment:
 | `iot_pipeline_postgres_app_password` | PostgreSQL, app | the PostgreSQL entrypoint exports it for initdb; Spring `configtree` |
 | `iot_pipeline_postgres_grafana_password` | PostgreSQL, Grafana | the PostgreSQL and Grafana entrypoints export it |
 | `iot_pipeline_grafana_admin_password` | Grafana | `GF_SECURITY_ADMIN_PASSWORD__FILE` |
+| `iot_pipeline_ingest_mqtt_password` | app | Spring `configtree`, as `pipeline.ingest.mqtt.password` |
+| `iot_pipeline_publish_mqtt_password` | app | Spring `configtree`, as `pipeline.publish.mqtt.password` |
 
 Generate each with:
 
     openssl rand -base64 24 | tr -d '/+='
 
-All four take effect only on first start: the roles are created when the data
+The MQTT passwords are used only with their usernames
+(`iot_pipeline_ingest_mqtt_username`, `iot_pipeline_publish_mqtt_username`),
+and a change restarts the application. The other four take effect only on
+first start: the roles are created when the data
 directory is empty, and Grafana sets its admin password when it creates its
 database. Changing one in the vault afterwards changes nothing until it is
 changed in the database too:
@@ -169,6 +174,8 @@ Example
     iot_pipeline_postgres_app_password: "{{ vault_iot_pipeline_postgres_app_password }}"
     iot_pipeline_postgres_grafana_password: "{{ vault_iot_pipeline_postgres_grafana_password }}"
     iot_pipeline_grafana_admin_password: "{{ vault_iot_pipeline_grafana_admin_password }}"
-    # Broker credentials or other application settings
+    iot_pipeline_publish_mqtt_username: iot-pipeline
+    iot_pipeline_publish_mqtt_password: "{{ vault_mqtt_password_iot_pipeline }}"
+    # Other application settings
     iot_pipeline_environment:
-      PIPELINE_INGEST_MQTT_USERNAME: iot-pipeline
+      MQTT_TOPIC: "rtl_433/+/events"

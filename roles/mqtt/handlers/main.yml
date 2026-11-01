@@ -1,0 +1,6 @@
+---
+- name: Restart mqtt
+  community.docker.docker_compose_v2:
+    project_src: "{{ mqtt_app_dir }}"
+    project_name: "{{ mqtt_stack_name }}"
+    state: restarted

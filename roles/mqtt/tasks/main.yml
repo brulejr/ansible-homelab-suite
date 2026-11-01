@@ -4,7 +4,7 @@
 - name: Create mqtt user
   ansible.builtin.user:
     name: mqtt
-    uid: 1883
+    uid: "{{ mqtt_uid }}"
     create_home: no
     home: "{{ mqtt_app_dir }}"
 
@@ -58,12 +58,95 @@
     access_time: preserve
     modification_time: preserve
 
+# A password whose vault key is missing is undefined, so name those users
+- name: Check every mqtt user has a password
+  ansible.builtin.assert:
+    that:
+      - mqtt_users | rejectattr('password', 'defined') | list | length == 0
+    fail_msg: >-
+      No password for: {{ mqtt_users | rejectattr('password', 'defined') | map(attribute='name') | join(', ') }}.
+      Add the vault key each one's password reads (vault_mqtt_password_<user>
+      in this inventory), generated with: openssl rand -hex 24
+
+- name: Validate mqtt users
+  ansible.builtin.assert:
+    that:
+      - mqtt_users | map(attribute='name') | unique | list | length == mqtt_users | length
+      - mqtt_users | rejectattr('name', 'match', '^[A-Za-z0-9._-]+$') | list | length == 0
+      - mqtt_users | map(attribute='password') | map('string') | select('match', '^\\S{16,}$') | list | length
+        == mqtt_users | length
+    fail_msg: >-
+      Each of mqtt_users needs a unique name (letters, digits, . _ -) and a
+      password of at least 16 characters without spaces, preferably from the
+      vault. Generate one with: openssl rand -hex 24
+
 - name: copy config files
   template:
     src: templates/{{ item }}
     dest: "{{ mqtt_config_dir }}"
   loop:
     - mosquitto.conf
+  notify: Restart mqtt
+
+# Mosquitto only reads hashed passwords, and each hashing salts them afresh, so
+# the plain list is kept root-only beside the stack to tell when it changed.
+- name: Configure mqtt users
+  when: mqtt_users | length > 0
+  block:
+    - name: Ensure mqtt secrets directory exists
+      ansible.builtin.file:
+        path: "{{ mqtt_secrets_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+
+    - name: Write mqtt users
+      ansible.builtin.copy:
+        content: |
+          {% for user in mqtt_users %}
+          {{ user.name }}:{{ user.password }}
+          {% endfor %}
+        dest: "{{ mqtt_secrets_dir }}/passwd.plain"
+        owner: root
+        group: root
+        mode: "0600"
+      register: mqtt_users_plain
+      no_log: true
+
+    - name: Check mqtt password file
+      ansible.builtin.stat:
+        path: "{{ mqtt_config_dir }}/passwd"
+      register: mqtt_passwd_file
+
+    - name: Hash mqtt password file
+      when: mqtt_users_plain is changed or not mqtt_passwd_file.stat.exists
+      block:
+        - name: Copy mqtt users into the password file
+          ansible.builtin.copy:
+            src: "{{ mqtt_secrets_dir }}/passwd.plain"
+            dest: "{{ mqtt_config_dir }}/passwd"
+            remote_src: true
+            owner: "{{ mqtt_uid }}"
+            group: "{{ mqtt_gid }}"
+            mode: "0600"
+
+        - name: Hash the mqtt password file
+          ansible.builtin.command:
+            argv:
+              - docker
+              - run
+              - --rm
+              - --user
+              - "{{ mqtt_uid }}:{{ mqtt_gid }}"
+              - -v
+              - "{{ mqtt_config_dir }}:/mosquitto/config"
+              - "{{ mqtt_image }}"
+              - mosquitto_passwd
+              - -U
+              - /mosquitto/config/passwd
+          changed_when: true
+          notify: Restart mqtt
 
 - name: "Render docker-compose.yml"
   ansible.builtin.template:
@@ -76,3 +159,8 @@
     project_src: "{{ mqtt_app_dir }}"
     project_name: "{{ mqtt_stack_name }}"
     state: present
+
+# Clients later in the play log in with the users above, so the broker must
+# have them first
+- name: Apply mqtt changes now
+  ansible.builtin.meta: flush_handlers

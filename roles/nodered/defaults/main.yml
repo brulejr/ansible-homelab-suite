@@ -26,6 +26,14 @@ nodered_verify_timeout: 120
 #   - "{{ inventory_dir }}/files/nodered/door_watch.json"
 nodered_flow_tab_files: []
 
+# MQTT broker config nodes (by id, as in the editor's node info) whose login
+# Ansible sets. The rest of each node stays as built in the editor. Keep the
+# passwords in the vault.
+#   - id: mqtt_broker_brulenet
+#     user: nodered
+#     password: "{{ vault_mqtt_password_nodered }}"
+nodered_mqtt_broker_logins: []
+
 # The editor and admin API login, one user with full access. Empty leaves
 # Node-RED open to anyone who can reach it. The password is bcrypt-hashed into
 # settings.js; the flow tab deploy logs in with it.

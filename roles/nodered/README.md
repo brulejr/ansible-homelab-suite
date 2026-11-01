@@ -35,6 +35,22 @@ Node-RED has one of two kinds of protection:
 With neither, anyone who reaches the port has the full editor, including exec
 nodes that run commands in the container.
 
+MQTT broker logins
+------------------
+
+`nodered_mqtt_broker_logins` sets the login of broker config nodes built in
+the editor, found by id (the node's info panel shows it). Only the login
+changes; the rest of the node stays as built. A script on the host sets it
+over the admin API, in a full deploy that reconnects every flow. Node-RED
+never shows a stored password, so the script keeps a digest of each login it
+set in `nodered_app_dir/broker_logins.json`, and changes a node again only
+when its login differs.
+
+    nodered_mqtt_broker_logins:
+      - id: mqtt_broker_brulenet
+        user: nodered
+        password: "{{ vault_mqtt_password_nodered }}"
+
 Flow tabs
 ---------
 

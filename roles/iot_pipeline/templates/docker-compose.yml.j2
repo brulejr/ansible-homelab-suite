@@ -131,6 +131,9 @@ services:
     volumes:
       - "{{ iot_pipeline_data_dir }}/grafana:/var/lib/grafana"
       - "{{ iot_pipeline_src_dir }}/docker/grafana/provisioning:/etc/grafana/provisioning:ro"
+    networks:
+      - default
+      - {{ iot_pipeline_docker_network }}
 
 secrets:
   postgres_admin_password:

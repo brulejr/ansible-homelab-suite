@@ -17,7 +17,9 @@ authelia_docker_network: "{{ docker_network }}"
 authelia_bind_ip: "{{ server_bind_ip }}"
 
 # Published for Traefik: the portal's edge route and the forward-auth
-# middleware of every Traefik that protects an app both use this port.
+# middleware of every Traefik that protects an app both use this port. When
+# the only such Traefik is on this host's Docker network, put it on 127.0.0.1
+# and point both at http://<authelia_container_name>:9091.
 authelia_host_port: "{{ app_port_authelia }}"
 authelia_container_port: 9091
 

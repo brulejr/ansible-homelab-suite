@@ -57,7 +57,9 @@ iot_pipeline_grafana_uid: 472
 # Networking
 #
 # The application joins the shared Docker network to reach the MQTT broker by
-# container name. PostgreSQL stays on the stack's private network.
+# container name, and Grafana joins it so Traefik can reach it as
+# <iot_pipeline_container_prefix>-grafana:3000. PostgreSQL stays on the
+# stack's private network.
 iot_pipeline_docker_network: "{{ docker_network }}"
 iot_pipeline_bind_ip: "{{ server_bind_ip }}"
 
@@ -65,7 +67,8 @@ iot_pipeline_bind_ip: "{{ server_bind_ip }}"
 # Home Assistant: keep it on a trusted network.
 iot_pipeline_host_port: "{{ app_port_iot_pipeline }}"
 # Grafana has its own login, so it can stay on the network when the
-# application is put on loopback behind SSO
+# application is put on loopback behind SSO. With its auth proxy on, put it on
+# loopback too, so the sign-in goes through the portal.
 iot_pipeline_grafana_bind_ip: "{{ iot_pipeline_bind_ip }}"
 iot_pipeline_grafana_host_port: "{{ app_port_iot_pipeline_grafana }}"
 
@@ -132,10 +135,11 @@ iot_pipeline_grafana_admin_password: ""
 # the admin user and for requests that do not come through the proxy.
 #
 # Grafana trusts the header only from iot_pipeline_grafana_auth_proxy_whitelist.
-# Traefik reaches Grafana through its published port, so Grafana sees the
-# Docker gateway as the source; the default covers Docker's default address
-# pools and keeps out clients on the LAN, which reach the port directly. Any
-# container or process on the Docker host can still set the header.
+# Traefik reaches Grafana over the Docker network, or through its published
+# port, where Grafana sees the Docker gateway as the source. The default
+# covers Docker's default address pools and keeps out clients on the LAN,
+# which reach the port directly. Any container or process on the Docker host
+# can still set the header.
 # ---------------------------------------------------------------------------
 iot_pipeline_grafana_auth_proxy_enabled: false
 iot_pipeline_grafana_auth_proxy_header: Remote-User

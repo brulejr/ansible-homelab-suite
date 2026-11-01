@@ -155,7 +155,11 @@ user, who still signs in with the login form.
 
 Grafana trusts the header only from `iot_pipeline_grafana_auth_proxy_whitelist`,
 by default Docker's address range, where Traefik's requests appear to come
-from. Requests from the LAN to the published port are not trusted. If Grafana
+from. Requests from the LAN to the published port are not trusted. Grafana is
+on the shared Docker network, so Traefik can reach it as
+`http://iot-pipeline-grafana:3000` with its port on loopback only
+(`iot_pipeline_grafana_bind_ip: 127.0.0.1`), and the portal is then the only
+way in. If Grafana
 answers "not whitelisted", check the source address in its log and adjust the
 whitelist.
 

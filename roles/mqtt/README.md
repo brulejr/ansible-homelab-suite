@@ -1,38 +1,58 @@
-Role Name
-=========
+mqtt
+====
 
-A brief description of the role goes here.
+Deploys the [Mosquitto](https://mosquitto.org/) MQTT broker as a Docker
+Compose stack, listening on port 1883 of the host and of the Docker network
+(as `mqtt:1883`).
 
-Requirements
-------------
+Users
+-----
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+With `mqtt_users`, clients log in with a username and password, and
+`mqtt_allow_anonymous: false` turns away everyone else. Every user may read
+and write every topic. With no users, the broker is open to anyone who
+reaches it, whatever `mqtt_allow_anonymous` says.
 
-Role Variables
---------------
+    mqtt_allow_anonymous: false
+    mqtt_users:
+      - name: homeassistant
+        password: "{{ vault_mqtt_password_homeassistant }}"
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+Generate each password with:
 
-Dependencies
-------------
+    openssl rand -hex 24
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+Hex passwords need no escaping in the URLs some clients take
+(`mqtt://user:password@host`).
 
-Example Playbook
-----------------
+Mosquitto reads only hashed passwords, and hashing salts them afresh each
+time. So the role keeps the plain list root-only in
+`mqtt_secrets_dir/passwd.plain`. When the list changes, it hashes it into
+`mqtt_config_dir/passwd` with the image's `mosquitto_passwd` and restarts the
+broker. It applies its changes before the role ends, so roles later in the
+play can log in with the new users. Run it before its clients.
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+Turning anonymous access off
+----------------------------
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+Clients without a login are turned away once `mqtt_allow_anonymous` is false.
+To find them first, deploy once with the users but anonymous access still on:
 
-License
+    ansible-playbook ... -e mqtt_allow_anonymous=true
+
+Then list the clients that connected without a username, the ones the log
+shows with no `u'...'`:
+
+    grep "New client connected" /path/to/mqtt/log/mosquitto.log | grep -v "u'"
+
+Deploy again without the override once there are none.
+
+The broker log shows each refused login as
+`Client <id> disconnected, not authorised`.
+
+Example
 -------
 
-BSD
-
-Author Information
-------------------
-
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+    - hosts: iot_servers
+      roles:
+        - mqtt

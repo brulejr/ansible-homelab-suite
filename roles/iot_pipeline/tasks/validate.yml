@@ -19,6 +19,15 @@
       - iot_pipeline_publish_mqtt_url is match('^(tcp|ssl|ws|wss)://')
     fail_msg: "iot-pipeline role configuration is invalid."
 
+- name: Validate iot-pipeline MQTT logins
+  ansible.builtin.assert:
+    that:
+      - (iot_pipeline_ingest_mqtt_username | length > 0) == (iot_pipeline_ingest_mqtt_password | length > 0)
+      - (iot_pipeline_publish_mqtt_username | length > 0) == (iot_pipeline_publish_mqtt_password | length > 0)
+    fail_msg: >-
+      Set both iot_pipeline_ingest_mqtt_username and _password, or neither;
+      likewise for iot_pipeline_publish_mqtt_.
+
 - name: Validate iot-pipeline Git source
   ansible.builtin.assert:
     that:

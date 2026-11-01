@@ -22,3 +22,9 @@
   when:
     - nodered_enabled | bool
     - nodered_flow_tab_files | length > 0
+
+- name: Set Node-RED MQTT broker logins
+  ansible.builtin.include_tasks: broker_logins.yml
+  when:
+    - nodered_enabled | bool
+    - nodered_mqtt_broker_logins | length > 0

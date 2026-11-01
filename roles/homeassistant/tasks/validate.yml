@@ -21,3 +21,12 @@
       homeassistant_automation_files needs homeassistant_api_token (to reload
       automations) and distinct .yaml file names.
   when: homeassistant_automation_files | length > 0
+
+- name: Validate Home Assistant MQTT login
+  ansible.builtin.assert:
+    that:
+      - (homeassistant_mqtt_username | length > 0) == (homeassistant_mqtt_password | length > 0)
+      - homeassistant_mqtt_username | length == 0 or homeassistant_api_token | length > 0
+    fail_msg: >-
+      Set both homeassistant_mqtt_username and homeassistant_mqtt_password, or
+      neither; setting them needs homeassistant_api_token.

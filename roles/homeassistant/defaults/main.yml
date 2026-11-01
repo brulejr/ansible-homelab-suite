@@ -121,6 +121,13 @@ homeassistant_generic_cameras: []
 #     area: foyer
 homeassistant_mqtt_devices: []
 
+# The login of the MQTT integration's broker, set on the entry made in the UI
+# (through its reconfigure flow, which tests it first). Needs
+# homeassistant_api_token; the password belongs in the vault. Empty leaves
+# the entry as it is.
+homeassistant_mqtt_username: ""
+homeassistant_mqtt_password: ""
+
 # Fixed entity ids, for entities matched by integration and unique id. Home
 # Assistant suffixes an id (_2) that another entity already holds; such an id
 # is assigned on the first deploy after that entity is gone.

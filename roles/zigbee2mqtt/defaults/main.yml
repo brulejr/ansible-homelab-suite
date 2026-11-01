@@ -11,3 +11,12 @@ zigbee2mqtt_bind_ip: "{{ server_bind_ip }}"
 
 # Complete zigbee2mqtt configuration.yaml content, supplied by the inventory
 zigbee2mqtt_configuration: {}
+
+# The broker login, if it needs one, merged into configuration.yaml's mqtt
+# section; the password belongs in the vault
+zigbee2mqtt_mqtt_user: ""
+zigbee2mqtt_mqtt_password: ""
+zigbee2mqtt_effective_configuration: >-
+  {{ zigbee2mqtt_configuration
+     | combine({'mqtt': {'user': zigbee2mqtt_mqtt_user, 'password': zigbee2mqtt_mqtt_password}}
+               if zigbee2mqtt_mqtt_user | length > 0 else {}, recursive=true) }}

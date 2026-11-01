@@ -81,6 +81,11 @@ iot_pipeline_ingest_mqtt_url: "tcp://mqtt:1883"
 iot_pipeline_ingest_mqtt_client_id: iot-pipeline
 iot_pipeline_publish_mqtt_url: "tcp://mqtt:1883"
 iot_pipeline_publish_mqtt_client_id: iot-pipeline-publisher
+# Each broker's login, if it needs one; the passwords belong in the vault
+iot_pipeline_ingest_mqtt_username: ""
+iot_pipeline_ingest_mqtt_password: ""
+iot_pipeline_publish_mqtt_username: ""
+iot_pipeline_publish_mqtt_password: ""
 
 # The database, and the role that owns the application's schema. Both are
 # created by the repository's docker/postgres/initdb on first start only.
@@ -89,8 +94,7 @@ iot_pipeline_postgres_app_username: iot_pipeline
 iot_pipeline_grafana_admin_user: admin
 iot_pipeline_timezone: "{{ timezone }}"
 
-# Additional environment for the application container, e.g. broker
-# credentials (PIPELINE_INGEST_MQTT_USERNAME) or MQTT_TOPIC
+# Additional environment for the application container, e.g. MQTT_TOPIC
 iot_pipeline_environment: {}
 
 # ---------------------------------------------------------------------------

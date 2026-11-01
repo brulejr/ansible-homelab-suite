@@ -10,3 +10,13 @@
       - nodered_docker_network | length > 0
       - nodered_host_port is defined
     fail_msg: "Node-RED role configuration is invalid."
+
+- name: Validate Node-RED MQTT broker logins
+  ansible.builtin.assert:
+    that:
+      - nodered_mqtt_broker_logins | rejectattr('id', 'defined') | list | length == 0
+      - nodered_mqtt_broker_logins | rejectattr('user', 'defined') | list | length == 0
+      - nodered_mqtt_broker_logins | rejectattr('password', 'defined') | list | length == 0
+      - nodered_mqtt_broker_logins | map(attribute='id') | unique | list | length
+        == nodered_mqtt_broker_logins | length
+    fail_msg: "Each of nodered_mqtt_broker_logins needs a unique id, a user and a password."

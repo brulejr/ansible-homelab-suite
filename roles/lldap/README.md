@@ -5,8 +5,10 @@ Deploys [LLDAP](https://github.com/lldap/lldap), a lightweight LDAP server
 with a web UI for managing users and groups, as a Docker Compose stack. It is
 the user directory behind the `authelia` role.
 
-The web UI is published on `server_bind_ip:app_port_lldap` for Traefik: add an
-`edge_apps` entry for it. LDAP itself (port 3890) is not published; clients on
+The web UI is published on `lldap_bind_ip:app_port_lldap` for Traefik: add an
+`edge_apps` entry for it. It is plain HTTP and takes the directory admin's
+password, so when Traefik is on the same Docker network, set
+`lldap_bind_ip: 127.0.0.1` and use a `backend_url` of `http://lldap:17170`. LDAP itself (port 3890) is not published; clients on
 the Docker network reach it as `ldap://lldap:3890`.
 
 Bootstrap

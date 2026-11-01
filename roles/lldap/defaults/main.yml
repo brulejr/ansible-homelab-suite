@@ -20,7 +20,8 @@ lldap_gid: 1000
 lldap_docker_network: "{{ docker_network }}"
 lldap_bind_ip: "{{ server_bind_ip }}"
 
-# The web UI is published for Traefik. LDAP stays on the Docker network:
+# The web UI is published for Traefik; put it on 127.0.0.1 when Traefik
+# reaches the container over the Docker network. LDAP stays there too:
 # clients such as Authelia reach it as ldap://<lldap_container_name>:3890.
 lldap_web_host_port: "{{ app_port_lldap }}"
 lldap_web_container_port: 17170

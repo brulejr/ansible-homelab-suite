@@ -3,11 +3,14 @@
 Run on the Node-RED host, with only the standard library. Reads JSON on stdin:
 
     {"url": "http://10.10.40.75:1880", "username": "admin", "password": "...",
+     "modules": [{"name": "node-red-contrib-cron-plus", "version": "2.1.0"}],
      "tabs": [["door_watch.json",
                [{"id": "door_watch_tab", "type": "tab", ...},
                 {"id": "door_watch_learn", "z": "door_watch_tab", ...}]]]}
 
-Each tab is a file name and one exported tab: its tab node and the nodes on
+Palette modules the tabs use are installed first if missing, at the version
+given; an installed module is left at whatever version it has. Each tab is a
+file name and one exported tab: its tab node and the nodes on
 it, whose ids must be fixed so the tab is found again on the next run. Config
 nodes (such as MQTT brokers) are shared with UI-built tabs, so any in an
 export are only checked to be live already, never deployed from here. Each
@@ -17,8 +20,9 @@ exported again with those marks loses them before the comparison. A tab whose
 live nodes already match is left alone, so nothing restarts. With a username
 and password (Node-RED's adminAuth), it logs in for a token, revoked when done. Otherwise its live nodes are replaced by the export,
 including anything added to it in the editor, and all changes go out in one
-deploy that restarts only the changed tabs. Prints JSON naming the tabs it
-added or changed and the errors it met; on an error nothing is deployed.
+deploy that restarts only the changed tabs. Prints JSON naming the modules it
+installed, the tabs it added or changed and the errors it met; on an error
+nothing is deployed.
 """
 
 import json
@@ -40,11 +44,11 @@ def marked(tab, source):
     return {**tab, "label": MARK + label, "info": HEADER.format(source) + info, "locked": True}
 
 
-def call(url, body=None, headers=None):
+def call(url, body=None, headers=None, timeout=30):
     request = urllib.request.Request(
         url, data=None if body is None else json.dumps(body).encode(),
         headers={**API, **(headers or {})}, method="GET" if body is None else "POST")
-    with urllib.request.urlopen(request, timeout=30) as reply:
+    with urllib.request.urlopen(request, timeout=timeout) as reply:
         text = reply.read()
         return json.loads(text) if text.strip() else None
 
@@ -65,7 +69,8 @@ def main(request):
             "client_id": "node-red-admin", "grant_type": "password", "scope": "*",
             "username": request["username"], "password": request["password"]})["access_token"]
     except urllib.error.HTTPError as error:
-        return {"added": [], "changed": [], "errors": [f"login as {request['username']} failed: {error.code}"]}
+        return {"installed": [], "added": [], "changed": [],
+                "errors": [f"login as {request['username']} failed: {error.code}"]}
     auth = {"Authorization": f"Bearer {token}"}
     try:
         return deploy(request, auth)
@@ -73,10 +78,29 @@ def main(request):
         call(f"{request['url']}/auth/revoke", {"token": token}, auth)
 
 
+def install_modules(request, auth, result):
+    """Installs the missing palette modules, so the tabs' node types exist."""
+    nodes = call(f"{request['url']}/nodes", headers={**auth, "Accept": "application/json"})
+    installed = {n["module"] for n in nodes}
+    for module in request.get("modules") or []:
+        if module["name"] in installed:
+            continue
+        try:
+            # npm runs in the container, which can take a while
+            call(f"{request['url']}/nodes", {"module": module["name"], "version": module["version"]},
+                 auth, timeout=300)
+            result["installed"].append(f"{module['name']}@{module['version']}")
+        except urllib.error.HTTPError as error:
+            result["errors"].append(f"installing {module['name']} failed: {error.code} {error.read().decode()}")
+
+
 def deploy(request, auth):
+    result = {"installed": [], "added": [], "changed": [], "errors": []}
+    install_modules(request, auth, result)
+    if result["errors"]:
+        return result
     current = call(f"{request['url']}/flows", headers=auth)
     flows = current["flows"]
-    result = {"added": [], "changed": [], "errors": []}
 
     for source, export in request["tabs"]:
         tabs = [n for n in export if n.get("type") == "tab"]

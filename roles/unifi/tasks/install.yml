@@ -1,0 +1,83 @@
+---
+- name: Ensure UniFi app directory exists
+  ansible.builtin.file:
+    path: "{{ unifi_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Secret files are world-readable so each container user can read its own,
+# which the directory's mode keeps from other users on the host.
+- name: Ensure UniFi secrets directory exists
+  ansible.builtin.file:
+    path: "{{ unifi_secrets_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Ensure UniFi data directory exists
+  ansible.builtin.file:
+    path: "{{ unifi_data_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure UniFi config directory exists
+  ansible.builtin.file:
+    path: "{{ unifi_config_dir }}"
+    state: directory
+    owner: "{{ unifi_puid }}"
+    group: "{{ unifi_pgid }}"
+    mode: "0755"
+
+# No owner: MongoDB's entrypoint hands the directory to its own user
+- name: Ensure UniFi database directory exists
+  ansible.builtin.file:
+    path: "{{ unifi_db_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Write UniFi secrets
+  ansible.builtin.copy:
+    dest: "{{ unifi_secrets_dir }}/{{ item.name }}"
+    content: "{{ item.content }}"
+    owner: root
+    group: root
+    mode: "0444"
+  loop:
+    - name: db_root_password
+      content: "{{ unifi_db_root_password | trim }}"
+    - name: db_password
+      content: "{{ unifi_db_password | trim }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true
+  # A changed secret alters no compose configuration, so nothing is recreated
+  notify: Restart UniFi
+
+# Runs only on MongoDB's first start, with an empty data directory
+- name: Copy UniFi database init script
+  ansible.builtin.copy:
+    src: init-mongo.sh
+    dest: "{{ unifi_app_dir }}/init-mongo.sh"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render UniFi docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ unifi_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start UniFi stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ unifi_app_dir }}"
+    project_name: "{{ unifi_stack_name }}"
+    state: present
+    pull: always

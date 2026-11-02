@@ -1,0 +1,78 @@
+---
+unifi_enabled: true
+
+unifi_stack_name: unifi
+unifi_container_name: unifi
+unifi_db_container_name: unifi-db
+
+# Paths
+#
+# The app directory holds docker-compose.yml, the database init script and
+# the secrets; the data directory holds the application's /config (its
+# system.properties, keystore and autobackups) and MongoDB's files.
+unifi_app_dir: "{{ docker_dir }}/unifi"
+unifi_secrets_dir: "{{ unifi_app_dir }}/secrets"
+unifi_data_dir: "{{ data_dir }}/unifi"
+unifi_config_dir: "{{ unifi_data_dir }}/config"
+unifi_db_dir: "{{ unifi_data_dir }}/db"
+
+# Images
+#
+# Both pinned. A backup restores only onto the same or a newer version, and
+# MongoDB doesn't upgrade its files across major versions by itself. MongoDB
+# 8.0 refuses to start on Linux 6.19 and newer (SERVER-121912), so stay on 7.0
+# until that's fixed.
+unifi_image: "lscr.io/linuxserver/unifi-network-application:10.6.109"
+unifi_db_image: "docker.io/mongo:7.0"
+unifi_restart_policy: unless-stopped
+unifi_timezone: "{{ timezone }}"
+unifi_puid: "{{ puid }}"
+unifi_pgid: "{{ pgid }}"
+
+# Java heap, in MB
+unifi_mem_limit: 1024
+unifi_mem_startup: 1024
+
+# Networking
+#
+# The application joins the shared Docker network, so Traefik can reach it
+# by name; the database sits on the stack's own network only.
+unifi_docker_network: "{{ docker_network }}"
+unifi_bind_ip: "{{ server_bind_ip }}"
+
+# Web UI and API (HTTPS, self-signed). Put it on 127.0.0.1 when Traefik
+# reaches it over the Docker network, behind SSO.
+unifi_ui_bind_ip: "{{ unifi_bind_ip }}"
+unifi_ui_host_port: "{{ app_port_unifi }}"
+
+# Devices inform on 8080/tcp and use STUN on 3478/udp, both on unifi_bind_ip.
+# Neither port can be remapped: the controller hands devices its own port.
+# Further ports, as compose port strings, e.g.
+#   - "{{ unifi_bind_ip }}:10001:10001/udp"   # AP discovery (same L2 only)
+#   - "{{ unifi_bind_ip }}:6789:6789"         # mobile speed test
+#   - "{{ unifi_bind_ip }}:5514:5514/udp"     # remote syslog
+#   - "{{ unifi_bind_ip }}:8843:8843"         # guest portal (HTTPS)
+#   - "{{ unifi_bind_ip }}:8880:8880"         # guest portal (HTTP)
+unifi_extra_ports: []
+
+# ---------------------------------------------------------------------------
+# Database (keep the passwords in the vault)
+#
+# Each is written to a file under unifi_secrets_dir and mounted into the
+# containers as a Docker Compose secret; neither appears in
+# docker-compose.yml. Both take effect only when MongoDB's data directory is
+# first initialised; to change one later, change it in MongoDB as well.
+#
+# unifi_db_root_password  MongoDB's root user (administration, first-run setup)
+# unifi_db_password       the application's user
+# ---------------------------------------------------------------------------
+unifi_db_root_password: ""
+unifi_db_password: ""
+unifi_db_user: unifi
+unifi_db_name: unifi
+
+# Verification
+unifi_verify_enabled: true
+# The application takes a minute or two to start, longer after an upgrade
+unifi_verify_retries: 30
+unifi_verify_delay: 10

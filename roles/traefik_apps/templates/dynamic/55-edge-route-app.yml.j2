@@ -9,6 +9,7 @@
 {% set redirect_http = edge_app.redirect_http | default(true) %}
 {% set backend_url = edge_app.backend_url %}
 {% set streaming = edge_app.streaming | default(false) | bool %}
+{% set backend_tls_insecure = edge_app.backend_tls_insecure | default(false) | bool %}
 {% set sso = edge_app.sso | default(false) %}
 {% set middlewares = ([traefik_sso_middleware] if sso else []) + (edge_app.middlewares | default([])) %}
 
@@ -37,9 +38,19 @@ http:
     {{ app_id }}:
       loadBalancer:
         passHostHeader: true
+{% if backend_tls_insecure %}
+        serversTransport: "{{ app_id }}"
+{% endif %}
 {% if streaming %}
         responseForwarding:
           flushInterval: "100ms"
 {% endif %}
         servers:
           - url: "{{ backend_url }}"
+{% if backend_tls_insecure %}
+
+  # The backend's certificate is self-signed
+  serversTransports:
+    {{ app_id }}:
+      insecureSkipVerify: true
+{% endif %}

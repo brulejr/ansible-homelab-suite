@@ -65,6 +65,7 @@ ansible-homelab-suite/
    ├─ authelia/            # SSO portal (forward auth, 2FA)
    ├─ forgejo/             # git server, SSH push mirrors
    ├─ config_snapshot/     # nightly app data snapshots to git (age-encrypted secrets)
+   ├─ unifi/               # UniFi Network Application with MongoDB
    ├─ keycloak/
    ├─ portainer/
    ├─ homarr/

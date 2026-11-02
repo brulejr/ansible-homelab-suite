@@ -1,0 +1,14 @@
+---
+- name: Validate UniFi configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: unifi_enabled | bool
+
+- name: Install and configure UniFi
+  ansible.builtin.include_tasks: install.yml
+  when: unifi_enabled | bool
+
+- name: Verify UniFi
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - unifi_enabled | bool
+    - unifi_verify_enabled | bool

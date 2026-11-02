@@ -23,8 +23,10 @@ A systemd timer (`config_snapshot_schedule`, 03:30 by default) runs
 2. writes files matching `secrets` as `<name>.age`, encrypted to every
    `config_snapshot_age_recipients`, instead of copying them. A secret is
    encrypted again only when its content or the recipients change;
-3. writes a README naming the sources and how to decrypt;
-4. commits whatever changed and pushes over SSH. A push that fails is retried
+3. copies files matching `sqlite` through SQLite's backup API (see
+   [Databases](#databases));
+4. writes a README naming the sources and how to decrypt;
+5. commits whatever changed and pushes over SSH. A push that fails is retried
    by the next run.
 
 The job pushes with its own SSH key, which the role registers on each
@@ -43,6 +45,24 @@ A pattern matches the path relative to `src` (`.storage/auth`), or with no
 `/` in it, a name at any depth (`*.log`). A directory that matches takes
 everything under it. Patterns are `fnmatch` globs, in which `*` also matches
 `/`.
+
+Databases
+---------
+
+Copying an SQLite database while its app writes to it can catch it half
+written. Files matching a source's `sqlite` patterns are read through SQLite's
+backup API instead, which gives a consistent copy, and their `-journal`,
+`-wal` and `-shm` files are left out. List a database under `secrets` too
+when it holds passwords or keys.
+
+Tables matching `sqlite_empty_tables` (globs, such as `oauth2_*`), for
+example sessions and sign-in logs, are emptied in the copy. They change on
+every sign-in and there's nothing in them worth restoring. The copy is
+committed again only when the rest of its content changes, compared as an SQL
+dump, so an idle database doesn't make a new commit each night.
+
+To restore one, stop the app, decrypt the copy over the database file (remove
+any `-journal` or `-wal` file beside it), and start the app.
 
 Secrets
 -------
@@ -73,3 +93,9 @@ Example
             dest: nodered
             exclude: [node_modules, .npm, "*.backup", .sessions.json]
             secrets: [flows_cred.json, .config.runtime.json]
+          - src: "{{ data_dir }}/lldap"
+            dest: lldap
+            exclude: [lldap_config.toml]
+            sqlite: [users.db]
+            sqlite_empty_tables: [jwt_storage, jwt_refresh_storage, password_reset_tokens]
+            secrets: [users.db]

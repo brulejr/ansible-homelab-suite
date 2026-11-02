@@ -11,7 +11,9 @@ Takes the path of a JSON configuration (rendered by Ansible):
                 "sources": [{"src": "/opt/.../homeassistant/config",
                              "dest": "homeassistant",
                              "exclude": ["*.log", "backups"],
-                             "secrets": ["secrets.yaml", ".storage/auth"]}]}]}
+                             "secrets": ["secrets.yaml", ".storage/auth"],
+                             "sqlite": ["users.db"],
+                             "sqlite_empty_tables": ["jwt_storage"]}]}]}
 
 Each source is mirrored into <dest> of its repository's working copy: files
 are copied, and files that no longer exist (or are now excluded) are removed.
@@ -21,6 +23,13 @@ encrypted again when its content or the recipients change, as recorded in the
 state directory (outside the repository). Patterns match the path relative to
 src, or with no "/" in them, a name at any depth; a matched directory takes
 everything under it.
+
+Files matching "sqlite" are SQLite databases that their app writes while it
+runs. Each is read through SQLite's backup API, which gives a consistent copy
+rather than one caught mid-write, and their journal files are left out. Tables
+matching "sqlite_empty_tables" (sessions, logs) are emptied in the copy, which
+is then committed, encrypted too if it also matches "secrets", only when its
+content (as an SQL dump) changed.
 
 Whatever changed is committed and pushed. Commits that an earlier run couldn't
 push are pushed by the next one. Exits non-zero if any repository failed.
@@ -32,9 +41,12 @@ import hashlib
 import json
 import os
 import shutil
+import pathlib
 import socket
+import sqlite3
 import subprocess
 import sys
+import tempfile
 
 README = """# {repo}
 
@@ -73,10 +85,14 @@ def matches(rel, patterns):
     return False
 
 
+SQLITE_JOURNALS = ("-journal", "-wal", "-shm")
+
+
 def wanted_files(source):
-    """Maps each path the source puts in the repository to (kind, file)."""
+    """Maps each path the source puts in the repository to (kind, file, sqlite)."""
     src, dest = source["src"], source["dest"].strip("/")
     exclude, secrets = source.get("exclude", []), source.get("secrets", [])
+    databases = source.get("sqlite", [])
     wanted = {}
     if not os.path.isdir(src):
         raise RuntimeError(f"{src} is not a directory")
@@ -91,11 +107,35 @@ def wanted_files(source):
             rel = rel_root + name
             if not os.path.isfile(path) or os.path.islink(path) or matches(rel, exclude):
                 continue
+            if any(rel.endswith(j) and matches(rel[:-len(j)], databases) for j in SQLITE_JOURNALS):
+                continue
+            database = matches(rel, databases)
             if matches(rel, secrets):
-                wanted[f"{dest}/{rel}.age"] = ("secret", path)
+                wanted[f"{dest}/{rel}.age"] = ("secret", path, database)
             else:
-                wanted[f"{dest}/{rel}"] = ("plain", path)
+                wanted[f"{dest}/{rel}"] = ("plain", path, database)
     return wanted
+
+
+def sqlite_copy(path, copy, empty_tables, recipients):
+    """Writes a consistent copy of a live database; returns its content digest."""
+    source = sqlite3.connect(pathlib.Path(path).as_uri() + "?mode=ro", uri=True, timeout=60)
+    target = sqlite3.connect(copy, isolation_level=None)
+    try:
+        source.backup(target)
+        tables = {name for (name,) in target.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'")}
+        for table in sorted(tables):
+            if any(fnmatch.fnmatchcase(table, pattern) for pattern in empty_tables):
+                target.execute('DELETE FROM "{}"'.format(table.replace('"', '""')))
+        target.execute("VACUUM")
+        hasher = hashlib.sha256("\n".join(sorted(recipients)).encode() + b"\0")
+        for line in target.iterdump():
+            hasher.update(line.encode() + b"\n")
+        return hasher.hexdigest()
+    finally:
+        source.close()
+        target.close()
 
 
 def digest(path, recipients):
@@ -113,22 +153,34 @@ def same_content(a, b):
         return left.read() == right.read()
 
 
-def sync(repo_dir, sources, recipients, state):
+def sync(repo_dir, sources, recipients, state, scratch):
     """Brings the working copy in line with the sources; updates state."""
-    wanted = {}
+    wanted, empty_tables = {}, {}
     for source in sources:
-        wanted.update(wanted_files(source))
+        files = wanted_files(source)
+        wanted.update(files)
+        empty_tables.update({rel: source.get("sqlite_empty_tables", []) for rel in files})
     new_state = {}
-    for rel, (kind, path) in wanted.items():
+    for rel, (kind, path, database) in wanted.items():
         target = os.path.join(repo_dir, rel)
         os.makedirs(os.path.dirname(target), exist_ok=True)
-        if kind == "plain":
+        if database:
+            copy = os.path.join(scratch, hashlib.sha256(rel.encode()).hexdigest())
+            stamp = sqlite_copy(path, copy, empty_tables[rel], recipients)
+            path = copy
+        if kind == "plain" and not database:
             if not same_content(path, target):
                 shutil.copyfile(path, target)
             executable = os.stat(path).st_mode & 0o111
             os.chmod(target, 0o755 if executable else 0o644)
+        elif kind == "plain":
+            if state.get(rel) != stamp or not os.path.exists(target):
+                shutil.copyfile(path, target)
+                os.chmod(target, 0o644)
+            new_state[rel] = stamp
         else:
-            stamp = digest(path, recipients)
+            if not database:
+                stamp = digest(path, recipients)
             if state.get(rel) != stamp or not os.path.exists(target):
                 argv = ["age", "--armor", "--output", target]
                 for recipient in recipients:
@@ -171,7 +223,9 @@ def snapshot(config, repo, env):
     if os.path.exists(state_file):
         with open(state_file) as handle:
             state = json.load(handle)
-    state = sync(repo_dir, repo["sources"], config["recipients"], state)
+    # Copies of databases, kept out of the repository and removed afterwards
+    with tempfile.TemporaryDirectory(dir=config["state_dir"]) as scratch:
+        state = sync(repo_dir, repo["sources"], config["recipients"], state, scratch)
 
     host = socket.gethostname()
     table = "\n".join(f"| `{s['dest'].strip('/')}/` | `{host}:{s['src']}` |" for s in repo["sources"])
@@ -206,7 +260,7 @@ def main(path):
         try:
             count = snapshot(config, repo, env)
             print(f"{repo['name']}: " + (f"committed {count} changed file(s)" if count else "no changes"))
-        except (RuntimeError, OSError, subprocess.CalledProcessError) as error:
+        except (RuntimeError, OSError, sqlite3.Error, subprocess.CalledProcessError) as error:
             detail = getattr(error, "stderr", None) or error
             print(f"{repo['name']}: failed: {str(detail).strip()}", file=sys.stderr)
             failed = True

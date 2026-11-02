@@ -41,6 +41,13 @@ config_snapshot_age_recipients: []
 # path relative to src, or with no "/", a name at any depth; a matched
 # directory takes everything under it. "secrets" are committed as <name>.age.
 #
+# "sqlite" names SQLite databases the app writes while it runs. They're read
+# through SQLite's backup API, for a consistent copy, without their journal
+# files. Tables matching "sqlite_empty_tables" (globs) are emptied in that
+# copy: sessions and logs, which change all the time and aren't worth
+# restoring. A database is committed again only when the rest of its content
+# changes.
+#
 # config_snapshot_repos:
 #   - name: config
 #     sources:
@@ -48,5 +55,11 @@ config_snapshot_age_recipients: []
 #         dest: homeassistant
 #         exclude: ["home-assistant_v2.db*", "*.log*", backups]
 #         secrets: [secrets.yaml, .storage/auth]
+#       - src: "{{ data_dir }}/lldap"
+#         dest: lldap
+#         exclude: [lldap_config.toml]
+#         sqlite: [users.db]
+#         sqlite_empty_tables: [jwt_storage, jwt_refresh_storage]
+#         secrets: [users.db]
 # ---------------------------------------------------------------------------
 config_snapshot_repos: []

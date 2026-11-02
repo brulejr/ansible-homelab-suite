@@ -22,9 +22,12 @@
       - item.1.dest is not search('(^|/)\.\.?(/|$)')
       - item.1.dest | trim('/') != '.git'
       - (item.1.secrets | default([]) | length == 0) or (config_snapshot_age_recipients | length > 0)
+      - item.1.sqlite_empty_tables | default([]) | reject('match', '^[A-Za-z0-9_*?]+$') | list | length == 0
+      - (item.1.sqlite_empty_tables | default([]) | length == 0) or (item.1.sqlite | default([]) | length > 0)
     fail_msg: >-
       Invalid source in {{ item.0.name }}: needs an absolute src and a dest
-      directory; secrets need config_snapshot_age_recipients.
+      directory; secrets need config_snapshot_age_recipients;
+      sqlite_empty_tables needs sqlite, and table names (globs allowed).
   loop: "{{ config_snapshot_repos | subelements('sources') }}"
   loop_control:
     label: "{{ item.0.name }}/{{ item.1.dest | default('?') }}"

@@ -1,0 +1,26 @@
+---
+- name: Validate UniFi required variables
+  ansible.builtin.assert:
+    that:
+      - unifi_stack_name | length > 0
+      - unifi_container_name | length > 0
+      - unifi_db_container_name | length > 0
+      - unifi_app_dir | length > 0
+      - unifi_data_dir | length > 0
+      - unifi_image | length > 0
+      - unifi_db_image | length > 0
+      - unifi_docker_network | length > 0
+      - unifi_bind_ip | length > 0
+      - unifi_ui_bind_ip | length > 0
+      - unifi_ui_host_port | int > 0
+      - unifi_db_user | length > 0
+      - unifi_db_name | length > 0
+    fail_msg: "UniFi role configuration is invalid."
+
+- name: Validate UniFi database passwords
+  ansible.builtin.assert:
+    that:
+      - unifi_db_root_password | trim | length > 0
+      - unifi_db_password | trim | length > 0
+    fail_msg: "Set unifi_db_root_password and unifi_db_password (in the vault)."
+  no_log: true

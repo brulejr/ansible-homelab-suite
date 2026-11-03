@@ -1,0 +1,6 @@
+---
+- name: Restart UniFi
+  community.docker.docker_compose_v2:
+    project_src: "{{ unifi_app_dir }}"
+    project_name: "{{ unifi_stack_name }}"
+    state: restarted

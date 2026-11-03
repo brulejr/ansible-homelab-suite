@@ -1,0 +1,33 @@
+---
+- name: Check UniFi container state
+  community.docker.docker_container_info:
+    name: "{{ unifi_container_name }}"
+  register: unifi_container_info
+
+- name: Assert UniFi container is running
+  ansible.builtin.assert:
+    that:
+      - unifi_container_info.exists
+      - unifi_container_info.container.State.Running
+    fail_msg: >-
+      Container {{ unifi_container_name }} is not running.
+      Status={{ unifi_container_info.container.State.Status | default('missing') }},
+      exit_code={{ unifi_container_info.container.State.ExitCode | default('unknown') }}
+
+# /status answers without a login, once the application is up
+- name: Wait for the UniFi application to answer
+  ansible.builtin.uri:
+    url: "https://{{ unifi_ui_bind_ip }}:{{ unifi_ui_host_port }}/status"
+    validate_certs: false
+    return_content: true
+  register: unifi_status
+  until:
+    - unifi_status.status == 200
+    - (unifi_status.json.meta.up | default(false)) | bool
+  retries: "{{ unifi_verify_retries }}"
+  delay: "{{ unifi_verify_delay }}"
+  changed_when: false
+
+- name: Show UniFi version
+  ansible.builtin.debug:
+    msg: "UniFi Network Application {{ unifi_status.json.meta.server_version | default('unknown') }} is up"

@@ -1,0 +1,77 @@
+---
+# Passwords are files mounted under /run/secrets; nothing secret is set here.
+services:
+  unifi-db:
+    image: "{{ unifi_db_image }}"
+    container_name: "{{ unifi_db_container_name }}"
+    restart: "{{ unifi_restart_policy }}"
+    environment:
+      TZ: "{{ unifi_timezone }}"
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      # Read by init-mongo.sh
+      MONGO_USER: "{{ unifi_db_user }}"
+      MONGO_DBNAME: "{{ unifi_db_name }}"
+      MONGO_AUTHSOURCE: admin
+    secrets:
+      - db_root_password
+      - db_password
+    volumes:
+      - "{{ unifi_db_dir }}:/data/db"
+      - "{{ unifi_app_dir }}/init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh:ro"
+    # Signs in as the application's user, so it passes only once
+    # init-mongo.sh has created it. The --option=value form keeps a password
+    # that starts with "-" from being read as an option.
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --norc --username=\"$$MONGO_USER\" --password=\"$$(cat /run/secrets/db_password)\" --authenticationDatabase=admin --eval 'db.adminCommand({ping: 1}).ok' | grep -qx 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 6
+      start_period: 60s
+    networks:
+      - default
+
+  unifi:
+    image: "{{ unifi_image }}"
+    container_name: "{{ unifi_container_name }}"
+    restart: "{{ unifi_restart_policy }}"
+    depends_on:
+      unifi-db:
+        condition: service_healthy
+    environment:
+      PUID: "{{ unifi_puid }}"
+      PGID: "{{ unifi_pgid }}"
+      TZ: "{{ unifi_timezone }}"
+      MONGO_HOST: unifi-db
+      MONGO_PORT: "27017"
+      MONGO_USER: "{{ unifi_db_user }}"
+      # The linuxserver.io init sets MONGO_PASS from this file
+      FILE__MONGO_PASS: /run/secrets/db_password
+      MONGO_DBNAME: "{{ unifi_db_name }}"
+      MONGO_AUTHSOURCE: admin
+      MEM_LIMIT: "{{ unifi_mem_limit }}"
+      MEM_STARTUP: "{{ unifi_mem_startup }}"
+    secrets:
+      - db_password
+    ports:
+      - "{{ unifi_ui_bind_ip }}:{{ unifi_ui_host_port }}:8443"
+      - "{{ unifi_bind_ip }}:8080:8080"
+      - "{{ unifi_bind_ip }}:3478:3478/udp"
+{% for port in unifi_extra_ports %}
+      - "{{ port }}"
+{% endfor %}
+    volumes:
+      - "{{ unifi_config_dir }}:/config"
+    networks:
+      - default
+      - {{ unifi_docker_network }}
+
+networks:
+  {{ unifi_docker_network }}:
+    external: true
+
+secrets:
+  db_root_password:
+    file: "{{ unifi_secrets_dir }}/db_root_password"
+  db_password:
+    file: "{{ unifi_secrets_dir }}/db_password"

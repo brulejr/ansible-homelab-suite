@@ -20,9 +20,14 @@ Edge apps
         middlewares: []          # optional: more Traefik middlewares
         redirect_http: true      # optional: HTTP to HTTPS redirect (default)
         streaming: false         # optional: flush responses every 100ms
+        backend_tls_insecure: false  # optional: accept a self-signed https backend
 
 Each app gets a router on the `https` entry point for its `fqdn`, a
 redirecting router on `http`, and a load-balancer service for `backend_url`.
+An app whose `backend_url` is `https://` with a self-signed certificate, such
+as the UniFi Network Application, needs `backend_tls_insecure: true`: its
+service gets its own servers transport that skips certificate verification,
+and no other route is affected.
 Route files are named `55-edge-route-<namespace>-<name>.yml` (no namespace
 prefix for `traefik_apps_default_namespace`), and files for apps no longer
 listed are removed. With `traefik_apps_namespaces` set, only files of those

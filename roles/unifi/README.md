@@ -51,10 +51,12 @@ Inform host
 -----------
 
 Inside Docker, the application only knows its container's address, and
-would hand that to devices. Set **Inform Host Override** (search the settings
-for "Inform Host") to an address the devices can reach, such as
-`unifi_bind_ip`. Devices that can't be told otherwise can be pointed at it
-over SSH:
+would hand that to devices. Set **Inform Host Override** to an address the
+devices can reach, such as `unifi_bind_ip`. UniFi moves the option between
+releases: in 10.6 it's under UniFi Devices (not Settings) → Device Updates &
+Settings; in 9.0, under Settings. It's part of the configuration, so a
+restored backup carries it. Devices that can't be told otherwise can be
+pointed at it over SSH:
 
     set-inform http://<unifi_bind_ip>:8080/inform
 

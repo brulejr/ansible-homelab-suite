@@ -67,8 +67,11 @@ same client:
 Not covered
 -----------
 
-- Meilisearch, which Linkwarden can use for faster, fuller search. Without
-  it, Linkwarden searches its database.
+- [Meilisearch](https://www.meilisearch.com/), a separate search engine
+  that Linkwarden can hand its search to (`MEILI_HOST`, `MEILI_MASTER_KEY`),
+  for faster, typo-tolerant results. It would be another container on the
+  stack's network, with its own index. Without it, Linkwarden searches its
+  database.
 - Backups. The database is under `linkwarden_db_dir` and the archives under
   `linkwarden_archive_dir`.
 

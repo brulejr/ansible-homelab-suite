@@ -1,0 +1,50 @@
+---
+- name: Check Linkwarden container state
+  community.docker.docker_container_info:
+    name: "{{ linkwarden_container_name }}"
+  register: linkwarden_container_info
+
+- name: Assert Linkwarden container is running
+  ansible.builtin.assert:
+    that:
+      - linkwarden_container_info.exists
+      - linkwarden_container_info.container.State.Running
+    fail_msg: >-
+      Container {{ linkwarden_container_name }} is not running.
+      Status={{ linkwarden_container_info.container.State.Status | default('missing') }},
+      exit_code={{ linkwarden_container_info.container.State.ExitCode | default('unknown') }}
+
+# The sign-in page answers without a session, once migrations are done
+- name: Wait for Linkwarden to answer
+  ansible.builtin.uri:
+    url: "http://{{ linkwarden_bind_ip }}:{{ linkwarden_host_port }}/login"
+    method: GET
+    follow_redirects: none
+    status_code: 200
+  register: linkwarden_login_page
+  until: linkwarden_login_page.status == 200
+  retries: "{{ linkwarden_verify_retries }}"
+  delay: "{{ linkwarden_verify_delay }}"
+  changed_when: false
+
+# Linkwarden's server fetches this to sign people in, so check it can, from
+# inside the container: the name must resolve and be reachable from there
+- name: Verify Linkwarden reaches Authelia's OIDC discovery
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - "{{ linkwarden_container_name }}"
+      - curl
+      - --silent
+      - --show-error
+      - --fail
+      - --output
+      - /dev/null
+      - "{{ linkwarden_authelia_wellknown_url }}"
+  register: linkwarden_oidc_check
+  until: linkwarden_oidc_check.rc == 0
+  retries: 6
+  delay: 5
+  changed_when: false
+  when: linkwarden_authelia_enabled | bool

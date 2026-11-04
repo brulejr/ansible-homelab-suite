@@ -1,0 +1,51 @@
+---
+# Linkwarden's settings, secrets among them, are in linkwarden.env (root
+# only); PostgreSQL's password is a file mounted under /run/secrets.
+services:
+  linkwarden-db:
+    image: "{{ linkwarden_db_image }}"
+    container_name: "{{ linkwarden_db_container_name }}"
+    restart: "{{ linkwarden_restart_policy }}"
+    environment:
+      TZ: "{{ linkwarden_timezone }}"
+      POSTGRES_USER: "{{ linkwarden_db_user }}"
+      POSTGRES_DB: "{{ linkwarden_db_name }}"
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    volumes:
+      - "{{ linkwarden_db_dir }}:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username=\"$$POSTGRES_USER\" --dbname=\"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    networks:
+      - default
+
+  linkwarden:
+    image: "{{ linkwarden_image }}"
+    container_name: "{{ linkwarden_container_name }}"
+    restart: "{{ linkwarden_restart_policy }}"
+    depends_on:
+      linkwarden-db:
+        condition: service_healthy
+    env_file: linkwarden.env
+    environment:
+      TZ: "{{ linkwarden_timezone }}"
+    ports:
+      - "{{ linkwarden_bind_ip }}:{{ linkwarden_host_port }}:3000"
+    volumes:
+      - "{{ linkwarden_archive_dir }}:/data/data"
+    networks:
+      - default
+      - {{ linkwarden_docker_network }}
+
+networks:
+  {{ linkwarden_docker_network }}:
+    external: true
+
+secrets:
+  db_password:
+    file: "{{ linkwarden_secrets_dir }}/db_password"

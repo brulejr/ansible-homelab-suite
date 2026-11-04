@@ -1,0 +1,6 @@
+---
+- name: Restart Linkwarden
+  community.docker.docker_compose_v2:
+    project_src: "{{ linkwarden_app_dir }}"
+    project_name: "{{ linkwarden_stack_name }}"
+    state: restarted

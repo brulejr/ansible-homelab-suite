@@ -1,0 +1,43 @@
+---
+- name: Validate Linkwarden required variables
+  ansible.builtin.assert:
+    that:
+      - linkwarden_stack_name | length > 0
+      - linkwarden_container_name | length > 0
+      - linkwarden_db_container_name | length > 0
+      - linkwarden_app_dir | length > 0
+      - linkwarden_data_dir | length > 0
+      - linkwarden_image | length > 0
+      - linkwarden_db_image | length > 0
+      - linkwarden_docker_network | length > 0
+      - linkwarden_bind_ip | length > 0
+      - linkwarden_host_port | int > 0
+      - linkwarden_fqdn | length > 0
+      - linkwarden_db_user | length > 0
+      - linkwarden_db_name | length > 0
+      - linkwarden_environment is mapping
+    fail_msg: "Linkwarden role configuration is invalid."
+
+# Otherwise nobody could sign in
+- name: Validate Linkwarden sign-in
+  ansible.builtin.assert:
+    that:
+      - (linkwarden_credentials_enabled | bool) or (linkwarden_authelia_enabled | bool)
+      - not (linkwarden_authelia_enabled | bool) or linkwarden_authelia_client_id | length > 0
+      - not (linkwarden_authelia_enabled | bool) or linkwarden_authelia_wellknown_url is match('^https://')
+    fail_msg: >-
+      Turn on linkwarden_credentials_enabled or linkwarden_authelia_enabled,
+      and with Authelia set linkwarden_authelia_client_id and an https
+      linkwarden_authelia_wellknown_url.
+
+- name: Validate Linkwarden secrets
+  ansible.builtin.assert:
+    that:
+      - linkwarden_nextauth_secret | trim | length >= 32
+      - linkwarden_db_password | trim | length > 0
+      - not (linkwarden_authelia_enabled | bool) or linkwarden_authelia_client_secret | trim | length > 0
+    fail_msg: >-
+      Set linkwarden_nextauth_secret (at least 32 characters),
+      linkwarden_db_password and, with Authelia,
+      linkwarden_authelia_client_secret (in the vault).
+  no_log: true

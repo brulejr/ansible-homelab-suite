@@ -18,6 +18,12 @@ services:
 {% if authelia_smtp_address | length > 0 %}
       AUTHELIA_NOTIFIER_SMTP_PASSWORD_FILE: /secrets/smtp_password
 {% endif %}
+{% if authelia_oidc_clients | length > 0 %}
+      AUTHELIA_IDENTITY_PROVIDERS_OIDC_HMAC_SECRET_FILE: /secrets/oidc_hmac_secret
+      # Lets configuration.yml read the signing key and client secrets from
+      # /secrets, which no *_FILE variable covers
+      X_AUTHELIA_CONFIG_FILTERS: template
+{% endif %}
     logging:
       driver: json-file
       options:

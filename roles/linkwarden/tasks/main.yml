@@ -1,0 +1,14 @@
+---
+- name: Validate Linkwarden configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: linkwarden_enabled | bool
+
+- name: Install and configure Linkwarden
+  ansible.builtin.include_tasks: install.yml
+  when: linkwarden_enabled | bool
+
+- name: Verify Linkwarden
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - linkwarden_enabled | bool
+    - linkwarden_verify_enabled | bool

@@ -62,10 +62,11 @@ ansible-homelab-suite/
    ├─ traefik/
    ├─ traefik_apps/        # edge routes, SSO middleware
    ├─ lldap/               # users and groups for SSO
-   ├─ authelia/            # SSO portal (forward auth, 2FA)
+   ├─ authelia/            # SSO portal (forward auth, OIDC, 2FA)
    ├─ forgejo/             # git server, SSH push mirrors
    ├─ config_snapshot/     # nightly app data snapshots to git (age-encrypted secrets)
    ├─ unifi/               # UniFi Network Application with MongoDB
+   ├─ linkwarden/          # bookmark manager with PostgreSQL
    ├─ keycloak/
    ├─ portainer/
    ├─ homarr/

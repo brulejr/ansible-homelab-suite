@@ -1,0 +1,90 @@
+---
+linkwarden_enabled: true
+
+linkwarden_stack_name: linkwarden
+linkwarden_container_name: linkwarden
+linkwarden_db_container_name: linkwarden-db
+
+# Paths
+#
+# The app directory holds docker-compose.yml, the environment file and the
+# secrets; the data directory holds Linkwarden's archived copies of each link
+# (screenshots, PDFs, readable views) and PostgreSQL's files.
+linkwarden_app_dir: "{{ docker_dir }}/linkwarden"
+linkwarden_secrets_dir: "{{ linkwarden_app_dir }}/secrets"
+linkwarden_data_dir: "{{ data_dir }}/linkwarden"
+linkwarden_archive_dir: "{{ linkwarden_data_dir }}/data"
+linkwarden_db_dir: "{{ linkwarden_data_dir }}/db"
+
+# Images
+#
+# Both pinned. Linkwarden migrates its database when it starts, and
+# PostgreSQL doesn't upgrade its files across major versions by itself.
+linkwarden_image: "ghcr.io/linkwarden/linkwarden:v2.16.3"
+linkwarden_db_image: "docker.io/postgres:16-alpine"
+linkwarden_restart_policy: unless-stopped
+linkwarden_timezone: "{{ timezone }}"
+
+# Networking
+#
+# Linkwarden joins the shared Docker network, so Traefik can reach it by
+# name; the database sits on the stack's own network only.
+linkwarden_docker_network: "{{ docker_network }}"
+linkwarden_bind_ip: "{{ server_bind_ip }}"
+linkwarden_host_port: "{{ app_port_linkwarden }}"
+
+# The address people use, through Traefik. Sign-in redirects and links in
+# Linkwarden are built from it.
+linkwarden_fqdn: "linkwarden.{{ domain_name }}"
+
+# ---------------------------------------------------------------------------
+# Sign-in
+#
+# Linkwarden has its own username and password sign-in, and sign-up. The first
+# account made (user id 1) is the administrator.
+#
+# With linkwarden_authelia_enabled, a button signs in through Authelia's OIDC
+# provider, as the client linkwarden_authelia_client_id (see the authelia
+# role's authelia_oidc_clients). The account is created on first sign-in,
+# unless linkwarden_new_sso_users_disabled. Turn off
+# linkwarden_credentials_enabled to leave Authelia the only way in.
+# ---------------------------------------------------------------------------
+linkwarden_credentials_enabled: true
+# Password sign-up only; sign-in through Authelia still creates accounts
+linkwarden_registration_disabled: false
+linkwarden_authelia_enabled: false
+linkwarden_authelia_button_name: "Authelia"
+linkwarden_authelia_client_id: linkwarden
+linkwarden_authelia_wellknown_url: "https://auth.{{ domain_name }}/.well-known/openid-configuration"
+linkwarden_new_sso_users_disabled: false
+
+# Further environment variables, as a mapping, from
+# https://docs.linkwarden.app/self-hosting/environment-variables
+linkwarden_environment: {}
+
+# ---------------------------------------------------------------------------
+# Secrets (keep them in the vault)
+#
+# linkwarden_nextauth_secret         signs sign-in sessions; changing it
+#                                    signs everyone out
+# linkwarden_db_password             the database user's password; applied
+#                                    only when PostgreSQL's data directory is
+#                                    first initialised
+# linkwarden_authelia_client_secret  the OIDC client's secret, the same one
+#                                    Authelia's client has
+#
+# Linkwarden reads its settings from the environment only, so the first and
+# last, and the database URL, are in an environment file readable by root
+# only. PostgreSQL reads its password from a Compose secret.
+# ---------------------------------------------------------------------------
+linkwarden_nextauth_secret: ""
+linkwarden_db_password: ""
+linkwarden_authelia_client_secret: ""
+linkwarden_db_user: linkwarden
+linkwarden_db_name: linkwarden
+
+# Verification
+linkwarden_verify_enabled: true
+# Linkwarden migrates its database before it answers, longer after an upgrade
+linkwarden_verify_retries: 30
+linkwarden_verify_delay: 5

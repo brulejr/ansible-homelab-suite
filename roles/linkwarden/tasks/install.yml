@@ -1,0 +1,79 @@
+---
+- name: Ensure Linkwarden app directory exists
+  ansible.builtin.file:
+    path: "{{ linkwarden_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Secret files are world-readable so the container user can read its own,
+# which the directory's mode keeps from other users on the host.
+- name: Ensure Linkwarden secrets directory exists
+  ansible.builtin.file:
+    path: "{{ linkwarden_secrets_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Ensure Linkwarden data directory exists
+  ansible.builtin.file:
+    path: "{{ linkwarden_data_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Linkwarden runs as root
+- name: Ensure Linkwarden archive directory exists
+  ansible.builtin.file:
+    path: "{{ linkwarden_archive_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# No owner: PostgreSQL's entrypoint hands the directory to its own user
+- name: Ensure Linkwarden database directory exists
+  ansible.builtin.file:
+    path: "{{ linkwarden_db_dir }}"
+    state: directory
+    mode: "0700"
+
+- name: Write Linkwarden database password
+  ansible.builtin.copy:
+    dest: "{{ linkwarden_secrets_dir }}/db_password"
+    content: "{{ linkwarden_db_password | trim }}"
+    owner: root
+    group: root
+    mode: "0444"
+  no_log: true
+  # A changed secret alters no compose configuration, so nothing is recreated
+  notify: Restart Linkwarden
+
+# Compose reads it into the container's environment, so a change recreates
+# Linkwarden on the next step
+- name: Render Linkwarden environment file
+  ansible.builtin.template:
+    src: linkwarden.env.j2
+    dest: "{{ linkwarden_app_dir }}/linkwarden.env"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Render Linkwarden docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ linkwarden_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start Linkwarden stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ linkwarden_app_dir }}"
+    project_name: "{{ linkwarden_stack_name }}"
+    state: present
+    pull: always

@@ -64,6 +64,45 @@ Apps that can't trust a header keep their own login behind Authelia. For one
 that only needs a login to edit, like Wiki-Go, turn off its private mode and
 publish it on loopback: Authelia then decides who reads.
 
+OpenID Connect
+--------------
+
+Apps that sign people in through OIDC get a client in
+`authelia_oidc_clients`, which also turns the provider on:
+
+    authelia_oidc_hmac_secret: "{{ vault_authelia_oidc_hmac_secret }}"
+    authelia_oidc_jwks_key: "{{ vault_authelia_oidc_jwks_key }}"
+    authelia_oidc_clients:
+      - id: linkwarden
+        name: Linkwarden
+        secret: "{{ vault_linkwarden_oidc_client_secret }}"
+        redirect_uris:
+          - https://linkwarden.example.invalid/api/v1/auth/callback/authelia
+        groups: [homelab_users]
+        id_token_claims: [email, email_verified, name, preferred_username]
+
+- **Who gets in** is decided at sign-in, not by an access rule: a client with
+  `groups` gets an authorization policy that admits those LLDAP groups, with
+  `policy` (two-factor by default), and denies everyone else.
+- **The app needs no `sso`** in its `edge_apps` entry. The app checks its own
+  sessions, so its API (browser extensions, mobile apps, tokens) still works,
+  which a forward-auth middleware in front would block.
+- **Secrets.** `authelia_oidc_hmac_secret` signs tokens
+  (`openssl rand -hex 64`), and `authelia_oidc_jwks_key` is the RSA key that
+  signs ID tokens (`openssl genrsa 4096`). Each client's secret is stored
+  as is (`$plaintext$`), in a file under `authelia_secrets_dir`. Authelia
+  reads the key and the client secrets into `configuration.yml` through its
+  template filter, so a literal `{{` anywhere in that file would be read as
+  a template too.
+- **Clients use PKCE** (S256) and the authorization code flow, and send
+  their secret with HTTP basic auth unless `token_endpoint_auth_method`
+  says otherwise.
+- **ID token claims.** Since 4.39, the ID token carries only the claims that
+  identify the sign-in. An app that reads the email or name from it, rather
+  than from the userinfo endpoint, needs them in `id_token_claims`.
+- **Discovery** is at `https://<authelia_fqdn>/.well-known/openid-configuration`.
+  The app's server fetches it, so it must resolve and reach `authelia_fqdn`.
+
 LDAP
 ----
 

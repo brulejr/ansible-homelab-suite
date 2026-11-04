@@ -34,6 +34,52 @@ access_control:
   rules:
     {{ authelia_access_control_rules | to_nice_yaml(indent=2) | indent(4) }}
 {% endif %}
+{% if authelia_oidc_clients | length > 0 %}
+
+# The signing key and client secrets are read from /secrets by Authelia's
+# template filter (X_AUTHELIA_CONFIG_FILTERS) when it loads this file.
+identity_providers:
+  oidc:
+    jwks:
+      - key: {{ '{{' }} secret "/secrets/oidc_jwks_key" | mindent 10 "|" | msquote {{ '}}' }}
+{% set gated = authelia_oidc_clients | selectattr('groups', 'defined') | selectattr('groups') | list %}
+{% if gated | length > 0 %}
+    authorization_policies:
+{% for client in gated %}
+      {{ client.id }}:
+        default_policy: deny
+        rules:
+          - policy: {{ client.policy | default(authelia_default_app_policy) | to_json }}
+            subject: {{ client.groups | map('regex_replace', '^', 'group:') | list | to_json }}
+{% endfor %}
+{% endif %}
+{% set claimed = authelia_oidc_clients | selectattr('id_token_claims', 'defined') | selectattr('id_token_claims') | list %}
+{% if claimed | length > 0 %}
+    claims_policies:
+{% for client in claimed %}
+      {{ client.id }}:
+        id_token: {{ client.id_token_claims | to_json }}
+{% endfor %}
+{% endif %}
+    clients:
+{% for client in authelia_oidc_clients %}
+      - client_id: {{ client.id | to_json }}
+        client_name: {{ client.name | default(client.id) | to_json }}
+        client_secret: {{ '{{' }} secret "/secrets/oidc_client_{{ client.id }}" | msquote {{ '}}' }}
+        public: false
+        authorization_policy: {{ (client.id if client in gated else client.policy | default(authelia_default_app_policy)) | to_json }}
+{% if client in claimed %}
+        claims_policy: {{ client.id | to_json }}
+{% endif %}
+        require_pkce: true
+        pkce_challenge_method: S256
+        redirect_uris: {{ client.redirect_uris | to_json }}
+        scopes: {{ client.scopes | default(['openid', 'email', 'profile']) | to_json }}
+        response_types: ["code"]
+        grant_types: ["authorization_code"]
+        token_endpoint_auth_method: {{ client.token_endpoint_auth_method | default('client_secret_basic') | to_json }}
+{% endfor %}
+{% endif %}
 
 session:
   expiration: "{{ authelia_session_expiration }}"

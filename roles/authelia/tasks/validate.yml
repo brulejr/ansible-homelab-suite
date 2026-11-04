@@ -51,3 +51,45 @@
   loop: "{{ authelia_sso_apps }}"
   loop_control:
     label: "{{ item.name }}"
+
+- name: Validate Authelia OIDC clients
+  ansible.builtin.assert:
+    that:
+      - item.id is defined
+      - item.id is match('^[a-z0-9_-]+$')
+      - item.id not in ['one_factor', 'two_factor', 'deny']
+      - item.secret | default('') | trim | length >= 32
+      - item.redirect_uris | default([]) is not string
+      - item.redirect_uris | default([]) | length > 0
+      - item.redirect_uris | select('match', '^https://') | list | length == item.redirect_uris | length
+      - (item.policy | default(authelia_default_app_policy)) in ['one_factor', 'two_factor']
+      - item.groups | default([]) is not string
+      - item.id_token_claims | default([]) is not string
+    fail_msg: >-
+      OIDC client '{{ item.id | default('?') }}' is invalid: its id must be
+      lowercase letters, digits, "-" or "_"; its secret at least 32
+      characters; its redirect_uris a list of https URLs; its policy
+      one_factor or two_factor; and its groups and id_token_claims lists.
+  loop: "{{ authelia_oidc_clients }}"
+  loop_control:
+    label: "{{ item.id | default('?') }}"
+  no_log: true
+
+- name: Validate Authelia OIDC client ids are unique
+  ansible.builtin.assert:
+    that:
+      - authelia_oidc_clients | map(attribute='id') | unique | list | length == authelia_oidc_clients | length
+    fail_msg: "Two OIDC clients in authelia_oidc_clients share an id."
+  when: authelia_oidc_clients | length > 0
+
+- name: Validate Authelia OIDC secrets
+  ansible.builtin.assert:
+    that:
+      - authelia_oidc_hmac_secret | trim | length >= 64
+      - authelia_oidc_jwks_key is search('-----BEGIN (RSA )?PRIVATE KEY-----')
+    fail_msg: >-
+      With OIDC clients, set authelia_oidc_hmac_secret (at least 64
+      characters: openssl rand -hex 64) and authelia_oidc_jwks_key (an RSA
+      private key in PEM: openssl genrsa 4096). Keep them in the vault.
+  when: authelia_oidc_clients | length > 0
+  no_log: true

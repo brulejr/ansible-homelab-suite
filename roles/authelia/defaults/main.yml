@@ -88,6 +88,41 @@ authelia_edge_route_groups: []
 authelia_access_control_extra_rules: []
 
 # ---------------------------------------------------------------------------
+# OpenID Connect
+#
+# For apps that sign people in through OIDC rather than trusting a
+# forward-auth header. The provider is turned on by listing a client, and then
+# needs authelia_oidc_hmac_secret and authelia_oidc_jwks_key (in the vault).
+#
+# authelia_oidc_clients:
+#   - id: linkwarden
+#     name: Linkwarden
+#     secret: "{{ vault_linkwarden_oidc_client_secret }}"
+#     redirect_uris:
+#       - https://linkwarden.example.invalid/api/v1/auth/callback/authelia
+#     groups: [homelab_users]        # optional; otherwise any signed-in user
+#     policy: two_factor             # one_factor | two_factor (default
+#                                    # authelia_default_app_policy)
+#     scopes: [openid, email, profile]                 # this is the default
+#     id_token_claims: [email, email_verified, name]   # optional, see below
+#     token_endpoint_auth_method: client_secret_basic  # this is the default
+#
+# The client must use PKCE (S256). Its secret is written to a file under
+# authelia_secrets_dir, so it appears in no configuration file; the app gets
+# the same secret in its own configuration.
+#
+# Since 4.39 the ID token carries only the claims that identify the sign-in;
+# the rest come from the userinfo endpoint. Clients that read the user's
+# email or name from the ID token instead list those claims in
+# id_token_claims.
+# ---------------------------------------------------------------------------
+authelia_oidc_clients: []
+authelia_oidc_hmac_secret: ""
+# An RSA private key in PEM, which signs the ID tokens:
+#   openssl genrsa 4096
+authelia_oidc_jwks_key: ""
+
+# ---------------------------------------------------------------------------
 # Notifications (identity checks when registering a 2FA device, password
 # resets). Without SMTP they are appended to <authelia_config_dir>/notification.txt:
 #   sudo cat /opt/homelab/data/authelia/notification.txt
@@ -111,6 +146,11 @@ authelia_smtp_sender: "Authelia <authelia@{{ domain_name }}>"
 # authelia_storage_encryption_key   encrypts the database (2FA secrets);
 #                                   changing it makes the database unreadable
 # authelia_ldap_password            the LDAP service account's password
+#
+# With OIDC clients (see above), also:
+# authelia_oidc_hmac_secret         signs OIDC tokens; at least 64 characters:
+#                                   openssl rand -hex 64
+# authelia_oidc_jwks_key            signs ID tokens: openssl genrsa 4096
 # ---------------------------------------------------------------------------
 authelia_jwt_secret: ""
 authelia_session_secret: ""

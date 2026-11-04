@@ -22,6 +22,7 @@
     - wikigo
     - zigbee2mqtt
     - unifi
+    - linkwarden
     - forgejo
     # Last, after every app whose data it snapshots
     - config_snapshot

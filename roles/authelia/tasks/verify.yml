@@ -25,3 +25,17 @@
     follow_redirects: none
     status_code: [302, 303, 401]
   when: authelia_sso_apps | length > 0
+
+# The issuer follows the host the request came in on, here the portal's
+- name: Verify Authelia serves OIDC discovery
+  ansible.builtin.uri:
+    url: "http://{{ authelia_bind_ip }}:{{ authelia_host_port }}/.well-known/openid-configuration"
+    method: GET
+    headers:
+      X-Forwarded-Proto: https
+      X-Forwarded-Host: "{{ authelia_fqdn }}"
+    return_content: true
+    status_code: 200
+  register: authelia_oidc_discovery
+  failed_when: authelia_oidc_discovery.json.issuer | default('') != 'https://' ~ authelia_fqdn
+  when: authelia_oidc_clients | length > 0

@@ -37,8 +37,27 @@
       content: "{{ authelia_ldap_password }}"
     - name: smtp_password
       content: "{{ authelia_smtp_password }}"
+    - name: oidc_hmac_secret
+      content: "{{ authelia_oidc_hmac_secret }}"
+    - name: oidc_jwks_key
+      content: "{{ authelia_oidc_jwks_key }}"
   loop_control:
     label: "{{ item.name }}"
+  no_log: true
+  notify: Restart authelia
+
+# Read into configuration.yml by its template filter. The prefix tells
+# Authelia the secret is stored as is, not as a hash.
+- name: Write Authelia OIDC client secrets
+  ansible.builtin.copy:
+    content: "$plaintext${{ item.secret | trim }}"
+    dest: "{{ authelia_secrets_dir }}/oidc_client_{{ item.id }}"
+    owner: root
+    group: root
+    mode: "0600"
+  loop: "{{ authelia_oidc_clients }}"
+  loop_control:
+    label: "{{ item.id }}"
   no_log: true
   notify: Restart authelia
 

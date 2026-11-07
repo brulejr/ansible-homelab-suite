@@ -1,0 +1,10 @@
+---
+- name: Setup the ham radio servers
+  hosts: ham_servers
+  become: true
+  roles:
+    - common
+    - docker
+    - watchtower
+    # Last, after every app whose data it snapshots
+    - config_snapshot

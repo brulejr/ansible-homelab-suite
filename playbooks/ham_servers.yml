@@ -6,5 +6,9 @@
     - common
     - docker
     - watchtower
+    # Its own edge, for TLS; sign-in is hasrv00's Authelia and LLDAP
+    - traefik
+    - traefik_apps
+    - plantuml
     # Last, after every app whose data it snapshots
     - config_snapshot

@@ -53,8 +53,6 @@
         remote_src: true
         owner: "{{ homeassistant_puid }}"
         group: "{{ homeassistant_pgid }}"
-        directory_mode: "0755"
-        mode: "0644"
       notify: Restart homeassistant
 
     - name: "Record installed version of {{ homeassistant_custom_component.domain }}"
@@ -71,3 +69,16 @@
         path: "{{ homeassistant_custom_component_staging.path }}"
         state: absent
       when: homeassistant_custom_component_staging.path is defined
+
+# Outside the install block so it also repairs a component already in place.
+# Directories need x (the capital X) or Home Assistant cannot read the
+# manifest and skips the integration without logging anything.
+- name: "Set permissions on custom component {{ homeassistant_custom_component.domain }}"
+  ansible.builtin.file:
+    path: "{{ homeassistant_custom_components_dir }}/{{ homeassistant_custom_component.domain }}"
+    state: directory
+    recurse: true
+    owner: "{{ homeassistant_puid }}"
+    group: "{{ homeassistant_pgid }}"
+    mode: "u=rwX,go=rX"
+  notify: Restart homeassistant

@@ -1,0 +1,19 @@
+---
+- name: Validate soapysdr configuration
+  ansible.builtin.assert:
+    that:
+      - soapysdr_stack_name | length > 0
+      - soapysdr_container_name | length > 0
+      - soapysdr_app_dir | length > 0
+      - soapysdr_image_name | length > 0
+      - soapysdr_base_image | length > 0
+      - soapysdr_remote_version | length > 0
+      - soapysdr_modules | length > 0
+      # Host networking: 0.0.0.0 would offer the SDR on every interface
+      - soapysdr_bind_ip is match('^[0-9.]+$')
+      - soapysdr_bind_ip != '0.0.0.0'
+      - soapysdr_port | int > 0
+      - soapysdr_port | int < 65536
+    fail_msg: >-
+      soapysdr needs a stack, container and image name, a base image, at least
+      one module, a bind address other than 0.0.0.0 and a valid port.

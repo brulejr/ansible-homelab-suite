@@ -1,0 +1,6 @@
+---
+- name: Restart soapysdr
+  community.docker.docker_compose_v2:
+    project_src: "{{ soapysdr_app_dir }}"
+    project_name: "{{ soapysdr_stack_name }}"
+    state: restarted

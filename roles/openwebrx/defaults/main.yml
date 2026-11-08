@@ -1,7 +1,61 @@
+---
 openwebrx_enabled: true
 
 openwebrx_stack_name: "openwebrx"
+openwebrx_container_name: "openwebrx"
 openwebrx_app_dir: "{{ docker_dir }}/openwebrx"
 openwebrx_data_dir: "{{ data_dir }}/openwebrx"
 
+# OpenWebRX+, with the SoftMBE codecs for digital voice
+openwebrx_image: "slechev/openwebrxplus-softmbe:latest"
+openwebrx_restart_policy: unless-stopped
+openwebrx_timezone: "{{ timezone }}"
+
+# Networking. The receiver has no login of its own (only its settings pages
+# do): put it on 127.0.0.1 when Traefik reaches it over the Docker network.
+openwebrx_docker_network: "{{ docker_network }}"
+openwebrx_bind_ip: "{{ server_bind_ip }}"
+openwebrx_host_port: "{{ app_port_openwebrx | default(8073) }}"
+
+# Host device passed to the container for a locally attached SDR, or empty
+# when the SDR is reached over the network (a SoapyRemote server, rtl_tcp)
 openwebrx_device: "/dev/bus/usb"
+
+# The settings pages' admin. The user is created on the container's first
+# start only; changing the password here later has no effect. Change it
+# with: docker exec -it openwebrx openwebrx admin resetpassword <user>
+openwebrx_admin_user: admin
+# Keep it in the vault
+openwebrx_admin_password: ""
+
+# ---------------------------------------------------------------------------
+# Initial settings
+#
+# OpenWebRX keeps the settings made on its settings pages (receiver details,
+# SDR devices and profiles) in settings.json. When this is not empty, it is
+# written there as the starting point, but only if the file doesn't exist
+# yet: after that, the settings pages own it. Top-level keys replace the
+# built-in defaults, so "sdrs" replaces the example devices.
+#
+# openwebrx_initial_settings:
+#   version: 8
+#   sdrs:
+#     rtlsdr:
+#       name: RTL-SDR
+#       type: soapy_remote
+#       remote: "10.0.0.5:55132"
+#       remote_driver: rtlsdr
+#       profiles:
+#         2m:
+#           name: 2m
+#           center_freq: 145000000
+#           samp_rate: 2400000
+#           start_freq: 145725000
+#           start_mod: nfm
+#           tuning_step: "5000"
+# ---------------------------------------------------------------------------
+openwebrx_initial_settings: {}
+
+# Verification
+openwebrx_verify_enabled: true
+openwebrx_verify_timeout: 180

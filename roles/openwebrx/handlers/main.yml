@@ -1,0 +1,6 @@
+---
+- name: Restart openwebrx
+  community.docker.docker_compose_v2:
+    project_src: "{{ openwebrx_app_dir }}"
+    project_name: "{{ openwebrx_stack_name }}"
+    state: restarted

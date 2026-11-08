@@ -1,24 +1,28 @@
+# Managed by Ansible (openwebrx)
 services:
-
   openwebrx:
-    image: slechev/openwebrxplus-softmbe:latest
-    container_name: openwebrx
-    restart: unless-stopped
+    image: "{{ openwebrx_image }}"
+    container_name: "{{ openwebrx_container_name }}"
+    restart: "{{ openwebrx_restart_policy }}"
     environment:
-      TZ: America/New_York
-      OPENWEBRX_ADMIN_USER: admin
-      OPENWEBRX_ADMIN_PASSWORD: password
+      TZ: "{{ openwebrx_timezone }}"
+      # Creates the user on first start only. "$$" keeps Compose from
+      # expanding a "$" in the password.
+      OPENWEBRX_ADMIN_USER: "{{ openwebrx_admin_user }}"
+      OPENWEBRX_ADMIN_PASSWORD: {{ openwebrx_admin_password | replace('$', '$$') | to_json }}
     volumes:
       - "{{ openwebrx_data_dir }}/etc:/etc/openwebrx"
       - "{{ openwebrx_data_dir }}/var:/var/lib/openwebrx"
-      - "{{ openwebrx_data_dir }}/plugins:/usr/lib/python3/dist-packages/htdocs/plugins"      
+      - "{{ openwebrx_data_dir }}/plugins:/usr/lib/python3/dist-packages/htdocs/plugins"
     ports:
-      - "{{ server_bind_ip }}:{{ app_port_openwebrx }}:8073"
+      - "{{ openwebrx_bind_ip }}:{{ openwebrx_host_port }}:8073"
+{% if openwebrx_device | length > 0 %}
     devices:
       - "{{ openwebrx_device }}:{{ openwebrx_device }}"
+{% endif %}
     networks:
-      - {{ docker_network }}
+      - {{ openwebrx_docker_network }}
 
 networks:
-  {{ docker_network }}:
+  {{ openwebrx_docker_network }}:
     external: true

@@ -1,0 +1,31 @@
+---
+- name: Check openwebrx container state
+  community.docker.docker_container_info:
+    name: "{{ openwebrx_container_name }}"
+  register: openwebrx_container_info
+
+- name: Assert openwebrx container is running
+  ansible.builtin.assert:
+    that:
+      - openwebrx_container_info.exists
+      - openwebrx_container_info.container.State.Running
+    fail_msg: >-
+      Container {{ openwebrx_container_name }} is not running.
+      Status={{ openwebrx_container_info.container.State.Status | default('missing') }},
+      exit_code={{ openwebrx_container_info.container.State.ExitCode | default('unknown') }}
+
+# Lists the SDR devices OpenWebRX loaded from its settings
+- name: Wait for openwebrx status endpoint
+  ansible.builtin.uri:
+    url: "http://{{ openwebrx_bind_ip }}:{{ openwebrx_host_port }}/status.json"
+    method: GET
+    return_content: true
+    status_code: 200
+  register: openwebrx_status
+  retries: "{{ (openwebrx_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
+  delay: 5
+  until: openwebrx_status.status == 200
+
+- name: Show openwebrx SDR devices
+  ansible.builtin.debug:
+    msg: "{{ openwebrx_status.json.sdrs | default([]) | map(attribute='name') | list }}"

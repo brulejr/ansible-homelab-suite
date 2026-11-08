@@ -10,5 +10,8 @@
     - traefik
     - traefik_apps
     - plantuml
+    # Owns the SDR; OpenWebRX is one of its clients
+    - soapysdr
+    - openwebrx
     # Last, after every app whose data it snapshots
     - config_snapshot

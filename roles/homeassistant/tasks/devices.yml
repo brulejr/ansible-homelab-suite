@@ -1,0 +1,12 @@
+---
+# Devices from integrations set up in the UI, such as custom integrations,
+# placed by the [domain, id] identifier their integration gives them
+- name: Place Home Assistant devices in their areas
+  ansible.builtin.include_tasks: device_areas.yml
+  vars:
+    homeassistant_device_areas_kind: devices
+    homeassistant_device_areas: >-
+      {{ homeassistant_devices
+         | zip(homeassistant_devices | map(attribute='name')
+               | map('community.general.dict_kv', 'label'))
+         | map('combine') | list }}

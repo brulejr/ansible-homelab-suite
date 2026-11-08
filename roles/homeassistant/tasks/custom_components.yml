@@ -1,0 +1,17 @@
+---
+# Custom integrations load only at startup, so installing or upgrading one
+# restarts Home Assistant. Components dropped from the list are left in place.
+- name: Ensure Home Assistant custom_components directory exists
+  ansible.builtin.file:
+    path: "{{ homeassistant_custom_components_dir }}"
+    state: directory
+    owner: "{{ homeassistant_puid }}"
+    group: "{{ homeassistant_pgid }}"
+    mode: "0755"
+
+- name: Install Home Assistant custom components
+  ansible.builtin.include_tasks: custom_component.yml
+  loop: "{{ homeassistant_custom_components }}"
+  loop_control:
+    loop_var: homeassistant_custom_component
+    label: "{{ homeassistant_custom_component.domain }} {{ homeassistant_custom_component.version }}"

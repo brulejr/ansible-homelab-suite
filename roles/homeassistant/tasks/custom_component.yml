@@ -1,0 +1,84 @@
+---
+# The installed version is recorded in a marker file inside the component, so
+# a deploy only downloads when the pinned version changes.
+- name: "Read installed version of custom component {{ homeassistant_custom_component.domain }}"
+  ansible.builtin.slurp:
+    src: "{{ homeassistant_custom_components_dir }}/{{ homeassistant_custom_component.domain }}/.ansible_version"
+  register: homeassistant_custom_component_installed
+  failed_when: false
+
+- name: "Install custom component {{ homeassistant_custom_component.domain }} {{ homeassistant_custom_component.version }}"
+  when: >-
+    (homeassistant_custom_component_installed.content | default('') | b64decode | trim)
+    != homeassistant_custom_component.version
+  block:
+    - name: "Create staging directory for {{ homeassistant_custom_component.domain }}"
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: "-{{ homeassistant_custom_component.domain }}"
+      register: homeassistant_custom_component_staging
+
+    # GitHub names the archive's top directory <repo>-<tag without leading v>,
+    # so it is stripped rather than guessed.
+    - name: "Download and unpack {{ homeassistant_custom_component.repo }} {{ homeassistant_custom_component.version }}"
+      ansible.builtin.unarchive:
+        src: >-
+          https://github.com/{{ homeassistant_custom_component.repo }}/archive/refs/tags/{{
+          homeassistant_custom_component.version }}.tar.gz
+        dest: "{{ homeassistant_custom_component_staging.path }}"
+        remote_src: true
+        extra_opts:
+          - --strip-components=1
+
+    - name: "Check {{ homeassistant_custom_component.domain }} is in the archive"
+      ansible.builtin.stat:
+        path: >-
+          {{ homeassistant_custom_component_staging.path }}/custom_components/{{
+          homeassistant_custom_component.domain }}/manifest.json
+      register: homeassistant_custom_component_manifest
+      failed_when: not homeassistant_custom_component_manifest.stat.exists
+
+    # Replaced wholesale, so files dropped upstream do not linger
+    - name: "Remove previous {{ homeassistant_custom_component.domain }}"
+      ansible.builtin.file:
+        path: "{{ homeassistant_custom_components_dir }}/{{ homeassistant_custom_component.domain }}"
+        state: absent
+
+    - name: "Copy {{ homeassistant_custom_component.domain }} into place"
+      ansible.builtin.copy:
+        src: >-
+          {{ homeassistant_custom_component_staging.path }}/custom_components/{{
+          homeassistant_custom_component.domain }}
+        dest: "{{ homeassistant_custom_components_dir }}/"
+        remote_src: true
+        owner: "{{ homeassistant_puid }}"
+        group: "{{ homeassistant_pgid }}"
+      notify: Restart homeassistant
+
+    - name: "Record installed version of {{ homeassistant_custom_component.domain }}"
+      ansible.builtin.copy:
+        content: "{{ homeassistant_custom_component.version }}\n"
+        dest: "{{ homeassistant_custom_components_dir }}/{{ homeassistant_custom_component.domain }}/.ansible_version"
+        owner: "{{ homeassistant_puid }}"
+        group: "{{ homeassistant_pgid }}"
+        mode: "0644"
+
+  always:
+    - name: "Remove staging directory for {{ homeassistant_custom_component.domain }}"
+      ansible.builtin.file:
+        path: "{{ homeassistant_custom_component_staging.path }}"
+        state: absent
+      when: homeassistant_custom_component_staging.path is defined
+
+# Outside the install block so it also repairs a component already in place.
+# Directories need x (the capital X) or Home Assistant cannot read the
+# manifest and skips the integration without logging anything.
+- name: "Set permissions on custom component {{ homeassistant_custom_component.domain }}"
+  ansible.builtin.file:
+    path: "{{ homeassistant_custom_components_dir }}/{{ homeassistant_custom_component.domain }}"
+    state: directory
+    recurse: true
+    owner: "{{ homeassistant_puid }}"
+    group: "{{ homeassistant_pgid }}"
+    mode: "u=rwX,go=rX"
+  notify: Restart homeassistant

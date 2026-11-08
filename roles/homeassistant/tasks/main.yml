@@ -7,6 +7,12 @@
   ansible.builtin.include_tasks: install.yml
   when: homeassistant_enabled | bool
 
+- name: Install Home Assistant custom components
+  ansible.builtin.include_tasks: custom_components.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_custom_components | length > 0
+
 - name: Configure Home Assistant frontend
   ansible.builtin.include_tasks: frontend.yml
   when: homeassistant_enabled | bool

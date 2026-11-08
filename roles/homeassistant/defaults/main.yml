@@ -41,6 +41,18 @@ homeassistant_verify_timeout: 120
 #         replace: "..."
 homeassistant_frontend_modules: []
 
+# Custom integrations (what HACS would install), pinned to a GitHub tag. The
+# tag's custom_components/<domain>/ is copied into /config/custom_components/
+# and Home Assistant restarted. Adding the integration itself (its login) is
+# still done once in the UI. Components dropped from the list are left in
+# place; delete them in /config/custom_components/ by hand.
+#   - domain: tryfi             # directory under custom_components/ in the repo
+#     repo: sbabcock23/hass-tryfi
+#     version: "0.0.26"         # git tag
+homeassistant_custom_components: []
+
+homeassistant_custom_components_dir: "{{ homeassistant_config_dir }}/custom_components"
+
 # YAML-mode dashboards rendered into /config/dashboards/<url_path>.yaml.
 # UI edits to these dashboards are overwritten on deploy.
 #   - url_path: dashboard-rooms   # must contain a hyphen

@@ -133,6 +133,14 @@ homeassistant_generic_cameras: []
 #     area: foyer
 homeassistant_mqtt_devices: []
 
+# Devices of integrations set up in the UI (custom integrations among them)
+# to place in areas, matched by the [domain, id] identifier their integration
+# registers. The area is reapplied on every deploy.
+#   - name: Carlos            # label for the deploy output only
+#     identifier: [tryfi, 5GaZVsCdgHW9qB986wXf5f]
+#     area: dogs
+homeassistant_devices: []
+
 # The login of the MQTT integration's broker, set on the entry made in the UI
 # (through its reconfigure flow, which tests it first). Needs
 # homeassistant_api_token; the password belongs in the vault. Empty leaves

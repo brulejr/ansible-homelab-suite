@@ -80,6 +80,13 @@
     - homeassistant_api_token | length > 0
     - homeassistant_mqtt_devices | length > 0
 
+- name: Configure Home Assistant device areas
+  ansible.builtin.include_tasks: devices.yml
+  when:
+    - homeassistant_enabled | bool
+    - homeassistant_api_token | length > 0
+    - homeassistant_devices | length > 0
+
 - name: Configure Home Assistant entity ids
   ansible.builtin.include_tasks: entity_ids.yml
   when:

@@ -1,0 +1,60 @@
+---
+- name: Check soapysdr container state
+  community.docker.docker_container_info:
+    name: "{{ soapysdr_container_name }}"
+  register: soapysdr_container_info
+
+- name: Assert soapysdr container is running
+  ansible.builtin.assert:
+    that:
+      - soapysdr_container_info.exists
+      - soapysdr_container_info.container.State.Running
+    fail_msg: >-
+      Container {{ soapysdr_container_name }} is not running.
+      Status={{ soapysdr_container_info.container.State.Status | default('missing') }},
+      exit_code={{ soapysdr_container_info.container.State.ExitCode | default('unknown') }}
+
+- name: Wait for the SoapyRemote server
+  ansible.builtin.wait_for:
+    host: "{{ soapysdr_bind_ip }}"
+    port: "{{ soapysdr_port | int }}"
+    timeout: 60
+
+# A server that exits soon after binding is restarted by Docker, and looks
+# running at any one moment
+- name: Give the SoapyRemote server time to fail
+  ansible.builtin.wait_for:
+    timeout: 10
+
+- name: Check soapysdr container again
+  community.docker.docker_container_info:
+    name: "{{ soapysdr_container_name }}"
+  register: soapysdr_container_recheck
+
+- name: Assert soapysdr is not restarting
+  ansible.builtin.assert:
+    that:
+      - soapysdr_container_recheck.container.State.Running
+      - soapysdr_container_recheck.container.RestartCount == soapysdr_container_info.container.RestartCount
+    fail_msg: >-
+      Container {{ soapysdr_container_name }} keeps restarting
+      ({{ soapysdr_container_recheck.container.RestartCount }} restarts);
+      see docker logs {{ soapysdr_container_name }}.
+
+# Lists attached devices without opening them, so it works while a client
+# has the SDR in use
+- name: Look for the SDR
+  ansible.builtin.command:
+    argv: [docker, exec, "{{ soapysdr_container_name }}", SoapySDRUtil, "--find={{ soapysdr_verify_device }}"]
+  register: soapysdr_find
+  changed_when: false
+  when: soapysdr_verify_device | length > 0
+
+- name: Assert the SDR is attached
+  ansible.builtin.assert:
+    that:
+      - soapysdr_find.stdout is search('Found device')
+    fail_msg: >-
+      No device matching "{{ soapysdr_verify_device }}" is attached.
+      SoapySDRUtil said: {{ soapysdr_find.stdout_lines | join(' / ') }}
+  when: soapysdr_verify_device | length > 0

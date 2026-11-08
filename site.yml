@@ -3,6 +3,7 @@
 - import_playbook: playbooks/ai_servers.yml
 - import_playbook: playbooks/devops_servers.yml
 - import_playbook: playbooks/ha_servers.yml
+- import_playbook: playbooks/ham_servers.yml
 - import_playbook: playbooks/id_servers.yml
 - import_playbook: playbooks/iot_servers.yml
 - import_playbook: playbooks/media_servers.yml

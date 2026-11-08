@@ -1,36 +1,29 @@
-# Role Name
+openwebrx
+=========
 
-A brief description of the role goes here.
+Runs [OpenWebRX+](https://github.com/luarvique/openwebrx), a web SDR
+receiver, from the `slechev/openwebrxplus-softmbe` image (with the SoftMBE
+codecs for digital voice).
 
-## Requirements
+- **The receiver has no login**; only its settings pages do, as
+  `openwebrx_admin_user`. Put it on 127.0.0.1 (`openwebrx_bind_ip`) behind a
+  Traefik route with SSO, or on a trusted network.
+- **The admin user is created on the first start only.** Changing
+  `openwebrx_admin_password` afterwards has no effect; reset it with
+  `docker exec -it openwebrx openwebrx admin resetpassword admin`.
+- **Settings are made on the settings pages** and kept in
+  `var/settings.json` under `openwebrx_data_dir`. `openwebrx_initial_settings`
+  seeds that file when it doesn't exist yet, for example with an SDR device;
+  after that, the deploy leaves it alone.
+- **The SDR** is either passed in (`openwebrx_device`, `/dev/bus/usb` by
+  default) or reached over the network, for example from the `soapysdr`
+  role's SoapyRemote server, with `openwebrx_device: ""` and a
+  `soapy_remote` device in the settings.
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+The deploy lists the SDR devices OpenWebRX loaded, from `/status.json`.
 
-## Role Variables
-
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
-
-## Dependencies
-
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
-
-## Example Playbook
-
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
-
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
-
-## License
-
-BSD
-
-## Author Information
-
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
-
-## Resources
+Resources
+---------
 
 - [OpenWebRX](https://www.openwebrx.de/)
-- [OpenWebRX Using Docker on Raspberry Pi and Other Devices](https://hamradio.my/2025/06/openwebrx-using-docker-on-raspberry-pi-and-other-devices/)
+- [OpenWebRX+ Docker builder](https://github.com/0xAF/openwebrxplus-docker-builder)

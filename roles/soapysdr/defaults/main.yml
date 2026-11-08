@@ -1,0 +1,61 @@
+---
+soapysdr_enabled: true
+
+soapysdr_stack_name: soapysdr
+soapysdr_container_name: soapysdr
+soapysdr_app_dir: "{{ docker_dir }}/soapysdr"
+
+# ---------------------------------------------------------------------------
+# Image
+#
+# Built on the target from a Dockerfile this role renders: Debian's SoapySDR
+# packages, plus SoapySDRServer built from SoapyRemote's source without Avahi
+# (Debian's exits when it finds no Avahi daemon). Nothing is pulled from or
+# pushed to a registry, so Watchtower leaves it alone. The image is tagged with a hash of the
+# Dockerfile, so a deploy builds only when the Dockerfile changes. Set
+# soapysdr_force_rebuild (-e soapysdr_force_rebuild=true) to rebuild from the
+# current base image and Debian packages, for their security updates.
+# ---------------------------------------------------------------------------
+soapysdr_image_name: soapysdr
+soapysdr_base_image: "debian:trixie-slim"
+# A tag of https://github.com/pothosware/SoapyRemote
+soapysdr_remote_version: "soapy-remote-0.5.3"
+# SoapySDR modules for the attached hardware, e.g. soapysdr-module-airspy
+soapysdr_modules:
+  - soapysdr-module-rtlsdr
+soapysdr_force_rebuild: false
+soapysdr_restart_policy: unless-stopped
+
+# ---------------------------------------------------------------------------
+# Network
+#
+# SoapyRemote has no login and no TLS: anyone who can reach the port can use
+# the SDR. Clients connect to the control port over TCP, and each stream
+# then opens its own socket (UDP by default), so the container uses the
+# host's network rather than published ports.
+# ---------------------------------------------------------------------------
+soapysdr_bind_ip: "{{ server_bind_ip }}"
+soapysdr_port: "{{ app_port_soapysdr | default(55132) }}"
+
+# ---------------------------------------------------------------------------
+# Hardware
+#
+# The container sees the host's USB bus, and may use any USB device on it
+# (character major 189), so a dongle that is unplugged and plugged back in
+# works without a restart.
+#
+# The kernel's DVB-T drivers claim RTL-SDR dongles as TV tuners, and the SDR
+# drivers can't open them then. They are blacklisted and unloaded. Set this
+# to false for other hardware, or a host that uses its dongle as a TV tuner.
+# ---------------------------------------------------------------------------
+soapysdr_blacklist_dvb: true
+soapysdr_blacklist_modules:
+  - rtl2832_sdr
+  - dvb_usb_rtl28xxu
+  - rtl2832
+  - r820t
+
+# Verification: the deploy fails unless a device matching this SoapySDR
+# filter is attached. Empty skips the check.
+soapysdr_verify_enabled: true
+soapysdr_verify_device: "driver=rtlsdr"

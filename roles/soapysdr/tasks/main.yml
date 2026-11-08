@@ -1,0 +1,14 @@
+---
+- name: Validate soapysdr configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: soapysdr_enabled | bool
+
+- name: Install and configure soapysdr
+  ansible.builtin.include_tasks: install.yml
+  when: soapysdr_enabled | bool
+
+- name: Verify soapysdr
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - soapysdr_enabled | bool
+    - soapysdr_verify_enabled | bool

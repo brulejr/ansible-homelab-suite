@@ -1,0 +1,22 @@
+# Managed by Ansible (soapysdr)
+services:
+  soapysdr:
+    build:
+      context: "{{ soapysdr_app_dir }}"
+      # Builds are rare, so each takes the current base image; a forced
+      # rebuild also skips the layer cache, to take Debian's updates
+      pull: true
+      no_cache: {{ soapysdr_force_rebuild | bool | lower }}
+    image: "{{ soapysdr_image_name }}:{{ soapysdr_version }}"
+    container_name: "{{ soapysdr_container_name }}"
+    restart: "{{ soapysdr_restart_policy }}"
+    command: ["--bind={{ soapysdr_bind_ip }}:{{ soapysdr_port }}"]
+    labels:
+      # Built here, so there is no registry for Watchtower to update it from
+      com.centurylinklabs.watchtower.enable: "false"
+    # Streams open their own sockets; see soapysdr_bind_ip
+    network_mode: host
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb
+    device_cgroup_rules:
+      - "c 189:* rwm"

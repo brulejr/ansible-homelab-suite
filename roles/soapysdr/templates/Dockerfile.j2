@@ -1,0 +1,30 @@
+# Managed by Ansible (soapysdr)
+
+# SoapySDRServer, built without Avahi: Debian's is built with it, and exits
+# when it can't reach an Avahi daemon, which the container doesn't have.
+# Without it, the server isn't announced over mDNS; clients give its address.
+FROM {{ soapysdr_base_image }} AS build
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      ca-certificates git cmake make g++ libsoapysdr-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth 1 --branch {{ soapysdr_remote_version }} \
+      https://github.com/pothosware/SoapyRemote.git /src \
+ && cmake -S /src -B /build -DCMAKE_BUILD_TYPE=Release -DENABLE_AVAHI=OFF \
+ && cmake --build /build --target SoapySDRServer -j"$(nproc)"
+
+FROM {{ soapysdr_base_image }}
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      soapysdr-tools \
+{% for module in soapysdr_modules %}
+      {{ module }} \
+{% endfor %}
+ && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /build/server/SoapySDRServer /usr/local/bin/SoapySDRServer
+
+ENTRYPOINT ["SoapySDRServer"]

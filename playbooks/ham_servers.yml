@@ -1,0 +1,17 @@
+---
+- name: Setup the ham radio servers
+  hosts: ham_servers
+  become: true
+  roles:
+    - common
+    - docker
+    - watchtower
+    # Its own edge, for TLS; sign-in is hasrv00's Authelia and LLDAP
+    - traefik
+    - traefik_apps
+    - plantuml
+    # Owns the SDR; OpenWebRX is one of its clients
+    - soapysdr
+    - openwebrx
+    # Last, after every app whose data it snapshots
+    - config_snapshot

@@ -1,0 +1,25 @@
+---
+- name: Validate openwebrx configuration
+  ansible.builtin.assert:
+    that:
+      - openwebrx_stack_name | length > 0
+      - openwebrx_container_name | length > 0
+      - openwebrx_image | length > 0
+      - openwebrx_docker_network | length > 0
+      - openwebrx_bind_ip | length > 0
+      - openwebrx_host_port | int > 0
+      - openwebrx_host_port | int < 65536
+      - openwebrx_admin_user | length > 0
+      - openwebrx_initial_settings is mapping
+      - (openwebrx_initial_settings | length == 0) or (openwebrx_initial_settings.version is defined)
+    fail_msg: >-
+      openwebrx needs a stack, container and image name, a network, a bind
+      address, a valid port and an admin user; initial settings need a
+      "version".
+
+- name: Validate openwebrx admin password
+  ansible.builtin.assert:
+    that:
+      - openwebrx_admin_password | length > 0
+    fail_msg: "Set openwebrx_admin_password, from the vault."
+  no_log: true

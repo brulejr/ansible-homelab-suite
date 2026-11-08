@@ -1,0 +1,46 @@
+---
+- name: Ensure openwebrx directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ openwebrx_app_dir }}"
+    - "{{ openwebrx_data_dir }}"
+    - "{{ openwebrx_data_dir }}/etc"
+    - "{{ openwebrx_data_dir }}/var"
+    - "{{ openwebrx_data_dir }}/plugins"
+
+# Only a starting point: the settings pages own the file once it exists
+- name: Write openwebrx initial settings
+  ansible.builtin.copy:
+    content: "{{ openwebrx_initial_settings | to_nice_json(indent=4) }}\n"
+    dest: "{{ openwebrx_data_dir }}/var/settings.json"
+    owner: root
+    group: root
+    mode: "0644"
+    force: false
+  when: openwebrx_initial_settings | length > 0
+  notify: Restart openwebrx
+
+# Holds the admin password, which the image only takes from its environment
+- name: Render openwebrx docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ openwebrx_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Start openwebrx stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ openwebrx_app_dir }}"
+    project_name: "{{ openwebrx_stack_name }}"
+    state: present
+    pull: policy
+    remove_orphans: true
+
+- name: Apply openwebrx restarts now
+  ansible.builtin.meta: flush_handlers

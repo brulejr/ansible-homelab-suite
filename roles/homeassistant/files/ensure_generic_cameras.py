@@ -7,16 +7,21 @@ stdin:
      "cameras": [
        {"name": "Front Door Stream", "entity_id": "camera.front_door_stream",
         "stream_source": "rtsp://ring-mqtt:8554/649a639d769b_live",
+        "still_image_url": "http://...",      # optional
+        "authentication": "digest",            # optional; basic by default
         "username": "ring", "password": "...", "area": "foyer"}]}
 
 The integration names each entry after the stream's host and does not notice
-one that already exists, so a camera is matched by its entity id instead: one
-already registered only has its name and area brought in line, and anything
-else is left as it is. A missing one is created through the config flow, which
-opens the stream to test it, then its entry is retitled and its entity renamed
-over the WebSocket API. The entry's device, which the integration also names
-after the host, is given the camera's name. Prints JSON naming the cameras it created or changed
-and the errors it met.
+one that already exists, so a camera is matched by its entity id instead. A
+missing one is created through the config flow, which opens the stream (and
+fetches the still) to test it, then its entry is retitled and its entity
+renamed over the WebSocket API. One already registered has its stream URL,
+still URL, login and authentication brought in line through the options flow,
+which tests them the same way, but only when the options form's current values
+differ from these (a password the form does not show is not compared). Its
+name and area are brought in line too. The entry's device, which the
+integration also names after the host, is given the camera's name. Prints JSON
+naming the cameras it created or changed and the errors it met.
 """
 
 import asyncio
@@ -25,6 +30,43 @@ import json
 import sys
 
 import aiohttp
+
+
+def camera_form(camera):
+    """The config/options flow form for a camera's stream, still and login."""
+    form = {
+        "username": camera.get("username", ""),
+        "password": camera.get("password", ""),
+        "advanced": {"framerate": 2, "verify_ssl": True, "rtsp_transport": "tcp",
+                     "authentication": camera.get("authentication", "basic")},
+    }
+    for key in ("stream_source", "still_image_url"):
+        if camera.get(key):
+            form[key] = camera[key]
+    return form
+
+
+def suggested_values(schema):
+    """A shown form's suggested (current) values, by field, sections nested."""
+    values = {}
+    for field in schema:
+        if field.get("type") == "expandable":
+            values[field["name"]] = suggested_values(field.get("schema", []))
+        elif "suggested_value" in (field.get("description") or {}):
+            values[field["name"]] = field["description"]["suggested_value"]
+    return values
+
+
+def drifted(current, wanted):
+    """Whether the entry's current options differ from the wanted form."""
+    for key in ("stream_source", "still_image_url", "username"):
+        if (current.get(key) or "") != (wanted.get(key) or ""):
+            return True
+    if "password" in current and current["password"] != wanted["password"]:
+        return True
+    current_advanced = current.get("advanced", {})
+    return any(current_advanced.get(key) != value
+               for key, value in wanted["advanced"].items())
 
 
 async def main(request):
@@ -60,6 +102,30 @@ async def main(request):
                 async with session.request(method, url, json=body) as reply:
                     return await reply.json(content_type=None)
 
+            async def reconfigure(entry_id, camera):
+                """Brings an entry's options in line; True when they changed."""
+                options_url = f"{request['url']}/api/config/config_entries/options/flow"
+                shown = await flow(options_url, body={"handler": entry_id})
+                if shown.get("step_id") != "init":
+                    raise RuntimeError(f"options flow: {shown.get('reason') or shown}")
+                step_url = f"{options_url}/{shown['flow_id']}"
+                current = suggested_values(shown.get("data_schema", []))
+                wanted = camera_form(camera)
+                if not drifted(current, wanted):
+                    await flow(step_url, method="DELETE")
+                    return False
+                # Keep the options this script does not manage
+                wanted["advanced"] = {**current.get("advanced", {}), **wanted["advanced"]}
+                step = await flow(step_url, body=wanted)
+                if step.get("step_id") != "user_confirm":
+                    await flow(step_url, method="DELETE")
+                    raise RuntimeError(
+                        f"options: {step.get('errors') or step.get('reason') or step}")
+                done = await flow(step_url, body={"confirmed_ok": True})
+                if done.get("type") != "create_entry":
+                    raise RuntimeError(f"options: {done}")
+                return True
+
             await ws.receive_json()  # auth_required
             await ws.send_json({"type": "auth", "access_token": request["token"]})
             if (await ws.receive_json()).get("type") != "auth_ok":
@@ -76,13 +142,7 @@ async def main(request):
                 if entity is None:
                     started = await flow(flow_url, body={"handler": "generic"})
                     step_url = f"{flow_url}/{started['flow_id']}"
-                    step = await flow(step_url, body={
-                        "stream_source": camera["stream_source"],
-                        "username": camera.get("username", ""),
-                        "password": camera.get("password", ""),
-                        "advanced": {"framerate": 2, "verify_ssl": True,
-                                     "rtsp_transport": "tcp", "authentication": "basic"},
-                    })
+                    step = await flow(step_url, body=camera_form(camera))
                     if step.get("step_id") != "user_confirm":
                         await flow(step_url, method="DELETE")
                         result["errors"].append(
@@ -116,7 +176,15 @@ async def main(request):
                     result["errors"].append(
                         f"{camera['name']}: {camera['entity_id']} belongs to {entity.get('platform')}")
                     continue
-                renamed = await name_device(entity, camera["name"])
+                renamed = False
+                entry_id = entity.get("config_entry_id")
+                if entry_id:
+                    try:
+                        renamed = await reconfigure(entry_id, camera)
+                    except RuntimeError as err:
+                        result["errors"].append(f"{camera['name']}: {err}")
+                        continue
+                renamed = await name_device(entity, camera["name"]) or renamed
                 if any(entity.get(key) != value for key, value in wanted.items()):
                     await call("config/entity_registry/update",
                                entity_id=camera["entity_id"], **wanted)

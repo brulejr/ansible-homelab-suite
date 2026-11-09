@@ -113,13 +113,18 @@ homeassistant_onvif_cameras: []
 # Generic Cameras (Generic Camera integration) for RTSP streams, such as
 # ring-mqtt's, to ensure exist, matched by entity id. The integration names an
 # entry after the stream's host, so each new entity is renamed to entity_id,
-# and its name and area are reapplied on every deploy. The stream is opened
-# once while the entry is created, so it must be reachable then. A camera
-# already added keeps its stream URL and credentials; delete it in Home
-# Assistant to change them. Entries are never removed.
+# and its name and area are reapplied on every deploy. Without a still image
+# URL the camera has no snapshots, so cards show it only in live view. A
+# camera already added has its stream URL, still URL, login and
+# authentication brought in line on every deploy, through the integration's
+# options flow, when they differ. Each time an entry is created or changed,
+# its stream is opened and its still fetched to test them, so both must be
+# reachable then. Entries are never removed.
 #   - name: Front Door Stream
 #     entity_id: camera.front_door_stream
 #     stream_source: rtsp://ring-mqtt:8554/<device id>_live
+#     still_image_url: http://<camera>/snapshot.jpg  # optional
+#     authentication: digest      # optional, for the still; basic by default
 #     username: ring              # optional, with password
 #     password: "{{ vault_stream_password }}"
 #     area: foyer                 # optional; set on the entity

@@ -29,7 +29,7 @@ What it manages
 | :-- | :-- |
 | `homeassistant_ping_hosts` | Ping integration entries. |
 | `homeassistant_brother_printers`, `homeassistant_roku_devices`, `homeassistant_onvif_cameras` | Integration entries, each with its device placed in an area. |
-| `homeassistant_generic_cameras` | Generic Camera entries for RTSP streams, with fixed entity ids. |
+| `homeassistant_generic_cameras` | Generic Camera entries for RTSP streams and still image URLs, with fixed entity ids; their URLs and logins are reapplied when they drift. |
 | `homeassistant_mqtt_username` | The MQTT integration's broker login, set on the entry made in the UI. |
 | `homeassistant_mqtt_devices` | Areas for MQTT devices, by the identifier their bridge publishes. |
 | `homeassistant_devices` | Areas for devices of any integration set up in the UI, custom ones among them, by the `[domain, id]` identifier the integration registers. |

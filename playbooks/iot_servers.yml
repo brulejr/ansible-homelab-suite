@@ -23,6 +23,7 @@
     - zigbee2mqtt
     - unifi
     - linkwarden
+    - vaultwarden
     - forgejo
     # Last, after every app whose data it snapshots
     - config_snapshot

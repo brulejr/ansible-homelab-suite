@@ -7,13 +7,26 @@
     group: root
     mode: "0755"
 
+# Vaultwarden runs as root. The database, the token signing key and config.json
+# are secret, so other users on the host are kept out.
 - name: Ensure Vaultwarden data directory exists
   ansible.builtin.file:
     path: "{{ vaultwarden_data_dir }}"
     state: directory
     owner: root
     group: root
-    mode: "0755"
+    mode: "0700"
+
+# Compose reads it into the container's environment, so a change recreates
+# Vaultwarden on the start step
+- name: Render Vaultwarden environment file
+  ansible.builtin.template:
+    src: vaultwarden.env.j2
+    dest: "{{ vaultwarden_app_dir }}/vaultwarden.env"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
 
 - name: Render Vaultwarden docker-compose.yml
   ansible.builtin.template:
@@ -22,7 +35,6 @@
     owner: root
     group: root
     mode: "0644"
-  notify: Restart vaultwarden
 
 - name: Start Vaultwarden stack
   community.docker.docker_compose_v2:

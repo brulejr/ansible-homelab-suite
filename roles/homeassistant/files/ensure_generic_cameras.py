@@ -46,6 +46,12 @@ def camera_form(camera):
     return form
 
 
+# Flow errors that a slow or flaky camera gives now and then (a still or
+# stream that timed out), worth submitting the form again for
+TRANSIENT_ERRORS = {"unable_still_load", "timeout"}
+ATTEMPTS = 3
+
+
 def suggested_values(schema):
     """A shown form's suggested (current) values, by field, sections nested."""
     values = {}
@@ -102,6 +108,17 @@ async def main(request):
                 async with session.request(method, url, json=body) as reply:
                     return await reply.json(content_type=None)
 
+            async def submit(step_url, form):
+                """Submits a form, again while it fails only on transient errors."""
+                for attempt in range(ATTEMPTS):
+                    step = await flow(step_url, body=form)
+                    errors = set((step.get("errors") or {}).values())
+                    if not errors or not errors <= TRANSIENT_ERRORS:
+                        return step
+                    if attempt + 1 < ATTEMPTS:
+                        await asyncio.sleep(2)
+                return step
+
             async def reconfigure(entry_id, camera):
                 """Brings an entry's options in line; True when they changed."""
                 options_url = f"{request['url']}/api/config/config_entries/options/flow"
@@ -116,7 +133,7 @@ async def main(request):
                     return False
                 # Keep the options this script does not manage
                 wanted["advanced"] = {**current.get("advanced", {}), **wanted["advanced"]}
-                step = await flow(step_url, body=wanted)
+                step = await submit(step_url, wanted)
                 if step.get("step_id") != "user_confirm":
                     await flow(step_url, method="DELETE")
                     raise RuntimeError(
@@ -142,7 +159,7 @@ async def main(request):
                 if entity is None:
                     started = await flow(flow_url, body={"handler": "generic"})
                     step_url = f"{flow_url}/{started['flow_id']}"
-                    step = await flow(step_url, body=camera_form(camera))
+                    step = await submit(step_url, camera_form(camera))
                     if step.get("step_id") != "user_confirm":
                         await flow(step_url, method="DELETE")
                         result["errors"].append(

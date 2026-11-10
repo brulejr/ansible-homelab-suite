@@ -1,16 +1,49 @@
 ---
-- name: Wait for Vaultwarden HTTP endpoint
+- name: Check Vaultwarden container state
+  community.docker.docker_container_info:
+    name: "{{ vaultwarden_container_name }}"
+  register: vaultwarden_container_info
+
+- name: Assert Vaultwarden container is running
+  ansible.builtin.assert:
+    that:
+      - vaultwarden_container_info.exists
+      - vaultwarden_container_info.container.State.Running
+    fail_msg: >-
+      Container {{ vaultwarden_container_name }} is not running.
+      Status={{ vaultwarden_container_info.container.State.Status | default('missing') }},
+      exit_code={{ vaultwarden_container_info.container.State.ExitCode | default('unknown') }}
+
+# /alive answers once the database is open and migrated
+- name: Wait for Vaultwarden to answer
   ansible.builtin.uri:
-    url: "http://{{ vaultwarden_bind_ip }}:{{ vaultwarden_host_port }}"
+    url: "http://{{ vaultwarden_bind_ip }}:{{ vaultwarden_host_port }}/alive"
     method: GET
-    status_code:
-      - 200
-      - 301
-      - 302
-      - 401
-      - 404
-    validate_certs: false
+    status_code: 200
   register: vaultwarden_verify_result
   retries: "{{ (vaultwarden_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
   delay: 5
-  until: vaultwarden_verify_result.status in [200, 301, 302, 401, 404]
+  until: vaultwarden_verify_result.status == 200
+  changed_when: false
+
+# Vaultwarden's server fetches the provider's discovery document to sign people
+# in, so check it can, from inside the container
+- name: Verify Vaultwarden reaches the SSO provider's discovery document
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - "{{ vaultwarden_container_name }}"
+      - curl
+      - --silent
+      - --show-error
+      - --fail
+      - --output
+      - /dev/null
+      - "{{ vaultwarden_sso_authority }}/.well-known/openid-configuration"
+  register: vaultwarden_sso_check
+  until: vaultwarden_sso_check.rc == 0
+  retries: 6
+  delay: 5
+  changed_when: false
+  when: vaultwarden_sso_enabled | bool

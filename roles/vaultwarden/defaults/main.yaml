@@ -6,13 +6,21 @@ vaultwarden_stack_name: vaultwarden
 vaultwarden_container_name: vaultwarden
 
 # Paths
+#
+# The app directory holds docker-compose.yml and the environment file; the
+# data directory holds the database (db.sqlite3), the key that signs sign-in
+# tokens (rsa_key.pem), attachments and Sends.
 vaultwarden_app_dir: "{{ docker_dir }}/vaultwarden"
 vaultwarden_data_dir: "{{ data_dir }}/vaultwarden"
 
 # Image/runtime
+#
+# Pin a release (for example "vaultwarden/server:1.37.5") so Watchtower leaves
+# it alone: Vaultwarden migrates its database when it starts.
 vaultwarden_image: "vaultwarden/server:latest"
 vaultwarden_restart_policy: unless-stopped
 vaultwarden_container_port: 80
+vaultwarden_timezone: "{{ timezone | default('UTC') }}"
 
 # Networking
 vaultwarden_docker_network: "{{ docker_network }}"
@@ -20,11 +28,74 @@ vaultwarden_bind_ip: "{{ server_bind_ip }}"
 vaultwarden_host_port: "{{ app_port_vaultwarden }}"
 
 # App config
+#
+# vaultwarden_domain is the full URL people use, through Traefik, for example
+# "https://vaultwarden.example.invalid". Links in emails, WebAuthn and SSO's
+# redirect URI are built from it, so SSO needs it.
 vaultwarden_domain: ""
-vaultwarden_admin_token: ""
 vaultwarden_signups_allowed: false
+# Lets the admin page and organization owners invite people even with
+# sign-ups off
+vaultwarden_invitations_allowed: true
 vaultwarden_websocket_enabled: true
+# Further environment variables, as a mapping, from
+# https://github.com/dani-garcia/vaultwarden/blob/main/.env.template
 vaultwarden_environment: {}
+
+# ---------------------------------------------------------------------------
+# Admin page (/admin)
+#
+# Off while vaultwarden_admin_token is empty. Set it to an Argon2 PHC string
+# (it starts with "$argon2"), not a plain token:
+#   docker run --rm -it vaultwarden/server /vaultwarden hash
+# Settings saved on the admin page go to config.json in the data directory
+# and override the environment; turn vaultwarden_admin_config_disabled on to
+# leave the environment, and so this role, in charge.
+# ---------------------------------------------------------------------------
+vaultwarden_admin_token: ""
+vaultwarden_admin_config_disabled: false
+
+# ---------------------------------------------------------------------------
+# Email
+#
+# Off while vaultwarden_smtp_host is empty. Used for invitations, email
+# verification and new-device alerts.
+# ---------------------------------------------------------------------------
+vaultwarden_smtp_host: ""
+vaultwarden_smtp_port: 587
+# starttls, force_tls (implicit TLS, usually 465) or off
+vaultwarden_smtp_security: starttls
+vaultwarden_smtp_from: ""
+vaultwarden_smtp_from_name: Vaultwarden
+vaultwarden_smtp_username: ""
+vaultwarden_smtp_password: ""
+
+# ---------------------------------------------------------------------------
+# Signing in through an OIDC provider (Authelia)
+#
+# Give the provider a confidential client with the redirect URI
+# "<vaultwarden_domain>/identity/connect/oidc-signin". The master password is
+# still needed to unlock the vault: SSO only replaces the email and password
+# step. vaultwarden_sso_only turns that step off.
+#
+# vaultwarden_sso_authority is the provider's issuer, exactly as its discovery
+# document gives it, without /.well-known/openid-configuration.
+#
+# With vaultwarden_sso_auth_only_not_session (the default here), the provider
+# is asked only at sign-in, and Vaultwarden keeps the session itself, so no
+# refresh token (offline_access) is needed and people stay signed in while the
+# provider is down. Turned off, sessions last as long as the provider's tokens.
+# ---------------------------------------------------------------------------
+vaultwarden_sso_enabled: false
+vaultwarden_sso_only: false
+vaultwarden_sso_authority: ""
+vaultwarden_sso_client_id: vaultwarden
+vaultwarden_sso_client_secret: ""
+vaultwarden_sso_scopes: "email profile"
+vaultwarden_sso_pkce: true
+# Links a first SSO sign-in to the existing account with the same email
+vaultwarden_sso_signups_match_email: true
+vaultwarden_sso_auth_only_not_session: true
 
 # Verification
 vaultwarden_verify_enabled: true

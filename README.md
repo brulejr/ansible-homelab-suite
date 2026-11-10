@@ -71,7 +71,7 @@ ansible-homelab-suite/
    ├─ portainer/
    ├─ homarr/
    ├─ wikijs/
-   ├─ vaultwarden/
+   ├─ vaultwarden/         # password manager, Bitwarden-compatible, with OIDC sign-in
    ├─ nexus/
    ├─ homeassistant/
    ├─ nodered/

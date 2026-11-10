@@ -8,5 +8,51 @@
       - vaultwarden_data_dir | length > 0
       - vaultwarden_image | length > 0
       - vaultwarden_docker_network | length > 0
-      - vaultwarden_host_port is defined
-    fail_msg: "Vaultwarden role configuration is invalid."
+      - vaultwarden_bind_ip | length > 0
+      - vaultwarden_host_port | int > 0
+      - vaultwarden_domain | length == 0 or vaultwarden_domain is match('^https?://[^/]+')
+      - vaultwarden_smtp_security in ['starttls', 'force_tls', 'off']
+      - vaultwarden_environment is mapping
+    fail_msg: >-
+      Vaultwarden role configuration is invalid. vaultwarden_domain, if set,
+      is a full URL such as https://vaultwarden.example.invalid.
+
+- name: Validate Vaultwarden email
+  ansible.builtin.assert:
+    that:
+      - vaultwarden_smtp_from | length > 0
+      - vaultwarden_smtp_username | length == 0 or vaultwarden_smtp_password | trim | length > 0
+    fail_msg: >-
+      With vaultwarden_smtp_host, set vaultwarden_smtp_from, and with
+      vaultwarden_smtp_username, vaultwarden_smtp_password (in the vault).
+  no_log: true
+  when: vaultwarden_smtp_host | length > 0
+
+# A plain token works but is stored, and logged as a warning, in the clear
+- name: Validate Vaultwarden admin token
+  ansible.builtin.assert:
+    that:
+      - vaultwarden_admin_token | trim is match('^\$argon2(id|i|d)\$')
+      - "\"'\" not in vaultwarden_admin_token"
+    fail_msg: >-
+      vaultwarden_admin_token must be an Argon2 PHC string, from
+      "docker run --rm -it vaultwarden/server /vaultwarden hash".
+  no_log: true
+  when: vaultwarden_admin_token | trim | length > 0
+
+- name: Validate Vaultwarden SSO
+  ansible.builtin.assert:
+    that:
+      - vaultwarden_domain is match('^https://')
+      - vaultwarden_sso_authority is match('^https://')
+      - not (vaultwarden_sso_authority is search('/\.well-known/'))
+      - vaultwarden_sso_client_id | length > 0
+      - vaultwarden_sso_client_secret | trim | length > 0
+      - "\"'\" not in vaultwarden_sso_client_secret"
+    fail_msg: >-
+      With vaultwarden_sso_enabled, set an https vaultwarden_domain, the
+      provider's issuer as vaultwarden_sso_authority (without
+      /.well-known/openid-configuration), vaultwarden_sso_client_id and
+      vaultwarden_sso_client_secret (in the vault).
+  no_log: true
+  when: vaultwarden_sso_enabled | bool

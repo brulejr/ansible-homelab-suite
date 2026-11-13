@@ -1,0 +1,14 @@
+---
+- name: Validate group-notify-manager configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: group_notify_manager_enabled | bool
+
+- name: Install and configure group-notify-manager
+  ansible.builtin.include_tasks: install.yml
+  when: group_notify_manager_enabled | bool
+
+- name: Verify group-notify-manager
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - group_notify_manager_enabled | bool
+    - group_notify_manager_verify_enabled | bool

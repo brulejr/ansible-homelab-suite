@@ -1,0 +1,150 @@
+---
+group_notify_manager_enabled: true
+
+group_notify_manager_stack_name: group-notify-manager
+# The application's container; Traefik reaches it by this name on port 5002.
+# PostgreSQL is <name>-postgres.
+group_notify_manager_container_name: group-notify-manager
+
+# Paths
+group_notify_manager_app_dir: "{{ docker_dir }}/group-notify-manager"
+group_notify_manager_src_dir: "{{ group_notify_manager_app_dir }}/src"
+group_notify_manager_secrets_dir: "{{ group_notify_manager_app_dir }}/secrets"
+group_notify_manager_ssh_dir: "{{ group_notify_manager_app_dir }}/ssh"
+group_notify_manager_data_dir: "{{ data_dir }}/group-notify-manager"
+# Extra delivery plugin jars, mounted read-only at /app/plugins (see the
+# application's docs/plugins.md). The bundled plugins need nothing here.
+group_notify_manager_plugins_dir: "{{ group_notify_manager_data_dir }}/plugins"
+
+# ---------------------------------------------------------------------------
+# Source checkout (over SSH)
+#
+# The application image is built on the target from this checkout; nothing is
+# pulled from or pushed to a registry. The checkout is owned by the role: local
+# changes on the host are discarded on the next deploy.
+#
+# Authentication uses an SSH key. Either supply the private key itself
+# (group_notify_manager_git_ssh_private_key, from the vault; it is written to
+# group_notify_manager_git_key_file), or leave it empty and point
+# group_notify_manager_git_key_file at a key already present on the host.
+# ---------------------------------------------------------------------------
+group_notify_manager_git_repo: "git@github.com:brulejr/group-notify-manager.git"
+group_notify_manager_git_version: main
+group_notify_manager_git_ssh_private_key: ""
+group_notify_manager_git_key_file: "{{ group_notify_manager_ssh_dir }}/id_deploy"
+group_notify_manager_git_known_hosts_file: "{{ group_notify_manager_ssh_dir }}/known_hosts"
+
+# ---------------------------------------------------------------------------
+# Application image build
+#
+# The image is tagged with the commit it was built from, so a deploy builds
+# only when the checked-out commit has no image yet. Gradle runs in a throwaway
+# JDK container (nothing Java is installed on the host); its cache lives in a
+# named volume so rebuilds do not download dependencies again.
+# Use "build" instead of "bootJar" to refuse a commit whose tests fail.
+# ---------------------------------------------------------------------------
+group_notify_manager_image_name: group-notify-manager
+group_notify_manager_builder_image: "eclipse-temurin:21-jdk"
+group_notify_manager_gradle_tasks:
+  - bootJar
+group_notify_manager_gradle_cache_volume: group-notify-manager-gradle
+group_notify_manager_force_rebuild: false
+
+# Keep in step with the upstream docker/prod/compose.prod.yaml
+group_notify_manager_postgres_image: "postgres:17"
+group_notify_manager_restart_policy: unless-stopped
+
+# PostgreSQL's user, which owns its data directory on the host
+group_notify_manager_postgres_uid: 999
+
+# ---------------------------------------------------------------------------
+# Networking
+#
+# The application joins the shared Docker network so Traefik can reach it as
+# <group_notify_manager_container_name>:5002. PostgreSQL stays on the stack's
+# private network.
+#
+# The application has no login of its own: it believes the Remote-* headers
+# Traefik copies from Authelia. Its port is on loopback by default, so the
+# portal is the only way in; publishing it anywhere else lets anyone who can
+# reach it claim to be anyone.
+# ---------------------------------------------------------------------------
+group_notify_manager_docker_network: "{{ docker_network }}"
+group_notify_manager_bind_ip: 127.0.0.1
+group_notify_manager_host_port: "{{ app_port_group_notify_manager }}"
+
+# Loopback only, for psql from the host
+group_notify_manager_postgres_bind_ip: 127.0.0.1
+group_notify_manager_postgres_host_port: "{{ app_port_group_notify_manager_postgres }}"
+
+# ---------------------------------------------------------------------------
+# Application settings
+# ---------------------------------------------------------------------------
+# Members of this LLDAP group see and manage every group's notifications and
+# provision delivery instances
+group_notify_manager_admin_group: homelab_admins
+# Which of a user's groups hold notifications: a regular expression the whole
+# group name must match, e.g. "notify_.*" or "club|family". The default, every
+# group, also offers the admin group and LLDAP's own.
+group_notify_manager_group_pattern: ".*"
+
+# Where the forward-auth headers are believed from; empty believes them from
+# any sender, which is safe while the port is on loopback and Traefik is the
+# only way in. Leave it empty for now: the application checks the address
+# after Spring has replaced it with X-Forwarded-For (its
+# server.forward-headers-strategy is framework), so it sees the browser's
+# address, never Traefik's, and an address range here refuses everyone.
+group_notify_manager_trusted_proxies: ""
+# The console's sign-out link, e.g. https://auth.example.invalid/logout
+group_notify_manager_logout_url: ""
+group_notify_manager_console_title: "Group Notify"
+# New notifications' time zone
+group_notify_manager_default_zone: "{{ timezone }}"
+group_notify_manager_timezone: "{{ timezone }}"
+
+# The database, and the role that owns the application's group_notify schema.
+# Both are created by the repository's docker/postgres/initdb on first start
+# only.
+group_notify_manager_postgres_db: group_notify
+group_notify_manager_postgres_app_username: group_notify
+
+# Optional SMTP, only for an external plugin that sends mail; none of the
+# bundled ones do. The password belongs in the vault.
+group_notify_manager_mail_host: ""
+group_notify_manager_mail_port: 587
+group_notify_manager_mail_username: ""
+group_notify_manager_mail_password: ""
+group_notify_manager_mail_from: ""
+group_notify_manager_mail_from_name: ""
+
+# Additional environment for the application container, by the property's
+# name in upper case, e.g. NOTIFY_DISPATCH_MISFIRE_GRACE: 2h
+group_notify_manager_environment: {}
+
+# ---------------------------------------------------------------------------
+# Secrets (keep them in the vault)
+#
+# Each is written to a file under group_notify_manager_secrets_dir and mounted
+# into the containers that need it as a Docker Compose secret
+# (/run/secrets/...); none appears in docker-compose.yml or in a container's
+# environment as configured.
+#
+# group_notify_manager_postgres_admin_password  the superuser, postgres
+#     (administration). Generate with: openssl rand -base64 24 | tr -d '/+='
+# group_notify_manager_postgres_app_password    the application's role; same
+# group_notify_manager_secret_key   encrypts delivery instances' credentials
+#     (AES-256-GCM): 32 bytes in base64, openssl rand -base64 32. Never change
+#     it: the stored credentials could no longer be read, and must be entered
+#     again.
+#
+# Both passwords take effect only on the first start with an empty data
+# directory, when the roles are created. To change one later, change it in
+# the database as well (ALTER ROLE ... PASSWORD).
+# ---------------------------------------------------------------------------
+group_notify_manager_postgres_admin_password: ""
+group_notify_manager_postgres_app_password: ""
+group_notify_manager_secret_key: ""
+
+# Verification
+group_notify_manager_verify_enabled: true
+group_notify_manager_verify_timeout: 180

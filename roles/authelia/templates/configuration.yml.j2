@@ -87,6 +87,7 @@ session:
   remember_me: "{{ authelia_session_remember_me }}"
   cookies:
     - domain: "{{ authelia_session_domain }}"
+      name: "{{ authelia_session_cookie_name }}"
       authelia_url: "https://{{ authelia_fqdn }}"
 {% if authelia_default_redirection_url | length > 0 %}
       default_redirection_url: "{{ authelia_default_redirection_url }}"

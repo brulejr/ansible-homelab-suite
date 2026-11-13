@@ -50,6 +50,8 @@ app_port_authelia: 9091
 app_port_esphome: 6052
 app_port_forgejo: 8117
 app_port_forgejo_ssh: 2222
+app_port_group_notify_manager: 8121
+app_port_group_notify_manager_postgres: 5433
 app_port_gitea: 8112
 app_port_guacamole: 8101
 app_port_homarr: 7575

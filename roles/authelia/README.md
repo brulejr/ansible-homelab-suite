@@ -36,6 +36,12 @@ The portal needs its own edge route, without `sso`, at `authelia_fqdn`. Its
 session cookie is set for `authelia_session_domain`, so every protected app
 must be under that domain.
 
+A second Authelia whose session domain sits under the first's (for example
+`dmz.example.invalid` under `example.invalid`) needs its own
+`authelia_session_cookie_name`. Browsers send both cookies to the inner
+domain's apps, and if the names match, each portal reads the other's
+session.
+
 Direct ports
 ------------
 

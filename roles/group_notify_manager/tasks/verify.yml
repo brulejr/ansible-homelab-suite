@@ -1,0 +1,38 @@
+---
+- name: Check group-notify-manager container state
+  community.docker.docker_container_info:
+    name: "{{ group_notify_manager_container_name }}{{ item }}"
+  register: group_notify_manager_container_info
+  loop: ['', '-postgres']
+
+- name: Assert group-notify-manager containers are running
+  ansible.builtin.assert:
+    that:
+      - item.exists
+      - item.container.State.Running
+    fail_msg: >-
+      Container {{ group_notify_manager_container_name }}{{ item.item }} is not running.
+      Status={{ item.container.State.Status | default('missing') }},
+      exit_code={{ item.container.State.ExitCode | default('unknown') }}
+  loop: "{{ group_notify_manager_container_info.results }}"
+  loop_control:
+    label: "{{ group_notify_manager_container_name }}{{ item.item }}"
+
+# Open without a login. 503 until PostgreSQL is reachable and the scheduler
+# polls; docker logs group-notify-manager says why.
+- name: Wait for group-notify-manager health endpoint
+  ansible.builtin.uri:
+    url: "http://{{ group_notify_manager_bind_ip }}:{{ group_notify_manager_host_port }}/mgmt/health"
+    method: GET
+    status_code: 200
+  register: group_notify_manager_health
+  retries: "{{ (group_notify_manager_verify_timeout | int / 5) | round(0, 'ceil') | int }}"
+  delay: 5
+  until: group_notify_manager_health.status == 200
+
+# Without the forward-auth headers, everything else must be refused
+- name: Verify group-notify-manager refuses a request without a sign-in
+  ansible.builtin.uri:
+    url: "http://{{ group_notify_manager_bind_ip }}:{{ group_notify_manager_host_port }}/api/me"
+    method: GET
+    status_code: 401

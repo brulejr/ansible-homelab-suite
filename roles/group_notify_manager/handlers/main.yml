@@ -1,0 +1,6 @@
+---
+- name: Restart group-notify-manager
+  community.docker.docker_compose_v2:
+    project_src: "{{ group_notify_manager_app_dir }}"
+    project_name: "{{ group_notify_manager_stack_name }}"
+    state: restarted

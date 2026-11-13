@@ -1,0 +1,72 @@
+---
+- name: Validate group-notify-manager required variables
+  ansible.builtin.assert:
+    that:
+      - group_notify_manager_stack_name | length > 0
+      - group_notify_manager_container_name | length > 0
+      - group_notify_manager_app_dir | length > 0
+      - group_notify_manager_src_dir | length > 0
+      - group_notify_manager_secrets_dir | length > 0
+      - group_notify_manager_data_dir | length > 0
+      - group_notify_manager_plugins_dir | length > 0
+      - group_notify_manager_docker_network | length > 0
+      - group_notify_manager_bind_ip | length > 0
+      - group_notify_manager_host_port | int > 0
+      - group_notify_manager_postgres_host_port | int > 0
+      - group_notify_manager_gradle_tasks | length > 0
+      - group_notify_manager_admin_group | length > 0
+      - group_notify_manager_group_pattern | length > 0
+    fail_msg: "group-notify-manager role configuration is invalid."
+
+- name: Validate group-notify-manager Git source
+  ansible.builtin.assert:
+    that:
+      - group_notify_manager_git_repo is match('^(ssh://|[A-Za-z0-9._-]+@)')
+      - group_notify_manager_git_version | length > 0
+      - group_notify_manager_git_key_file | length > 0
+    fail_msg: "group_notify_manager_git_repo must be an SSH URL (git@github.com:owner/repo.git)."
+
+# A key whose line breaks were lost on the way into the vault fails in ssh with
+# only "error in libcrypto"
+- name: Validate group-notify-manager Git deploy key format
+  ansible.builtin.assert:
+    that:
+      - group_notify_manager_git_ssh_private_key | trim is match('-----BEGIN [A-Z ]*PRIVATE KEY-----\n')
+      - group_notify_manager_git_ssh_private_key | trim is search('\n-----END [A-Z ]*PRIVATE KEY-----$')
+    fail_msg: >-
+      group_notify_manager_git_ssh_private_key must be the whole private key file,
+      including its BEGIN and END lines and its line breaks. In the vault, use a
+      block scalar: 'vault_group_notify_manager_git_ssh_private_key: |' followed by
+      the key file indented two spaces.
+  when: group_notify_manager_git_ssh_private_key | length > 0
+
+- name: Validate group-notify-manager secrets
+  ansible.builtin.assert:
+    that:
+      - group_notify_manager_postgres_admin_password | length > 0
+      - group_notify_manager_postgres_app_password | length > 0
+      # 32 bytes in base64 is 44 characters, padding included
+      - group_notify_manager_secret_key | trim | length == 44
+    fail_msg: >-
+      group_notify_manager_postgres_admin_password,
+      group_notify_manager_postgres_app_password and group_notify_manager_secret_key
+      must be set, preferably from the vault. The secret key is 32 bytes in base64:
+      openssl rand -base64 32.
+
+- name: Validate group-notify-manager mail login
+  ansible.builtin.assert:
+    that:
+      - (group_notify_manager_mail_username | length > 0) == (group_notify_manager_mail_password | length > 0)
+    fail_msg: "Set both group_notify_manager_mail_username and _password, or neither."
+
+# Both become SQL identifiers; keep them to names PostgreSQL never needs quoted
+- name: Validate group-notify-manager PostgreSQL names
+  ansible.builtin.assert:
+    that:
+      - group_notify_manager_postgres_db is match('^[a-z_][a-z0-9_]{0,62}$')
+      - group_notify_manager_postgres_app_username is match('^[a-z_][a-z0-9_]{0,62}$')
+      - group_notify_manager_postgres_app_username != 'postgres'
+    fail_msg: >-
+      group_notify_manager_postgres_db and group_notify_manager_postgres_app_username
+      must be lower-case letters, digits and underscores, and the username cannot be
+      postgres.

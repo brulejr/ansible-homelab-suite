@@ -1,0 +1,154 @@
+---
+- name: Ensure group-notify-manager app directory exists
+  ansible.builtin.file:
+    path: "{{ group_notify_manager_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Secret files are world-readable so each container user can read its own,
+# which the directory's mode keeps from other users on the host.
+- name: Ensure group-notify-manager private directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  loop:
+    - "{{ group_notify_manager_secrets_dir }}"
+    - "{{ group_notify_manager_ssh_dir }}"
+
+- name: Ensure group-notify-manager data directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.uid }}"
+    group: "{{ item.uid }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ group_notify_manager_data_dir }}", uid: 0, mode: "0755" }
+    - { path: "{{ group_notify_manager_data_dir }}/postgres", uid: "{{ group_notify_manager_postgres_uid }}", mode: "0750" }
+    # Read by the image's own "app" user, whatever its uid
+    - { path: "{{ group_notify_manager_plugins_dir }}", uid: 0, mode: "0755" }
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Install group-notify-manager Git deploy key
+  ansible.builtin.copy:
+    dest: "{{ group_notify_manager_git_key_file }}"
+    content: "{{ group_notify_manager_git_ssh_private_key | trim }}\n"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  when: group_notify_manager_git_ssh_private_key | length > 0
+
+- name: Check out group-notify-manager source
+  ansible.builtin.git:
+    repo: "{{ group_notify_manager_git_repo }}"
+    dest: "{{ group_notify_manager_src_dir }}"
+    version: "{{ group_notify_manager_git_version }}"
+    key_file: "{{ group_notify_manager_git_key_file }}"
+    accept_newhostkey: true
+    ssh_opts: "-o UserKnownHostsFile={{ group_notify_manager_git_known_hosts_file }}"
+    force: true
+  register: group_notify_manager_git_result
+
+- name: Set group-notify-manager image version
+  ansible.builtin.set_fact:
+    group_notify_manager_version: "{{ group_notify_manager_git_result.after[:12] }}"
+
+- name: Look up group-notify-manager image for this commit
+  community.docker.docker_image_info:
+    name: "{{ group_notify_manager_image_name }}:{{ group_notify_manager_version }}"
+  register: group_notify_manager_image_info
+
+- name: Decide whether to build the group-notify-manager image
+  ansible.builtin.set_fact:
+    group_notify_manager_needs_build: >-
+      {{ (group_notify_manager_force_rebuild | bool)
+         or (group_notify_manager_image_info.images | length == 0) }}
+
+# The upstream Dockerfile packages a jar Gradle has already built
+- name: Build group-notify-manager jar
+  ansible.builtin.command:
+    argv: >-
+      {{
+        ['docker', 'run', '--rm',
+         '-v', group_notify_manager_src_dir ~ ':/workspace',
+         '-v', group_notify_manager_gradle_cache_volume ~ ':/root/.gradle',
+         '-w', '/workspace',
+         group_notify_manager_builder_image,
+         './gradlew', '--no-daemon', '--console=plain']
+        + group_notify_manager_gradle_tasks
+      }}
+  changed_when: true
+  when: group_notify_manager_needs_build | bool
+
+# Each file's name is the placeholder it resolves in the application's
+# application.yml, through Spring's configtree (see docker-compose.yml.j2)
+- name: Write group-notify-manager secrets
+  ansible.builtin.copy:
+    dest: "{{ group_notify_manager_secrets_dir }}/{{ item.name }}"
+    content: "{{ item.content }}"
+    owner: root
+    group: root
+    mode: "0444"
+  loop:
+    - name: postgres_admin_password
+      content: "{{ group_notify_manager_postgres_admin_password | trim }}"
+    - name: postgres_app_password
+      content: "{{ group_notify_manager_postgres_app_password | trim }}"
+    - name: secret_key
+      content: "{{ group_notify_manager_secret_key | trim }}"
+    - name: mail_password
+      content: "{{ group_notify_manager_mail_password | trim }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true
+  # A changed secret alters no compose configuration, so nothing is recreated
+  notify: Restart group-notify-manager
+
+- name: Render group-notify-manager docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ group_notify_manager_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start group-notify-manager stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ group_notify_manager_app_dir }}"
+    project_name: "{{ group_notify_manager_stack_name }}"
+    state: present
+    build: "{{ 'always' if group_notify_manager_needs_build | bool else 'never' }}"
+    pull: policy
+    remove_orphans: true
+
+# Each commit leaves an image behind; keep only the one now running
+- name: List group-notify-manager images
+  ansible.builtin.command:
+    argv:
+      - docker
+      - image
+      - ls
+      - --filter
+      - "reference={{ group_notify_manager_image_name }}"
+      - --format
+      - "{% raw %}{{.Repository}}:{{.Tag}}{% endraw %}"
+  register: group_notify_manager_image_list
+  changed_when: false
+
+- name: Remove superseded group-notify-manager images
+  community.docker.docker_image_remove:
+    name: "{{ item }}"
+  loop: >-
+    {{
+      group_notify_manager_image_list.stdout_lines
+      | reject('equalto', group_notify_manager_image_name ~ ':' ~ group_notify_manager_version)
+      | reject('search', ':<none>$')
+      | list
+    }}

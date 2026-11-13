@@ -1,0 +1,107 @@
+# Adapted from docker/prod/compose.prod.yaml in {{ group_notify_manager_git_repo }}.
+# Secrets are files mounted under /run/secrets; nothing secret is set here.
+services:
+  app:
+    build:
+      context: "{{ group_notify_manager_src_dir }}"
+      dockerfile: docker/Dockerfile
+    image: "{{ group_notify_manager_image_name }}:{{ group_notify_manager_version }}"
+    container_name: "{{ group_notify_manager_container_name }}"
+    restart: "{{ group_notify_manager_restart_policy }}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    labels:
+      # Built here, so there is no registry for Watchtower to update it from
+      com.centurylinklabs.watchtower.enable: "false"
+    environment:
+      PROFILE: prod
+      TZ: "{{ group_notify_manager_timezone }}"
+      # Each file in /run/secrets becomes a property named after it, which
+      # resolves the ${POSTGRES_APP_PASSWORD}, ${NOTIFY_SECRET_KEY} and
+      # ${MAIL_PASSWORD} placeholders in the application's application.yml.
+      SPRING_CONFIG_IMPORT: "configtree:/run/secrets/"
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: "{{ group_notify_manager_postgres_db }}"
+      POSTGRES_APP_USERNAME: "{{ group_notify_manager_postgres_app_username }}"
+      ADMIN_GROUP: "{{ group_notify_manager_admin_group }}"
+      GROUP_PATTERN: "{{ group_notify_manager_group_pattern }}"
+      TRUSTED_PROXIES: "{{ group_notify_manager_trusted_proxies }}"
+      LOGOUT_URL: "{{ group_notify_manager_logout_url }}"
+      CONSOLE_TITLE: "{{ group_notify_manager_console_title }}"
+      DEFAULT_ZONE: "{{ group_notify_manager_default_zone }}"
+{% if group_notify_manager_mail_host | length > 0 %}
+      MAIL_HOST: "{{ group_notify_manager_mail_host }}"
+      MAIL_PORT: "{{ group_notify_manager_mail_port }}"
+      MAIL_USERNAME: "{{ group_notify_manager_mail_username }}"
+      MAIL_FROM: "{{ group_notify_manager_mail_from }}"
+      MAIL_FROM_NAME: "{{ group_notify_manager_mail_from_name }}"
+{% endif %}
+{% for key, value in group_notify_manager_environment.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+    secrets:
+      - source: postgres_app_password
+        target: POSTGRES_APP_PASSWORD
+      - source: secret_key
+        target: NOTIFY_SECRET_KEY
+{% if group_notify_manager_mail_username | length > 0 %}
+      - source: mail_password
+        target: MAIL_PASSWORD
+{% endif %}
+    ports:
+      - "{{ group_notify_manager_bind_ip }}:{{ group_notify_manager_host_port }}:5002"
+    volumes:
+      - "{{ group_notify_manager_plugins_dir }}:/app/plugins:ro"
+    networks:
+      - default
+      - {{ group_notify_manager_docker_network }}
+
+  postgres:
+    image: "{{ group_notify_manager_postgres_image }}"
+    container_name: "{{ group_notify_manager_container_name }}-postgres"
+    restart: "{{ group_notify_manager_restart_policy }}"
+    # The repository's initdb script reads the application role's password from
+    # its environment, so load it from the secret before handing over to the
+    # image's entrypoint. Overriding the entrypoint drops the image's default
+    # command, hence the explicit one.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - 'export POSTGRES_APP_PASSWORD="$$(cat /run/secrets/postgres_app_password)"; exec docker-entrypoint.sh "$$@"'
+      - postgres
+    command: ["postgres"]
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_admin_password
+      POSTGRES_DB: "{{ group_notify_manager_postgres_db }}"
+      POSTGRES_APP_USERNAME: "{{ group_notify_manager_postgres_app_username }}"
+    secrets:
+      - postgres_admin_password
+      - postgres_app_password
+    ports:
+      - "{{ group_notify_manager_postgres_bind_ip }}:{{ group_notify_manager_postgres_host_port }}:5432"
+    volumes:
+      - "{{ group_notify_manager_data_dir }}/postgres:/var/lib/postgresql/data"
+      # Creates the application's role and schema on the first start only
+      - "{{ group_notify_manager_src_dir }}/docker/postgres/initdb:/docker-entrypoint-initdb.d:ro"
+    healthcheck:
+      # Over TCP, which only answers once initdb has finished
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+secrets:
+  postgres_admin_password:
+    file: "{{ group_notify_manager_secrets_dir }}/postgres_admin_password"
+  postgres_app_password:
+    file: "{{ group_notify_manager_secrets_dir }}/postgres_app_password"
+  secret_key:
+    file: "{{ group_notify_manager_secrets_dir }}/secret_key"
+  mail_password:
+    file: "{{ group_notify_manager_secrets_dir }}/mail_password"
+
+networks:
+  {{ group_notify_manager_docker_network }}:
+    external: true

@@ -27,6 +27,10 @@ authelia_container_port: 9091
 # every protected app must be under that domain.
 authelia_fqdn: "auth.{{ domain_name }}"
 authelia_session_domain: "{{ domain_name }}"
+# Give each Authelia its own name when one's session domain is under
+# another's: a browser sends both cookies to the inner domain's apps, and
+# with the same name, each portal would read the other's session.
+authelia_session_cookie_name: authelia_session
 # Where the portal sends users who open it directly; empty shows the portal
 authelia_default_redirection_url: ""
 

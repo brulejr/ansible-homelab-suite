@@ -1,0 +1,15 @@
+---
+- name: Setup the dmz servers
+  hosts: dmz_servers
+  become: true
+  roles:
+    - common
+    - docker
+    - watchtower
+    # A standalone sign-in stack: its own edge, directory and portal, shared
+    # with no other group
+    - traefik
+    - traefik_apps
+    - lldap
+    - authelia
+    - group_notify_manager

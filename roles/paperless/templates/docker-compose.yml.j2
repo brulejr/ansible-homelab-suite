@@ -1,0 +1,143 @@
+---
+# Adapted from paperless-ngx's docker/compose/docker-compose.postgres(-tika).yml.
+# Every secret is a file mounted under /run/secrets, read through Paperless's
+# *_FILE variables and PostgreSQL's POSTGRES_PASSWORD_FILE.
+services:
+  paperless-broker:
+    image: "{{ paperless_broker_image }}"
+    container_name: "{{ paperless_broker_container_name }}"
+    restart: "{{ paperless_restart_policy }}"
+    volumes:
+      - "{{ paperless_broker_dir }}:/data"
+    networks:
+      - default
+
+  paperless-db:
+    image: "{{ paperless_db_image }}"
+    container_name: "{{ paperless_db_container_name }}"
+    restart: "{{ paperless_restart_policy }}"
+    environment:
+      TZ: "{{ paperless_time_zone }}"
+      POSTGRES_USER: "{{ paperless_db_user }}"
+      POSTGRES_DB: "{{ paperless_db_name }}"
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    volumes:
+      # PostgreSQL 18 keeps its files in a versioned directory under here
+      - "{{ paperless_db_dir }}:/var/lib/postgresql"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username=\"$$POSTGRES_USER\" --dbname=\"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    networks:
+      - default
+{% if paperless_tika_enabled | bool %}
+
+  paperless-gotenberg:
+    image: "{{ paperless_gotenberg_image }}"
+    container_name: "{{ paperless_gotenberg_container_name }}"
+    restart: "{{ paperless_restart_policy }}"
+    # Gotenberg's Chromium converts .eml files; keep it from running their
+    # JavaScript or loading anything from outside, such as tracking pixels
+    command:
+      - "gotenberg"
+      - "--chromium-disable-javascript=true"
+      - "--chromium-allow-list=^file:///tmp/.*"
+    networks:
+      - default
+
+  paperless-tika:
+    image: "{{ paperless_tika_image }}"
+    container_name: "{{ paperless_tika_container_name }}"
+    restart: "{{ paperless_restart_policy }}"
+    networks:
+      - default
+{% endif %}
+
+  paperless:
+    image: "{{ paperless_image }}"
+    container_name: "{{ paperless_container_name }}"
+    restart: "{{ paperless_restart_policy }}"
+    depends_on:
+      paperless-db:
+        condition: service_healthy
+      paperless-broker:
+        condition: service_started
+{% if paperless_tika_enabled | bool %}
+      paperless-gotenberg:
+        condition: service_started
+      paperless-tika:
+        condition: service_started
+{% endif %}
+    environment:
+      USERMAP_UID: "{{ paperless_uid }}"
+      USERMAP_GID: "{{ paperless_gid }}"
+      PAPERLESS_TIME_ZONE: "{{ paperless_time_zone }}"
+      PAPERLESS_OCR_LANGUAGE: "{{ paperless_ocr_language }}"
+      PAPERLESS_URL: "https://{{ paperless_fqdn }}"
+      # Only Traefik reaches the port, and it sets this header itself
+      PAPERLESS_PROXY_SSL_HEADER: '["HTTP_X_FORWARDED_PROTO", "https"]'
+      PAPERLESS_SECRET_KEY_FILE: /run/secrets/secret_key
+      PAPERLESS_REDIS: "redis://{{ paperless_broker_container_name }}:6379"
+      PAPERLESS_DBENGINE: postgresql
+      PAPERLESS_DBHOST: "{{ paperless_db_container_name }}"
+      PAPERLESS_DBNAME: "{{ paperless_db_name }}"
+      PAPERLESS_DBUSER: "{{ paperless_db_user }}"
+      PAPERLESS_DBPASS_FILE: /run/secrets/db_password
+      PAPERLESS_ACCOUNT_ALLOW_SIGNUPS: "false"
+{% if paperless_logout_redirect_url | length > 0 %}
+      PAPERLESS_LOGOUT_REDIRECT_URL: "{{ paperless_logout_redirect_url }}"
+{% endif %}
+{% if paperless_oidc_enabled | bool %}
+      PAPERLESS_APPS: allauth.socialaccount.providers.openid_connect
+      PAPERLESS_SOCIALACCOUNT_PROVIDERS_FILE: /run/secrets/socialaccount_providers
+      PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: "true"
+      PAPERLESS_SOCIAL_AUTO_SIGNUP: "true"
+      PAPERLESS_DISABLE_REGULAR_LOGIN: "true"
+      PAPERLESS_REDIRECT_LOGIN_TO_SSO: "{{ paperless_oidc_redirect_to_sso | bool | lower }}"
+      PAPERLESS_SOCIAL_ACCOUNT_SYNC_GROUPS: "{{ paperless_oidc_sync_groups | bool | lower }}"
+{% if paperless_oidc_superuser_group | length > 0 %}
+      PAPERLESS_SOCIAL_ACCOUNT_SYNC_SUPERUSER_GROUP: "{{ paperless_oidc_superuser_group }}"
+{% endif %}
+{% endif %}
+{% if paperless_tika_enabled | bool %}
+      PAPERLESS_TIKA_ENABLED: "true"
+      PAPERLESS_TIKA_ENDPOINT: "http://{{ paperless_tika_container_name }}:9998"
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: "http://{{ paperless_gotenberg_container_name }}:3000"
+{% endif %}
+{% for key, value in paperless_environment.items() %}
+      {{ key }}: {{ value | string | to_json }}
+{% endfor %}
+    secrets:
+      - secret_key
+      - db_password
+{% if paperless_oidc_enabled | bool %}
+      - socialaccount_providers
+{% endif %}
+    ports:
+      - "{{ paperless_bind_ip }}:{{ paperless_host_port }}:8000"
+    volumes:
+      - "{{ paperless_data_dir }}:/usr/src/paperless/data"
+      - "{{ paperless_media_dir }}:/usr/src/paperless/media"
+      - "{{ paperless_consume_dir }}:/usr/src/paperless/consume"
+      - "{{ paperless_export_dir }}:/usr/src/paperless/export"
+    networks:
+      - default
+      - {{ paperless_docker_network }}
+
+networks:
+  {{ paperless_docker_network }}:
+    external: true
+
+secrets:
+  secret_key:
+    file: "{{ paperless_secrets_dir }}/secret_key"
+  db_password:
+    file: "{{ paperless_secrets_dir }}/db_password"
+{% if paperless_oidc_enabled | bool %}
+  socialaccount_providers:
+    file: "{{ paperless_secrets_dir }}/socialaccount_providers"
+{% endif %}

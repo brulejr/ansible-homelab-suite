@@ -1,0 +1,53 @@
+---
+- name: Check Paperless container state
+  community.docker.docker_container_info:
+    name: "{{ paperless_container_name }}"
+  register: paperless_container_info
+
+- name: Assert Paperless container is running
+  ansible.builtin.assert:
+    that:
+      - paperless_container_info.exists
+      - paperless_container_info.container.State.Running
+    fail_msg: >-
+      Container {{ paperless_container_name }} is not running.
+      Status={{ paperless_container_info.container.State.Status | default('missing') }},
+      exit_code={{ paperless_container_info.container.State.ExitCode | default('unknown') }}
+
+# The sign-in page answers without a session, once migrations are done.
+# Paperless accepts its own host name only, so ask for it by that name.
+- name: Wait for Paperless to answer
+  ansible.builtin.uri:
+    url: "http://{{ paperless_bind_ip }}:{{ paperless_host_port }}/accounts/login/"
+    method: GET
+    headers:
+      Host: "{{ paperless_fqdn }}"
+    follow_redirects: none
+    status_code: 200
+  register: paperless_login_page
+  until: paperless_login_page.status == 200
+  retries: "{{ paperless_verify_retries }}"
+  delay: "{{ paperless_verify_delay }}"
+  changed_when: false
+
+# Paperless's server fetches this to sign people in, so check it can, from
+# inside the container: the name must resolve and be reachable from there
+- name: Verify Paperless reaches the OIDC provider's discovery
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - "{{ paperless_container_name }}"
+      - curl
+      - --silent
+      - --show-error
+      - --fail
+      - --output
+      - /dev/null
+      - "{{ paperless_oidc_server_url }}/.well-known/openid-configuration"
+  register: paperless_oidc_check
+  until: paperless_oidc_check.rc == 0
+  retries: 6
+  delay: 5
+  changed_when: false
+  when: paperless_oidc_enabled | bool

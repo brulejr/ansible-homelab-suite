@@ -1,0 +1,49 @@
+---
+- name: Validate Paperless required variables
+  ansible.builtin.assert:
+    that:
+      - paperless_stack_name | length > 0
+      - paperless_container_name | length > 0
+      - paperless_db_container_name | length > 0
+      - paperless_broker_container_name | length > 0
+      - paperless_app_dir | length > 0
+      - paperless_root_dir | length > 0
+      - paperless_image | length > 0
+      - paperless_db_image | length > 0
+      - paperless_broker_image | length > 0
+      - paperless_docker_network | length > 0
+      - paperless_bind_ip | length > 0
+      - paperless_host_port | int > 0
+      - paperless_fqdn | length > 0
+      - paperless_fqdn is not search('/')
+      - paperless_uid | int > 0
+      - paperless_gid | int > 0
+      - paperless_db_uid | int > 0
+      - paperless_db_user | length > 0
+      - paperless_db_name | length > 0
+      - paperless_environment is mapping
+    fail_msg: "Paperless role configuration is invalid."
+
+- name: Validate Paperless sign-in
+  ansible.builtin.assert:
+    that:
+      - not (paperless_oidc_enabled | bool) or paperless_oidc_client_id | length > 0
+      - not (paperless_oidc_enabled | bool) or paperless_oidc_provider_id is match('^[a-z0-9_-]+$')
+      - not (paperless_oidc_enabled | bool) or paperless_oidc_server_url is match('^https://')
+      - paperless_logout_redirect_url | length == 0 or paperless_logout_redirect_url is match('^https://')
+    fail_msg: >-
+      With paperless_oidc_enabled, set paperless_oidc_client_id, a
+      paperless_oidc_provider_id of lower-case letters, digits, - and _, and
+      an https paperless_oidc_server_url. paperless_logout_redirect_url must
+      be https or empty.
+
+- name: Validate Paperless secrets
+  ansible.builtin.assert:
+    that:
+      - paperless_secret_key | trim | length >= 50
+      - paperless_db_password | trim | length > 0
+      - not (paperless_oidc_enabled | bool) or paperless_oidc_client_secret | trim | length > 0
+    fail_msg: >-
+      Set paperless_secret_key (at least 50 characters), paperless_db_password
+      and, with OIDC, paperless_oidc_client_secret (in the vault).
+  no_log: true

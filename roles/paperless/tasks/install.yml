@@ -1,0 +1,124 @@
+---
+- name: Ensure Paperless app directory exists
+  ansible.builtin.file:
+    path: "{{ paperless_app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Secret files are world-readable so each container's user can read its own,
+# which the directory's mode keeps from other users on the host.
+- name: Ensure Paperless secrets directory exists
+  ansible.builtin.file:
+    path: "{{ paperless_secrets_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Ensure Paperless root directory exists
+  ansible.builtin.file:
+    path: "{{ paperless_root_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Created owned by Paperless's user; Paperless also hands them to it on start
+- name: Ensure Paperless data directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ paperless_uid }}"
+    group: "{{ paperless_gid }}"
+    mode: "0755"
+  loop:
+    - "{{ paperless_data_dir }}"
+    - "{{ paperless_media_dir }}"
+    - "{{ paperless_consume_dir }}"
+    - "{{ paperless_export_dir }}"
+
+# PostgreSQL 18 keeps its files in 18/docker under this directory, and its
+# entrypoint takes ownership of that subdirectory only, so its user must own
+# this one to reach it
+- name: Ensure Paperless database directory exists
+  ansible.builtin.file:
+    path: "{{ paperless_db_dir }}"
+    state: directory
+    owner: "{{ paperless_db_uid }}"
+    group: "{{ paperless_db_uid }}"
+    mode: "0700"
+
+# No owner: Valkey's entrypoint hands it to its own user
+- name: Ensure Paperless broker directory exists
+  ansible.builtin.file:
+    path: "{{ paperless_broker_dir }}"
+    state: directory
+    mode: "0700"
+
+# No trailing newline: Paperless reads each file whole, and warns about one
+- name: Write Paperless secrets
+  ansible.builtin.copy:
+    dest: "{{ paperless_secrets_dir }}/{{ item.name }}"
+    content: "{{ item.value }}"
+    owner: root
+    group: root
+    mode: "0444"
+  loop:
+    - name: secret_key
+      value: "{{ paperless_secret_key | trim }}"
+    - name: db_password
+      value: "{{ paperless_db_password | trim }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true
+  # A changed secret alters no compose configuration, so nothing is recreated
+  notify: Restart Paperless
+
+- name: Write Paperless OIDC provider settings
+  ansible.builtin.copy:
+    dest: "{{ paperless_secrets_dir }}/socialaccount_providers"
+    content: "{{ paperless_socialaccount_providers | to_json }}"
+    owner: root
+    group: root
+    mode: "0444"
+  vars:
+    paperless_socialaccount_providers:
+      openid_connect:
+        OAUTH_PKCE_ENABLED: true
+        # "groups" for the superuser group and group sync
+        SCOPE: [openid, profile, email, groups]
+        APPS:
+          - provider_id: "{{ paperless_oidc_provider_id }}"
+            name: "{{ paperless_oidc_button_name }}"
+            client_id: "{{ paperless_oidc_client_id }}"
+            secret: "{{ paperless_oidc_client_secret | trim }}"
+            settings:
+              server_url: "{{ paperless_oidc_server_url }}"
+              token_auth_method: client_secret_basic
+  no_log: true
+  when: paperless_oidc_enabled | bool
+  notify: Restart Paperless
+
+- name: Remove Paperless OIDC provider settings
+  ansible.builtin.file:
+    path: "{{ paperless_secrets_dir }}/socialaccount_providers"
+    state: absent
+  when: not (paperless_oidc_enabled | bool)
+
+- name: Render Paperless docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ paperless_app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start Paperless stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ paperless_app_dir }}"
+    project_name: "{{ paperless_stack_name }}"
+    state: present
+    pull: always
+    remove_orphans: true

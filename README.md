@@ -72,6 +72,8 @@ ansible-homelab-suite/
    ├─ homarr/
    ├─ wikijs/
    ├─ vaultwarden/         # password manager, Bitwarden-compatible, with OIDC sign-in
+   ├─ paperless/           # Paperless-ngx document manager, with PostgreSQL and OIDC sign-in
+   ├─ group_notify_manager/ # group notifications app, built from its repository, behind forward-auth
    ├─ nexus/
    ├─ homeassistant/
    ├─ nodered/

@@ -1,0 +1,14 @@
+---
+- name: Validate Paperless configuration
+  ansible.builtin.include_tasks: validate.yml
+  when: paperless_enabled | bool
+
+- name: Install and configure Paperless
+  ansible.builtin.include_tasks: install.yml
+  when: paperless_enabled | bool
+
+- name: Verify Paperless
+  ansible.builtin.include_tasks: verify.yml
+  when:
+    - paperless_enabled | bool
+    - paperless_verify_enabled | bool

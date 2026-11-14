@@ -72,6 +72,7 @@ app_port_nodered: 1880
 app_port_oiltank_monitor: 8116
 app_port_openwebrx: 8073
 app_port_openwebui: 8120
+app_port_paperless: 8122
 app_port_plantuml: 8108
 app_port_portainer: 9000
 app_port_ring_mqtt: 55123

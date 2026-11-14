@@ -1,0 +1,137 @@
+---
+paperless_enabled: true
+
+paperless_stack_name: paperless
+# The web server's container; Traefik reaches it by this name on port 8000
+paperless_container_name: paperless
+paperless_db_container_name: paperless-db
+paperless_broker_container_name: paperless-broker
+paperless_tika_container_name: paperless-tika
+paperless_gotenberg_container_name: paperless-gotenberg
+
+# Paths
+#
+# The app directory holds docker-compose.yml and the secrets; the data
+# directory holds everything Paperless keeps.
+paperless_app_dir: "{{ docker_dir }}/paperless"
+paperless_secrets_dir: "{{ paperless_app_dir }}/secrets"
+paperless_root_dir: "{{ data_dir }}/paperless"
+# Search index, classifier and logs
+paperless_data_dir: "{{ paperless_root_dir }}/data"
+# The documents: originals, archived PDFs and thumbnails
+paperless_media_dir: "{{ paperless_root_dir }}/media"
+# Files dropped here are consumed (imported, then deleted)
+paperless_consume_dir: "{{ paperless_root_dir }}/consume"
+# Where document_exporter writes a full export, for backups
+paperless_export_dir: "{{ paperless_root_dir }}/export"
+paperless_db_dir: "{{ paperless_root_dir }}/db"
+paperless_broker_dir: "{{ paperless_root_dir }}/broker"
+
+# Images
+#
+# Paperless and PostgreSQL are pinned: Paperless migrates its database when
+# it starts, and PostgreSQL doesn't upgrade its files across major versions
+# by itself. Keep the others in step with the upstream compose files
+# (docker/compose/ in the paperless-ngx repository).
+paperless_image: "ghcr.io/paperless-ngx/paperless-ngx:3.4.2"
+paperless_db_image: "docker.io/library/postgres:18"
+paperless_broker_image: "docker.io/valkey/valkey:9-alpine"
+paperless_tika_image: "docker.io/apache/tika:3.3.1.0"
+paperless_gotenberg_image: "docker.io/gotenberg/gotenberg:8.38"
+paperless_restart_policy: unless-stopped
+
+# The owner of the data, media, consume and export directories, which
+# Paperless hands to this user when it starts. Files dropped into the consume
+# directory must be readable by it.
+paperless_uid: 1000
+paperless_gid: 1000
+# PostgreSQL's user in its image, which owns the database directory
+paperless_db_uid: 999
+
+# Networking
+#
+# The web server joins the shared Docker network, so Traefik can reach it by
+# name; the database, broker, Tika and Gotenberg sit on the stack's own
+# network only.
+paperless_docker_network: "{{ docker_network }}"
+paperless_bind_ip: "{{ server_bind_ip }}"
+paperless_host_port: "{{ app_port_paperless }}"
+
+# The address people use, through Traefik. Paperless accepts requests for
+# this host name only (and localhost, for its health check), and builds the
+# sign-in callback from it.
+paperless_fqdn: "paperless.{{ domain_name }}"
+
+paperless_time_zone: "{{ timezone }}"
+# Tesseract's code for the language most documents are in
+paperless_ocr_language: eng
+
+# Office documents and email (.eml) through Apache Tika and Gotenberg, two
+# more containers. Without them Paperless takes PDFs, images and text only.
+paperless_tika_enabled: false
+
+# ---------------------------------------------------------------------------
+# Sign-in
+#
+# With paperless_oidc_enabled, Paperless signs people in through an OpenID
+# Connect provider, as the client paperless_oidc_client_id (see the authelia
+# role's authelia_oidc_clients), with the callback
+#   https://<paperless_fqdn>/accounts/oidc/<paperless_oidc_provider_id>/login/callback/
+# An account is created on first sign-in, named after preferred_username, and
+# the username and password form is turned off. API tokens (for the mobile
+# apps) and the Django admin's own login still work.
+#
+# Group sync reads the provider's "groups" claim on every sign-in:
+# - paperless_oidc_superuser_group makes its members superusers, and takes
+#   superuser away from anyone who has left it
+# - with paperless_oidc_sync_groups, each person is put in the Paperless
+#   groups named like their provider groups (create them in Paperless, with
+#   the permissions they should give), and taken out of every other group
+#
+# Without OIDC, the username and password form is on; create the first
+# superuser with: docker exec -it paperless createsuperuser
+# ---------------------------------------------------------------------------
+paperless_oidc_enabled: false
+paperless_oidc_provider_id: authelia
+paperless_oidc_button_name: "SSO"
+paperless_oidc_client_id: paperless
+paperless_oidc_server_url: "https://auth.{{ domain_name }}"
+paperless_oidc_superuser_group: ""
+paperless_oidc_sync_groups: true
+paperless_oidc_redirect_to_sso: true
+# e.g. Authelia's https://auth.example.invalid/logout
+paperless_logout_redirect_url: ""
+
+# Further environment variables, as a mapping, from
+# https://docs.paperless-ngx.com/configuration/
+paperless_environment: {}
+
+# ---------------------------------------------------------------------------
+# Secrets (keep them in the vault)
+#
+# paperless_secret_key          signs sessions and tokens; changing it signs
+#                               everyone out. At least 50 characters:
+#                               python3 -c 'import secrets; print(secrets.token_urlsafe(64))'
+# paperless_db_password         the database user's; applied only when
+#                               PostgreSQL's data directory is first
+#                               initialised
+# paperless_oidc_client_secret  the OIDC client's, the same one the
+#                               provider's client has
+#
+# Each is written to a file under paperless_secrets_dir and mounted as a
+# Docker Compose secret; Paperless reads them through its *_FILE variables,
+# so none appears in docker-compose.yml or a container's configured
+# environment. The OIDC client secret is in the provider settings file.
+# ---------------------------------------------------------------------------
+paperless_secret_key: ""
+paperless_db_password: ""
+paperless_oidc_client_secret: ""
+paperless_db_user: paperless
+paperless_db_name: paperless
+
+# Verification
+paperless_verify_enabled: true
+# Paperless migrates its database and builds its search index before it
+# answers, longer after an upgrade
+paperless_verify_retries: 60
+paperless_verify_delay: 5

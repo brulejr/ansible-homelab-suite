@@ -241,6 +241,8 @@ defines:
 - the public host name (`fqdn`)
 - the upstream URL (`backend_url`), on the SERVER VLAN
 - optionally `sso`, to put the app behind single sign-on
+- optionally `internal_only`, to answer only `traefik_internal_source_ranges`
+  (for admin UIs on a Traefik that faces the internet)
 
 Example:
 
@@ -358,7 +360,8 @@ ansible-vault create inventories/homelab/vault/vault.yml
 
 Examples of secrets:
 
-- Cloudflare DNS token for Traefik (DNS-01 certs)
+- Cloudflare DNS token for Traefik (DNS-01 certs); give a host that faces the
+  internet its own, through `traefik_cloudflare_dns_token`
 - Authelia and LLDAP secrets (JWT, session and storage keys, the LDAP service
   account and SMTP passwords)
 - Keycloak admin password

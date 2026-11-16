@@ -1,5 +1,5 @@
 api:
-  debug: true
+  debug: {{ traefik_api_debug | bool | lower }}
   dashboard: true
 
 entryPoints:

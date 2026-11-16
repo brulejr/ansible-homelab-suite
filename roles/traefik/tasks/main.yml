@@ -29,6 +29,32 @@
     access_time: preserve
     modification_time: preserve
 
+- name: Validate the Cloudflare DNS token
+  ansible.builtin.assert:
+    that:
+      - traefik_cloudflare_dns_token | trim | length > 0
+    fail_msg: Set traefik_cloudflare_dns_token (in the vault).
+  no_log: true
+
+# Read by Traefik, which runs as root, from the directory only root can open
+- name: Create traefik secrets directory
+  ansible.builtin.file:
+    path: "{{ traefik_secrets_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Write the Cloudflare DNS token
+  ansible.builtin.copy:
+    dest: "{{ traefik_secrets_dir }}/cf_dns_api_token"
+    content: "{{ traefik_cloudflare_dns_token | trim }}"
+    owner: root
+    group: root
+    mode: "0400"
+  no_log: true
+  notify: Traefik | Restart
+
 - name: Create traefik data directory
   ansible.builtin.file:
     path: "{{ traefik_data_dir }}"

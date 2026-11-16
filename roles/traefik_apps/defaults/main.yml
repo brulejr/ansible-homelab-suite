@@ -28,3 +28,17 @@ traefik_sso_auth_response_headers:
   - Remote-Groups
   - Remote-Email
   - Remote-Name
+
+# Internal-only apps
+#
+# When traefik_internal_source_ranges is set, the common route file defines an
+# ipAllowList middleware named traefik_internal_middleware, and every edge app
+# with "internal_only: true" is routed through it, before SSO: a request from
+# anywhere else gets a 403 without reaching the sign-in portal. Traefik checks
+# the connection's own address and ignores X-Forwarded-For, so the ranges must
+# be the addresses Traefik sees, e.g. the house's networks and the VPN's.
+# Other route sources, such as the traefik role's dashboard labels, refer to
+# it as "<traefik_internal_middleware>@file". Rendering an app with
+# internal_only while the ranges are empty fails the play.
+traefik_internal_source_ranges: []
+traefik_internal_middleware: internal-only

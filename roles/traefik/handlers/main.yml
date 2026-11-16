@@ -4,3 +4,11 @@
     project_src: "{{ traefik_app_dir }}"
     project_name: "{{ traefik_stack_name }}"
     state: present
+
+# A changed secret file alters no compose configuration, so nothing would be
+# recreated
+- name: Traefik | Restart
+  community.docker.docker_compose_v2:
+    project_src: "{{ traefik_app_dir }}"
+    project_name: "{{ traefik_stack_name }}"
+    state: restarted

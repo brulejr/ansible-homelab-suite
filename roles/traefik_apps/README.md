@@ -17,6 +17,7 @@ Edge apps
         backend_url: "http://{{ server_bind_ip }}:{{ app_port_nodered }}"
         sso:                     # optional: put the app behind SSO
           groups: [homelab_admins]
+        internal_only: false     # optional: only from traefik_internal_source_ranges
         middlewares: []          # optional: more Traefik middlewares
         redirect_http: true      # optional: HTTP to HTTPS redirect (default)
         streaming: false         # optional: flush responses every 100ms
@@ -65,3 +66,18 @@ SSO protects the host name only. An app with no login of its own should be
 published on loopback, with a `backend_url` that names its container on the
 Docker network Traefik shares with it (`http://nodered:1880`), so that its
 port doesn't skip SSO. Such a route only works on a Traefik on the same host.
+
+Internal-only apps
+------------------
+
+An app with `internal_only: true` answers only requests from
+`traefik_internal_source_ranges`; anyone else gets a 403, before SSO. Use it
+for admin UIs on a Traefik that faces the internet:
+
+    traefik_internal_source_ranges: [10.10.0.0/16]
+
+Traefik checks the address the connection comes from, not `X-Forwarded-For`.
+That is the client's own address behind a port forward, but would be the
+proxy's behind Cloudflare's proxy or another reverse proxy, which would then
+let everyone through. The `traefik` role's dashboard can use the same
+middleware as `internal-only@file`.

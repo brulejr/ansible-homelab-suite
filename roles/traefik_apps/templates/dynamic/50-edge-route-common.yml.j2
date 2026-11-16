@@ -5,6 +5,15 @@ http:
       redirectScheme:
         scheme: https
         permanent: true
+{% if traefik_internal_source_ranges | length > 0 %}
+
+    {{ traefik_internal_middleware }}:
+      ipAllowList:
+        sourceRange:
+{% for range in traefik_internal_source_ranges %}
+          - "{{ range }}"
+{% endfor %}
+{% endif %}
 {% if traefik_sso_forward_auth_url | length > 0 %}
 
     {{ traefik_sso_middleware }}:

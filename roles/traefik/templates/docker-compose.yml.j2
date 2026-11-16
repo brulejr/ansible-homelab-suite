@@ -29,7 +29,10 @@ services:
       - "{{ traefik_dynamic_dir }}:{{ traefik_dynamic_mount }}:ro"
 
     environment:
-      CF_DNS_API_TOKEN: "{{ vault_cloudflare_dns_token }}"
+      CF_DNS_API_TOKEN_FILE: /run/secrets/cf_dns_api_token
+
+    secrets:
+      - cf_dns_api_token
 
     labels:
       traefik.enable: "true"
@@ -58,6 +61,10 @@ services:
 {% endfor %}
 
       traefik.http.routers.traefik-secure.service: "api@internal"
+
+secrets:
+  cf_dns_api_token:
+    file: "{{ traefik_secrets_dir }}/cf_dns_api_token"
 
 networks:
   {{ docker_network }}:

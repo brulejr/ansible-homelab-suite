@@ -6,7 +6,21 @@ traefik_data_dir: "{{ data_dir }}/traefik"
 traefik_dynamic_dir: "{{ traefik_data_dir }}/dynamic"
 traefik_dynamic_mount: "/etc/traefik/dynamic"
 
+traefik_secrets_dir: "{{ traefik_app_dir }}/secrets"
+
 traefik_basic_auth_hash: "{{ vault_traefik_basic_auth_hash }}"
+
+# Cloudflare API token for the DNS challenge. Give it Zone:Zone:Read and
+# Zone:DNS:Edit on the one zone it issues certificates for, nothing more. A host that faces the
+# internet should have a token of its own, so a compromise there can be
+# contained by revoking that one. Written to a file in traefik_secrets_dir and
+# read through CF_DNS_API_TOKEN_FILE, so it is in neither docker-compose.yml
+# nor the container's configured environment.
+traefik_cloudflare_dns_token: "{{ vault_cloudflare_dns_token }}"
+
+# Traefik's debug endpoints (/debug/pprof and friends) on the dashboard's
+# router. Turn off on a host that faces the internet.
+traefik_api_debug: true
 
 # Protect the dashboard with an SSO middleware instead of basic auth, e.g.
 # "sso@file" for the forward-auth middleware traefik_apps defines. Empty keeps

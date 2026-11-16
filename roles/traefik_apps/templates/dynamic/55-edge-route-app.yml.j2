@@ -11,7 +11,8 @@
 {% set streaming = edge_app.streaming | default(false) | bool %}
 {% set backend_tls_insecure = edge_app.backend_tls_insecure | default(false) | bool %}
 {% set sso = edge_app.sso | default(false) %}
-{% set middlewares = ([traefik_sso_middleware] if sso else []) + (edge_app.middlewares | default([])) %}
+{% set internal_only = edge_app.internal_only | default(false) | bool %}
+{% set middlewares = ([traefik_internal_middleware] if internal_only else []) + ([traefik_sso_middleware] if sso else []) + (edge_app.middlewares | default([])) %}
 
 http:
   routers:

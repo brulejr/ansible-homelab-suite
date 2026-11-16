@@ -150,6 +150,17 @@
     label: "{{ item._ns }}:{{ item.name }}"
   run_once: true
 
+- name: Ensure internal-only edge apps have source ranges
+  ansible.builtin.assert:
+    that:
+      - traefik_internal_source_ranges | length > 0
+    fail_msg: >-
+      Edge app '{{ item.name }}' sets "internal_only" but
+      traefik_internal_source_ranges is empty on {{ inventory_hostname }}.
+  loop: "{{ traefik_edge_apps_selected | selectattr('internal_only', 'defined') | selectattr('internal_only') | list }}"
+  loop_control:
+    label: "{{ item._ns }}:{{ item.name }}"
+
 # 7) Ensure edge app identity (namespace+name) is unique
 - name: Ensure edge app identity (namespace:name) is unique
   ansible.builtin.assert:
